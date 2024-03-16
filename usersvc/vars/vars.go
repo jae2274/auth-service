@@ -10,6 +10,7 @@ type Vars struct {
 	GoogleClientID     string
 	GoogleClientSecret string
 	RedirectURL        string
+	SecretKey          string
 	Port               int
 }
 
@@ -42,6 +43,11 @@ func Variables() (*Vars, error) {
 		return nil, NotExistedVar("REDIRECT_URL")
 	}
 
+	SecretKey, err := getFromEnv("SECRET_KEY")
+	if err != nil {
+		return nil, NotExistedVar("SECRET_KEY")
+	}
+
 	userSvcPort, err := getFromEnv("USER_SVC_PORT")
 	if err != nil {
 		return nil, err
@@ -56,6 +62,7 @@ func Variables() (*Vars, error) {
 		GoogleClientID:     googleClientID,
 		GoogleClientSecret: googleClientSecret,
 		RedirectURL:        redirectURL,
+		SecretKey:          SecretKey,
 		Port:               int(userSvcPortInt),
 	}, nil
 }

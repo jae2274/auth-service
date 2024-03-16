@@ -68,6 +68,7 @@ func (g *GoogleOauth) GetUserInfo(ctx context.Context, authToken *oauth2.Token) 
 	json.Unmarshal(userInfo, &authUser)
 
 	return &UserInfo{
+		Name:  authUser.Name,
 		Email: authUser.Email,
 	}, nil
 }

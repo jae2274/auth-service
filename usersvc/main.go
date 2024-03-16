@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"userService/usersvc/ctrlr"
+	"userService/usersvc/jwtutils"
 	"userService/usersvc/ooauth"
 	"userService/usersvc/vars"
 
@@ -20,9 +21,9 @@ func main() {
 	}
 
 	googleAuth := ooauth.NewGoogleOauth(envVars.GoogleClientID, envVars.GoogleClientSecret, envVars.RedirectURL)
-
+	jwtResolver := jwtutils.NewJwtUtils(envVars.SecretKey)
 	router := mux.NewRouter()
-	controller := ctrlr.NewController(googleAuth, router)
+	controller := ctrlr.NewController(googleAuth, router, jwtResolver)
 	controller.RegisterRoutes()
 
 	err = http.ListenAndServe(fmt.Sprintf(":%d", envVars.Port), router)

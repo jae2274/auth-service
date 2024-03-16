@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"net/http"
 	"text/template"
+	"userService/usersvc/jwtutils"
 	"userService/usersvc/ooauth"
 
 	"github.com/gorilla/mux"
@@ -13,14 +14,16 @@ import (
 
 type Controller struct {
 	googleOauth ooauth.Ooauth
+	jwtResolver *jwtutils.JwtResolver
 	router      *mux.Router
 	store       *sessions.CookieStore
 }
 
-func NewController(googleOauth ooauth.Ooauth, router *mux.Router) *Controller {
+func NewController(googleOauth ooauth.Ooauth, router *mux.Router, jwtResolver *jwtutils.JwtResolver) *Controller {
 	return &Controller{
 		googleOauth: googleOauth,
 		router:      router,
+		jwtResolver: jwtResolver,
 		store:       sessions.NewCookieStore([]byte("secret")),
 	}
 }
@@ -77,12 +80,12 @@ func (c *Controller) Authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session.Options = &sessions.Options{
-		Path:   "/",
-		MaxAge: 86400,
+	jwt, err := c.jwtResolver.CreateToken(userInfo.Email, userInfo.Email, []string{"user"}) //TODO: userID 및 roles 설정
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
-	session.Values["user"] = userInfo.Email
-	session.Save(r, w)
 
+	w.Write([]byte(jwt)) //TODO: 임시로 jwt를 브라우저에 노출
 	http.Redirect(w, r, "/", http.StatusFound)
 }
