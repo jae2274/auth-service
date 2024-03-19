@@ -24,8 +24,7 @@ func main() {
 	check(mainCtx, err)
 	defer db.Close()
 
-	dbMapper := mysqldb.NewDBMapper(db)
-	userService := service.NewUserService(dbMapper)
+	userService := service.NewUserService(db)
 
 	googleAuth := ooauth.NewGoogleOauth(envVars.GoogleClientID, envVars.GoogleClientSecret, envVars.RedirectURL)
 	jwtResolver := jwtutils.NewJwtUtils(envVars.SecretKey)

@@ -6,30 +6,14 @@ import (
 	"userService/usersvc/entity"
 )
 
-type DBMapper interface {
-	SaveUser(user entity.UserVO) error
-	FindByAuthorized(authorizedType domain.AuthorizedBy, authorizedID string) (*entity.UserVO, error)
-	FindAllUserRoles(userID int64) ([]entity.UserRoleVO, error)
-}
-
-type DBMapperImpl struct {
-	db *sql.DB
-}
-
-func NewDBMapper(db *sql.DB) DBMapper {
-	return &DBMapperImpl{
-		db: db,
-	}
-}
-
-func (d *DBMapperImpl) SaveUser(user entity.UserVO) error {
+func SaveUser(tx *sql.Tx, user entity.UserVO) error {
 	return nil //TODO
 }
 
-func (d *DBMapperImpl) FindByAuthorized(authorizedType domain.AuthorizedBy, authorizedID string) (*entity.UserVO, error) {
+func FindByAuthorized(tx *sql.Tx, authorizedType domain.AuthorizedBy, authorizedID string) (*entity.UserVO, error) {
 	return nil, nil //TODO
 }
 
-func (d *DBMapperImpl) FindAllUserRoles(userID int64) ([]entity.UserRoleVO, error) {
+func FindAllUserRoles(tx *sql.Tx, userID int64) ([]entity.UserRoleVO, error) {
 	return nil, nil //TODO
 }
