@@ -6,11 +6,20 @@ import (
 	"strconv"
 )
 
+type DBVars struct {
+	Host     string
+	Port     int64
+	Name     string
+	Username string
+	Password string
+}
+
 type Vars struct {
 	GoogleClientID     string
 	GoogleClientSecret string
 	RedirectURL        string
 	SecretKey          string
+	DbVars             *DBVars
 	Port               int
 }
 
@@ -58,12 +67,58 @@ func Variables() (*Vars, error) {
 		return nil, fmt.Errorf("REST_API_PORT is not integer.\tREST_API_PORT: %s", userSvcPort)
 	}
 
+	dbVars, err := getDBVars()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Vars{
 		GoogleClientID:     googleClientID,
 		GoogleClientSecret: googleClientSecret,
 		RedirectURL:        redirectURL,
 		SecretKey:          SecretKey,
 		Port:               int(userSvcPortInt),
+		DbVars:             dbVars,
+	}, nil
+}
+
+func getDBVars() (*DBVars, error) {
+	dbHost, err := getFromEnv("DB_HOST")
+	if err != nil {
+		return nil, err
+	}
+
+	dbPortStr, err := getFromEnv("DB_PORT")
+	if err != nil {
+		return nil, err
+	}
+
+	dbPort, err := strconv.ParseInt(dbPortStr, 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("DB_PORT is not integer.\tDB_PORT: %s", dbPortStr)
+	}
+
+	dbName, err := getFromEnv("DB_NAME")
+	if err != nil {
+		return nil, err
+	}
+
+	dbUsername, err := getFromEnv("DB_USERNAME")
+	if err != nil {
+		return nil, err
+	}
+
+	dbPassword, err := getFromEnv("DB_PASSWORD")
+	if err != nil {
+		return nil, err
+	}
+
+	return &DBVars{
+		Host:     dbHost,
+		Port:     dbPort,
+		Name:     dbName,
+		Username: dbUsername,
+		Password: dbPassword,
 	}, nil
 }
 

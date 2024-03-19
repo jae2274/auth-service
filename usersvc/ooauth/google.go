@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"userService/usersvc/domain"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -49,8 +50,8 @@ func (g *GoogleOauth) GetToken(ctx context.Context, code string) (*oauth2.Token,
 }
 
 type user struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	LocalId string `json:"localId"`
+	Email   string `json:"email"`
 }
 
 func (g *GoogleOauth) GetUserInfo(ctx context.Context, authToken *oauth2.Token) (*UserInfo, error) {
@@ -68,7 +69,8 @@ func (g *GoogleOauth) GetUserInfo(ctx context.Context, authToken *oauth2.Token) 
 	json.Unmarshal(userInfo, &authUser)
 
 	return &UserInfo{
-		Name:  authUser.Name,
-		Email: authUser.Email,
+		AuthorizedBy: domain.GOOGLE,
+		AuthorizedID: authUser.LocalId,
+		Email:        authUser.Email,
 	}, nil
 }

@@ -2,6 +2,7 @@ package jwtutils
 
 import (
 	"time"
+	"userService/usersvc/domain"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -22,15 +23,15 @@ func NewJwtUtils(secretKey string) *JwtResolver {
 	}
 }
 
-func (j *JwtResolver) CreateToken(userId string, email string, roles []string) (string, error) {
+func (j *JwtResolver) CreateToken(user domain.User) (string, error) {
 	now := time.Now()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		&CustomClaims{
-			UserId: userId,
-			Roles:  roles,
+			UserId: user.UserID,
+			Roles:  user.Roles,
 			RegisteredClaims: jwt.RegisteredClaims{
 				Issuer:    "careerhub.jyo-liar.com", //TODO: 임의 설정
-				Subject:   email,
+				Subject:   user.Email,
 				Audience:  []string{"careerhub.jyo-liar.com"},          //TODO: 임의 설정
 				ExpiresAt: jwt.NewNumericDate(now.Add(24 * time.Hour)), //TODO: 임의 설정
 				IssuedAt:  jwt.NewNumericDate(now),

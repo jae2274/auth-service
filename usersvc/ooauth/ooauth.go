@@ -2,13 +2,15 @@ package ooauth
 
 import (
 	"context"
+	"userService/usersvc/domain"
 
 	"golang.org/x/oauth2"
 )
 
 type UserInfo struct {
-	Name  string
-	Email string
+	AuthorizedBy domain.AuthorizedBy
+	AuthorizedID string
+	Email        string
 }
 
 type Ooauth interface {

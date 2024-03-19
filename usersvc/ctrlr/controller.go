@@ -5,8 +5,10 @@ import (
 	"encoding/base64"
 	"net/http"
 	"text/template"
+	"userService/usersvc/domain"
 	"userService/usersvc/jwtutils"
 	"userService/usersvc/ooauth"
+	"userService/usersvc/service"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -15,15 +17,17 @@ import (
 type Controller struct {
 	googleOauth ooauth.Ooauth
 	jwtResolver *jwtutils.JwtResolver
+	userService service.UserService
 	router      *mux.Router
 	store       *sessions.CookieStore
 }
 
-func NewController(googleOauth ooauth.Ooauth, router *mux.Router, jwtResolver *jwtutils.JwtResolver) *Controller {
+func NewController(googleOauth ooauth.Ooauth, router *mux.Router, jwtResolver *jwtutils.JwtResolver, userService service.UserService) *Controller {
 	return &Controller{
 		googleOauth: googleOauth,
 		router:      router,
 		jwtResolver: jwtResolver,
+		userService: userService,
 		store:       sessions.NewCookieStore([]byte("secret")),
 	}
 }
@@ -80,7 +84,13 @@ func (c *Controller) Authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwt, err := c.jwtResolver.CreateToken(userInfo.Email, userInfo.Email, []string{"user"}) //TODO: userID 및 roles 설정
+	user, err := c.getUser(userInfo.AuthorizedBy, userInfo.AuthorizedID, userInfo.Email)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	jwt, err := c.jwtResolver.CreateToken(user) //TODO: userID 및 roles 설정
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -88,4 +98,25 @@ func (c *Controller) Authenticate(w http.ResponseWriter, r *http.Request) {
 
 	w.Write([]byte(jwt)) //TODO: 임시로 jwt를 브라우저에 노출
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func (c *Controller) getUser(authorizedBy domain.AuthorizedBy, authorizedID string, email string) (domain.User, error) {
+	user, err := c.userService.GetUser(authorizedBy, authorizedID)
+	if err != nil {
+		return domain.User{}, err
+	}
+
+	if user == nil {
+		err = c.userService.SaveUser(authorizedBy, authorizedID, email)
+		if err != nil {
+			return domain.User{}, err
+		}
+
+		user, err = c.userService.GetUser(authorizedBy, authorizedID)
+		if err != nil {
+			return domain.User{}, err
+		}
+	}
+
+	return *user, nil
 }
