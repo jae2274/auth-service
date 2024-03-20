@@ -2,6 +2,7 @@ package ctrlr
 
 import (
 	"crypto/rand"
+	_ "embed"
 	"encoding/base64"
 	"net/http"
 	"text/template"
@@ -15,31 +16,38 @@ import (
 )
 
 type Controller struct {
-	googleOauth ooauth.Ooauth
-	jwtResolver *jwtutils.JwtResolver
-	userService service.UserService
-	router      *mux.Router
-	store       *sessions.CookieStore
+	googleOauth  ooauth.Ooauth
+	jwtResolver  *jwtutils.JwtResolver
+	userService  service.UserService
+	router       *mux.Router
+	store        *sessions.CookieStore
+	authHtmlTmpl *template.Template
 }
 
+//go:embed auth.html
+var authHtml string
+
 func NewController(googleOauth ooauth.Ooauth, router *mux.Router, jwtResolver *jwtutils.JwtResolver, userService service.UserService) *Controller {
+
+	tmpl, err := template.New("auth").Parse(authHtml)
+
+	if err != nil {
+		panic(err)
+	}
+
 	return &Controller{
-		googleOauth: googleOauth,
-		router:      router,
-		jwtResolver: jwtResolver,
-		userService: userService,
-		store:       sessions.NewCookieStore([]byte("secret")),
+		googleOauth:  googleOauth,
+		router:       router,
+		jwtResolver:  jwtResolver,
+		userService:  userService,
+		store:        sessions.NewCookieStore([]byte("secret")),
+		authHtmlTmpl: tmpl,
 	}
 }
 
 func (c *Controller) RegisterRoutes() {
 	c.router.HandleFunc("/auth", c.RenderAuthView)
 	c.router.HandleFunc("/auth/callback/google", c.Authenticate)
-}
-
-func renderTemplate(w http.ResponseWriter, name string, data interface{}) {
-	tmpl, _ := template.ParseFiles(name)
-	tmpl.Execute(w, data)
 }
 
 func (c *Controller) RenderAuthView(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +59,8 @@ func (c *Controller) RenderAuthView(w http.ResponseWriter, r *http.Request) {
 	state := randToken()
 	session.Values["state"] = state
 	session.Save(r, w)
-	renderTemplate(w, "usersvc/ctrlr/auth.html", c.googleOauth.GetLoginURL(state))
+
+	c.authHtmlTmpl.Execute(w, c.googleOauth.GetLoginURL(state))
 }
 
 func randToken() string {
