@@ -8,9 +8,9 @@ import (
 )
 
 type UserInfo struct {
-	AuthorizedBy domain.AuthorizedBy
-	AuthorizedID string
-	Email        string
+	AuthorizedBy domain.AuthorizedBy `validate:"nonzero"`
+	AuthorizedID string              `validate:"nonzero"`
+	Email        string              `validate:"nonzero"`
 }
 
 type Ooauth interface {

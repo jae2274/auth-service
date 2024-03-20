@@ -13,6 +13,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"gopkg.in/validator.v2"
 )
 
 type Controller struct {
@@ -69,6 +70,7 @@ func randToken() string {
 	return base64.StdEncoding.EncodeToString(b)
 }
 
+// TODO: error handling, 현재는 임의로 외부에 에러 내용을 노출하고 있다.
 func (c *Controller) Authenticate(w http.ResponseWriter, r *http.Request) {
 	session, _ := c.store.Get(r, "session")
 	state := session.Values["state"]
@@ -89,6 +91,10 @@ func (c *Controller) Authenticate(w http.ResponseWriter, r *http.Request) {
 
 	userInfo, err := c.googleOauth.GetUserInfo(r.Context(), token)
 	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := validator.Validate(userInfo); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
