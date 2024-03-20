@@ -11,7 +11,7 @@ import (
 func SaveUser(tx *sql.Tx, user entity.UserVO) error {
 	_, err := tx.Exec("INSERT INTO user (authorized_by, authorized_id, email) VALUES ( ?, ?, ?)", user.AuthorizedBy, user.AuthorizedID, user.Email)
 	if err != nil {
-		return err
+		return terr.Wrap(err)
 	}
 	return nil //TODO
 }

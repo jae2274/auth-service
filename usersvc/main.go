@@ -32,7 +32,7 @@ func main() {
 	controller := ctrlr.NewController(googleAuth, router, jwtResolver, userService)
 	controller.RegisterRoutes()
 
-	err = http.ListenAndServe(fmt.Sprintf(":%d", envVars.Port), router)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", envVars.ApiPort), router)
 	check(mainCtx, err)
 }
 

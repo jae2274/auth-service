@@ -20,7 +20,7 @@ type Vars struct {
 	RedirectURL        string
 	SecretKey          string
 	DbVars             *DBVars
-	Port               int
+	ApiPort            int
 }
 
 type ErrNotExistedVar struct {
@@ -57,14 +57,14 @@ func Variables() (*Vars, error) {
 		return nil, NotExistedVar("SECRET_KEY")
 	}
 
-	userSvcPort, err := getFromEnv("USER_SVC_PORT")
+	apiPort, err := getFromEnv("API_PORT")
 	if err != nil {
 		return nil, err
 	}
 
-	userSvcPortInt, err := strconv.ParseInt(userSvcPort, 10, 32)
+	userSvcPortInt, err := strconv.ParseInt(apiPort, 10, 32)
 	if err != nil {
-		return nil, fmt.Errorf("REST_API_PORT is not integer.\tREST_API_PORT: %s", userSvcPort)
+		return nil, fmt.Errorf("REST_API_PORT is not integer.\tREST_API_PORT: %s", apiPort)
 	}
 
 	dbVars, err := getDBVars()
@@ -77,7 +77,7 @@ func Variables() (*Vars, error) {
 		GoogleClientSecret: googleClientSecret,
 		RedirectURL:        redirectURL,
 		SecretKey:          SecretKey,
-		Port:               int(userSvcPortInt),
+		ApiPort:            int(userSvcPortInt),
 		DbVars:             dbVars,
 	}, nil
 }
