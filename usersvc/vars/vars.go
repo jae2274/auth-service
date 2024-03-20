@@ -17,7 +17,7 @@ type DBVars struct {
 type Vars struct {
 	GoogleClientID     string
 	GoogleClientSecret string
-	RedirectURL        string
+	GoogleRedirectUrl  string
 	SecretKey          string
 	DbVars             *DBVars
 	ApiPort            int
@@ -47,9 +47,9 @@ func Variables() (*Vars, error) {
 		return nil, NotExistedVar("GOOGLE_CLIENT_SECRET")
 	}
 
-	redirectURL, err := getFromEnv("REDIRECT_URL")
+	googleRedirectUrl, err := getFromEnv("GOOGLE_REDIRECT_URL")
 	if err != nil {
-		return nil, NotExistedVar("REDIRECT_URL")
+		return nil, NotExistedVar("GOOGLE_REDIRECT_URL")
 	}
 
 	SecretKey, err := getFromEnv("SECRET_KEY")
@@ -75,7 +75,7 @@ func Variables() (*Vars, error) {
 	return &Vars{
 		GoogleClientID:     googleClientID,
 		GoogleClientSecret: googleClientSecret,
-		RedirectURL:        redirectURL,
+		GoogleRedirectUrl:  googleRedirectUrl,
 		SecretKey:          SecretKey,
 		ApiPort:            int(userSvcPortInt),
 		DbVars:             dbVars,

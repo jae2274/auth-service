@@ -26,7 +26,7 @@ func main() {
 
 	userService := service.NewUserService(db)
 
-	googleAuth := ooauth.NewGoogleOauth(envVars.GoogleClientID, envVars.GoogleClientSecret, envVars.RedirectURL)
+	googleAuth := ooauth.NewGoogleOauth(envVars.GoogleClientID, envVars.GoogleClientSecret, envVars.GoogleRedirectUrl)
 	jwtResolver := jwtutils.NewJwtUtils(envVars.SecretKey)
 	router := mux.NewRouter()
 	controller := ctrlr.NewController(googleAuth, router, jwtResolver, userService)

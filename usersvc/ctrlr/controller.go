@@ -34,7 +34,7 @@ func NewController(googleOauth ooauth.Ooauth, router *mux.Router, jwtResolver *j
 
 func (c *Controller) RegisterRoutes() {
 	c.router.HandleFunc("/auth", c.RenderAuthView)
-	c.router.HandleFunc("/auth/callback", c.Authenticate)
+	c.router.HandleFunc("/auth/callback/google", c.Authenticate)
 }
 
 func renderTemplate(w http.ResponseWriter, name string, data interface{}) {
