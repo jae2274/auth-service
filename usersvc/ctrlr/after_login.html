@@ -1,0 +1,8 @@
+<script>
+    const grantType = "{{ .GrantType }}";
+    const accessToken = "{{ .AccessToken }}";
+    const refreshToken = "{{ .RefreshToken }}";
+
+    window.opener.SetAccessToken(grantType, accessToken, refreshToken); 
+    window.close();
+</script>

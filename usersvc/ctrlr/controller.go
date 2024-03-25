@@ -17,32 +17,43 @@ import (
 )
 
 type Controller struct {
-	googleOauth  ooauth.Ooauth
-	jwtResolver  *jwtutils.JwtResolver
-	userService  service.UserService
-	router       *mux.Router
-	store        *sessions.CookieStore
-	authHtmlTmpl *template.Template
+	googleOauth        ooauth.Ooauth
+	jwtResolver        *jwtutils.JwtResolver
+	userService        service.UserService
+	router             *mux.Router
+	store              *sessions.CookieStore
+	authHtmlTmpl       *template.Template
+	afterLoginHtmlTmpl *template.Template
 }
 
 //go:embed auth.html
 var authHtml string
 
+//go:embed after_login.html
+var afterLoginHtml string
+
 func NewController(googleOauth ooauth.Ooauth, router *mux.Router, jwtResolver *jwtutils.JwtResolver, userService service.UserService) *Controller {
 
-	tmpl, err := template.New("auth").Parse(authHtml)
+	authHtmlTmpl, err := template.New("auth").Parse(authHtml)
+
+	if err != nil {
+		panic(err)
+	}
+
+	afterLoginHtmlTmpl, err := template.New("afterLogin").Parse(afterLoginHtml)
 
 	if err != nil {
 		panic(err)
 	}
 
 	return &Controller{
-		googleOauth:  googleOauth,
-		router:       router,
-		jwtResolver:  jwtResolver,
-		userService:  userService,
-		store:        sessions.NewCookieStore([]byte("secret")),
-		authHtmlTmpl: tmpl,
+		googleOauth:        googleOauth,
+		router:             router,
+		jwtResolver:        jwtResolver,
+		userService:        userService,
+		store:              sessions.NewCookieStore([]byte("secret")),
+		authHtmlTmpl:       authHtmlTmpl,
+		afterLoginHtmlTmpl: afterLoginHtmlTmpl,
 	}
 }
 
@@ -111,8 +122,10 @@ func (c *Controller) Authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte(jwt)) //TODO: 임시로 jwt를 브라우저에 노출
-	http.Redirect(w, r, "/", http.StatusFound)
+	// w.Header().Set("Content-Type", "application/json")
+	// json.NewEncoder(w).Encode(jwt)
+
+	c.afterLoginHtmlTmpl.Execute(w, jwt)
 }
 
 func (c *Controller) getUser(authorizedBy domain.AuthorizedBy, authorizedID string, email string) (domain.User, error) {
