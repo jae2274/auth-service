@@ -43,6 +43,7 @@ func main() {
 	controller := ctrlr.NewController(googleAuth, router, jwtResolver, userService)
 	controller.RegisterRoutes()
 
+	llog.Msg("Starting server").Data("port", envVars.ApiPort).Log(mainCtx)
 	err = http.ListenAndServe(fmt.Sprintf(":%d", envVars.ApiPort), router)
 	check(mainCtx, err)
 }
