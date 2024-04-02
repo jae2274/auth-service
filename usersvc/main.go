@@ -23,10 +23,27 @@ const (
 	ctxKeyTraceID = "trace_id"
 )
 
+func initLogger(ctx context.Context) error {
+	llog.SetMetadata("service", svc)
+	llog.SetMetadata("app", app)
+	llog.SetDefaultContextData(ctxKeyTraceID)
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+
+	llog.SetMetadata("hostname", hostname)
+
+	return nil
+}
+
 func main() {
 	mainCtx := context.Background()
+
 	err := initLogger(mainCtx)
 	check(mainCtx, err)
+	llog.Info(mainCtx, "Start Application")
 
 	envVars, err := vars.Variables()
 	check(mainCtx, err)
@@ -43,24 +60,9 @@ func main() {
 	controller := ctrlr.NewController(googleAuth, router, jwtResolver, userService)
 	controller.RegisterRoutes()
 
-	llog.Msg("Starting server").Data("port", envVars.ApiPort).Log(mainCtx)
+	llog.Msg("Start api server").Data("port", envVars.ApiPort).Log(mainCtx)
 	err = http.ListenAndServe(fmt.Sprintf(":%d", envVars.ApiPort), router)
 	check(mainCtx, err)
-}
-
-func initLogger(ctx context.Context) error {
-	llog.SetMetadata("service", svc)
-	llog.SetMetadata("app", app)
-	llog.SetDefaultContextData(ctxKeyTraceID)
-
-	hostname, err := os.Hostname()
-	if err != nil {
-		return err
-	}
-
-	llog.SetMetadata("hostname", hostname)
-
-	return nil
 }
 
 func check(ctx context.Context, err error) {
