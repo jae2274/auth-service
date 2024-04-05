@@ -14,13 +14,15 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jae2274/goutils/llog"
+	"github.com/jae2274/goutils/mw"
+	"github.com/jae2274/goutils/mw/httpmw"
 )
 
 const (
 	app = "user-service"
 	svc = "careerhub"
 
-	ctxKeyTraceID = "trace_id"
+	ctxKeyTraceID = string(mw.CtxKeyTraceID)
 )
 
 func initLogger(ctx context.Context) error {
@@ -57,6 +59,8 @@ func main() {
 	googleAuth := ooauth.NewGoogleOauth(envVars.GoogleClientID, envVars.GoogleClientSecret, envVars.GoogleRedirectUrl)
 	jwtResolver := jwtutils.NewJwtUtils(envVars.SecretKey)
 	router := mux.NewRouter()
+	router.Use(httpmw.SetTraceIdMW("TODO_REMOVE_ME")) //TODO: 불필요한 파라미터가 잘못 포함되어 있어 이후 라이브러리 수정 필요
+
 	controller := ctrlr.NewController(googleAuth, router, jwtResolver, userService)
 	controller.RegisterRoutes()
 
