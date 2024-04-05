@@ -15,7 +15,7 @@ require (
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/sessions v1.2.2 // indirect
-	github.com/jae2274/goutils v1.0.27 // indirect
+	github.com/jae2274/goutils v1.0.28 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
