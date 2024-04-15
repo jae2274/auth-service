@@ -1,9 +1,9 @@
-package mysqldb
+package mapper
 
 import (
 	"database/sql"
-	"userService/usersvc/domain"
-	"userService/usersvc/entity"
+	"userService/usersvc/common/domain"
+	"userService/usersvc/restapi/entity"
 
 	"github.com/jae2274/goutils/terr"
 )

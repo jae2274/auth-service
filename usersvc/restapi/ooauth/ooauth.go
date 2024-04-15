@@ -2,7 +2,7 @@ package ooauth
 
 import (
 	"context"
-	"userService/usersvc/domain"
+	"userService/usersvc/common/domain"
 
 	"golang.org/x/oauth2"
 )

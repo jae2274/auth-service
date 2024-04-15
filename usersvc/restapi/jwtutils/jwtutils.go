@@ -2,7 +2,7 @@ package jwtutils
 
 import (
 	"time"
-	"userService/usersvc/domain"
+	"userService/usersvc/common/domain"
 
 	"github.com/golang-jwt/jwt/v5"
 )

@@ -3,7 +3,7 @@ package mysqldb
 import (
 	"database/sql"
 	"strconv"
-	"userService/usersvc/vars"
+	"userService/usersvc/common/vars"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jae2274/goutils/terr"

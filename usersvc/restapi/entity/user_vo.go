@@ -2,7 +2,7 @@ package entity
 
 import (
 	"time"
-	"userService/usersvc/domain"
+	"userService/usersvc/common/domain"
 
 	"github.com/jae2274/goutils/enum"
 )

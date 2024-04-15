@@ -3,9 +3,9 @@ package service
 import (
 	"database/sql"
 	"fmt"
-	"userService/usersvc/domain"
-	"userService/usersvc/entity"
-	"userService/usersvc/mysqldb"
+	"userService/usersvc/common/domain"
+	"userService/usersvc/restapi/entity"
+	"userService/usersvc/restapi/mapper"
 )
 
 type UserService interface {
@@ -43,14 +43,14 @@ func (u *UserServiceImpl) GetUser(authorizedBy domain.AuthorizedBy, authorizedID
 }
 
 func (u *UserServiceImpl) getUser(tx *sql.Tx, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, error) {
-	user, err := mysqldb.FindByAuthorized(tx, authorizedBy, authorizedID)
+	user, err := mapper.FindByAuthorized(tx, authorizedBy, authorizedID)
 	if err != nil {
 		return nil, err
 	} else if user == nil {
 		return nil, nil
 	}
 
-	userRoles, err := mysqldb.FindAllUserRoles(tx, user.UserID)
+	userRoles, err := mapper.FindAllUserRoles(tx, user.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -95,5 +95,5 @@ func (u *UserServiceImpl) saveUser(tx *sql.Tx, authorizedBy domain.AuthorizedBy,
 		Email:        email,
 	}
 
-	return mysqldb.SaveUser(tx, userVO)
+	return mapper.SaveUser(tx, userVO)
 }

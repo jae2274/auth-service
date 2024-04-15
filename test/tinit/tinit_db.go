@@ -3,8 +3,8 @@ package tinit
 import (
 	"database/sql"
 	"testing"
-	"userService/usersvc/mysqldb"
-	"userService/usersvc/vars"
+	"userService/usersvc/common/mysqldb"
+	"userService/usersvc/common/vars"
 )
 
 func DB(t *testing.T) *sql.DB {

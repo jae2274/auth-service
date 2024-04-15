@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 	"userService/test/tinit"
-	"userService/usersvc/domain"
-	"userService/usersvc/entity"
-	"userService/usersvc/mysqldb"
+	"userService/usersvc/common/domain"
+	"userService/usersvc/restapi/entity"
+	"userService/usersvc/restapi/mapper"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/jae2274/goutils/terr"
@@ -27,7 +27,7 @@ func TestDBMapper(t *testing.T) {
 		defer sqlDB.Close()
 
 		txCommit(t, sqlDB, func(tx *sql.Tx) {
-			user, err := mysqldb.FindByAuthorized(tx, domain.GOOGLE, "test")
+			user, err := mapper.FindByAuthorized(tx, domain.GOOGLE, "test")
 			require.NoError(t, err)
 			require.Nil(t, user)
 		})
@@ -39,9 +39,9 @@ func TestDBMapper(t *testing.T) {
 			defer sqlDB.Close()
 			txCommit(t, sqlDB, func(tx *sql.Tx) {
 
-				require.NoError(t, mysqldb.SaveUser(tx, willSavedUserVO))
+				require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
 
-				user, err := mysqldb.FindByAuthorized(tx, domain.GOOGLE, "test")
+				user, err := mapper.FindByAuthorized(tx, domain.GOOGLE, "test")
 				require.NoError(t, err)
 				require.NotNil(t, user)
 
@@ -57,11 +57,11 @@ func TestDBMapper(t *testing.T) {
 			defer sqlDB.Close()
 			txCommit(t, sqlDB, func(tx *sql.Tx) {
 
-				require.NoError(t, mysqldb.SaveUser(tx, willSavedUserVO))
+				require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
 			})
 
 			txCommit(t, sqlDB, func(tx *sql.Tx) {
-				user, err := mysqldb.FindByAuthorized(tx, domain.GOOGLE, "test")
+				user, err := mapper.FindByAuthorized(tx, domain.GOOGLE, "test")
 				require.NoError(t, err)
 				require.NotNil(t, user)
 
@@ -79,11 +79,11 @@ func TestDBMapper(t *testing.T) {
 		sqlDB := tinit.DB(t)
 		defer sqlDB.Close()
 		txRollback(t, sqlDB, func(tx *sql.Tx) {
-			require.NoError(t, mysqldb.SaveUser(tx, willSavedUserVO))
+			require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
 		})
 
 		txCommit(t, sqlDB, func(tx *sql.Tx) {
-			user, err := mysqldb.FindByAuthorized(tx, domain.GOOGLE, "test")
+			user, err := mapper.FindByAuthorized(tx, domain.GOOGLE, "test")
 			require.NoError(t, err)
 			require.Nil(t, user)
 		})
@@ -110,8 +110,8 @@ func TestDBMapper(t *testing.T) {
 			defer sqlDB.Close()
 
 			txCommit(t, sqlDB, func(tx *sql.Tx) {
-				require.NoError(t, mysqldb.SaveUser(tx, willSavedUserVO))
-				err := mysqldb.SaveUser(tx, sameUser)
+				require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
+				err := mapper.SaveUser(tx, sameUser)
 				require.Error(t, err)
 				require.True(t, isDuplicate(err))
 			})
@@ -122,11 +122,11 @@ func TestDBMapper(t *testing.T) {
 			defer sqlDB.Close()
 
 			txCommit(t, sqlDB, func(tx *sql.Tx) {
-				require.NoError(t, mysqldb.SaveUser(tx, willSavedUserVO))
+				require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
 			})
 
 			txCommit(t, sqlDB, func(tx *sql.Tx) {
-				err := mysqldb.SaveUser(tx, sameUser)
+				err := mapper.SaveUser(tx, sameUser)
 				require.Error(t, err)
 				require.True(t, isDuplicate(err))
 			})

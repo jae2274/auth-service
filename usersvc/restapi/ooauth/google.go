@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"userService/usersvc/domain"
+	"userService/usersvc/common/domain"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
