@@ -6,6 +6,7 @@ include test.env
 ## build: Build binary
 build:
 	@echo "Building..."
+	@sqlboiler mysql
 	@go build -ldflags="-s -w" -o ${BINARY_NAME} ${CODE_DIR}
 	@echo "Built!"
 
@@ -41,6 +42,7 @@ proto:
 ## test: runs all tests
 test:	
 	@echo "Testing..."
+	@sqlboiler mysql
 	@GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET} GOOGLE_REDIRECT_URL=${GOOGLE_REDIRECT_URL} SECRET_KEY=${SECRET_KEY} API_PORT=${API_PORT} DB_HOST=${DB_HOST} DB_PORT=${DB_PORT} DB_NAME=${DB_NAME} DB_USERNAME=${DB_USERNAME} DB_PASSWORD=${DB_PASSWORD} go test -p 1 -timeout 600s ./test/...
 	
 
