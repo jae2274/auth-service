@@ -23,5 +23,6 @@ type User struct {
 	AuthorizedID string
 	Email        string
 	Roles        []string
+	AgreeMail    bool
 	CreateDate   time.Time
 }

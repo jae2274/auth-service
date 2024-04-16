@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 	"userService/test/tinit"
+	"userService/test/tutils"
 	"userService/usersvc/common/domain"
-	"userService/usersvc/restapi/entity"
+	"userService/usersvc/common/entity"
 	"userService/usersvc/restapi/mapper"
 
 	"github.com/go-sql-driver/mysql"
@@ -26,7 +27,7 @@ func TestDBMapper(t *testing.T) {
 		sqlDB := tinit.DB(t)
 		defer sqlDB.Close()
 
-		txCommit(t, sqlDB, func(tx *sql.Tx) {
+		tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
 			user, err := mapper.FindByAuthorized(tx, domain.GOOGLE, "test")
 			require.NoError(t, err)
 			require.Nil(t, user)
@@ -37,7 +38,7 @@ func TestDBMapper(t *testing.T) {
 		t.Run("In same tx", func(t *testing.T) {
 			sqlDB := tinit.DB(t)
 			defer sqlDB.Close()
-			txCommit(t, sqlDB, func(tx *sql.Tx) {
+			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
 
 				require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
 
@@ -55,12 +56,12 @@ func TestDBMapper(t *testing.T) {
 		t.Run("In two tx", func(t *testing.T) {
 			sqlDB := tinit.DB(t)
 			defer sqlDB.Close()
-			txCommit(t, sqlDB, func(tx *sql.Tx) {
+			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
 
 				require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
 			})
 
-			txCommit(t, sqlDB, func(tx *sql.Tx) {
+			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
 				user, err := mapper.FindByAuthorized(tx, domain.GOOGLE, "test")
 				require.NoError(t, err)
 				require.NotNil(t, user)
@@ -78,11 +79,11 @@ func TestDBMapper(t *testing.T) {
 	t.Run("Save but rollback", func(t *testing.T) {
 		sqlDB := tinit.DB(t)
 		defer sqlDB.Close()
-		txRollback(t, sqlDB, func(tx *sql.Tx) {
+		tutils.TxRollback(t, sqlDB, func(tx *sql.Tx) {
 			require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
 		})
 
-		txCommit(t, sqlDB, func(tx *sql.Tx) {
+		tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
 			user, err := mapper.FindByAuthorized(tx, domain.GOOGLE, "test")
 			require.NoError(t, err)
 			require.Nil(t, user)
@@ -109,7 +110,7 @@ func TestDBMapper(t *testing.T) {
 			sqlDB := tinit.DB(t)
 			defer sqlDB.Close()
 
-			txCommit(t, sqlDB, func(tx *sql.Tx) {
+			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
 				require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
 				err := mapper.SaveUser(tx, sameUser)
 				require.Error(t, err)
@@ -121,33 +122,15 @@ func TestDBMapper(t *testing.T) {
 			sqlDB := tinit.DB(t)
 			defer sqlDB.Close()
 
-			txCommit(t, sqlDB, func(tx *sql.Tx) {
+			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
 				require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
 			})
 
-			txCommit(t, sqlDB, func(tx *sql.Tx) {
+			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
 				err := mapper.SaveUser(tx, sameUser)
 				require.Error(t, err)
 				require.True(t, isDuplicate(err))
 			})
 		})
 	})
-}
-
-func txCommit(t *testing.T, db *sql.DB, action func(*sql.Tx)) {
-	tx, err := db.Begin()
-	if err != nil {
-		require.NoError(t, err)
-	}
-	action(tx)
-	require.NoError(t, tx.Commit())
-}
-
-func txRollback(t *testing.T, db *sql.DB, action func(*sql.Tx)) {
-	tx, err := db.Begin()
-	if err != nil {
-		require.NoError(t, err)
-	}
-	action(tx)
-	require.NoError(t, tx.Rollback())
 }

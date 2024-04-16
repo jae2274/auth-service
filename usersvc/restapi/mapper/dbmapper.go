@@ -3,7 +3,7 @@ package mapper
 import (
 	"database/sql"
 	"userService/usersvc/common/domain"
-	"userService/usersvc/restapi/entity"
+	"userService/usersvc/common/entity"
 
 	"github.com/jae2274/goutils/terr"
 )

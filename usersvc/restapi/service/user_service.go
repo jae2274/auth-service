@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"userService/usersvc/common/domain"
-	"userService/usersvc/restapi/entity"
+	"userService/usersvc/common/entity"
 	"userService/usersvc/restapi/mapper"
 )
 
