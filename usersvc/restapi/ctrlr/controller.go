@@ -1,6 +1,7 @@
 package ctrlr
 
 import (
+	"context"
 	"crypto/rand"
 	_ "embed"
 	"encoding/base64"
@@ -110,7 +111,7 @@ func (c *Controller) Authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := c.getUser(userInfo.AuthorizedBy, userInfo.AuthorizedID, userInfo.Email)
+	user, err := c.getUser(r.Context(), userInfo.AuthorizedBy, userInfo.AuthorizedID, userInfo.Email)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -128,19 +129,19 @@ func (c *Controller) Authenticate(w http.ResponseWriter, r *http.Request) {
 	c.afterLoginHtmlTmpl.Execute(w, jwt)
 }
 
-func (c *Controller) getUser(authorizedBy domain.AuthorizedBy, authorizedID string, email string) (domain.User, error) {
-	user, err := c.userService.GetUser(authorizedBy, authorizedID)
+func (c *Controller) getUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string, email string) (domain.User, error) {
+	user, err := c.userService.GetUser(ctx, authorizedBy, authorizedID)
 	if err != nil {
 		return domain.User{}, err
 	}
 
 	if user == nil {
-		err = c.userService.SaveUser(authorizedBy, authorizedID, email)
+		err = c.userService.SaveUser(ctx, authorizedBy, authorizedID, email)
 		if err != nil {
 			return domain.User{}, err
 		}
 
-		user, err = c.userService.GetUser(authorizedBy, authorizedID)
+		user, err = c.userService.GetUser(ctx, authorizedBy, authorizedID)
 		if err != nil {
 			return domain.User{}, err
 		}

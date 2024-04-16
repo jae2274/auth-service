@@ -1,64 +1,40 @@
 package mapper
 
 import (
+	"context"
 	"database/sql"
+	"userService/models"
 	"userService/usersvc/common/domain"
-	"userService/usersvc/common/entity"
 
 	"github.com/jae2274/goutils/terr"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-func SaveUser(tx *sql.Tx, user entity.UserVO) error {
-	_, err := tx.Exec("INSERT INTO user (authorized_by, authorized_id, email) VALUES ( ?, ?, ?)", user.AuthorizedBy, user.AuthorizedID, user.Email)
+func SaveUser(ctx context.Context, exec boil.ContextExecutor, authorizedBy domain.AuthorizedBy, authorizedID, email string) error {
+	user := models.User{
+		AuthorizedBy: string(authorizedBy),
+		AuthorizedID: authorizedID,
+		Email:        email,
+	}
+
+	err := user.Insert(ctx, exec, boil.Infer())
 	if err != nil {
 		return terr.Wrap(err)
 	}
-	return nil //TODO
+
+	return nil
 }
 
-func FindByAuthorized(tx *sql.Tx, authorizedType domain.AuthorizedBy, authorizedID string) (*entity.UserVO, error) {
-	row := tx.QueryRow(
-		`SELECT user_id,
-		authorized_by,
-		authorized_id,
-		email,
-		create_date
-	FROM user WHERE authorized_by = ? and authorized_id = ?`, authorizedType, authorizedID)
+func FindByAuthorized(ctx context.Context, exec boil.ContextExecutor, authorizedType domain.AuthorizedBy, authorizedID string) (*models.User, error) {
 
-	var user entity.UserVO
-	err := row.Scan(&user.UserID, &user.AuthorizedBy, &user.AuthorizedID, &user.Email, &user.CreateDate)
+	user, err := models.Users(qm.Where(models.UserColumns.AuthorizedBy+"=?", authorizedType), qm.And(models.UserColumns.AuthorizedID+"=?", authorizedID)).One(ctx, exec)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, terr.Wrap(err)
 	}
-	return &user, nil
-}
 
-func FindAllUserRoles(tx *sql.Tx, userID int64) ([]entity.UserRoleVO, error) {
-	rows, err := tx.Query(`
-	SELECT user_id,
-    role_name,
-    granted_type,
-    granted_by,
-    expiry_date
-FROM user_role WHERE user_id=?`, userID)
-
-	if err != nil {
-		return nil, terr.Wrap(err)
-	}
-	defer rows.Close()
-
-	var userRoles []entity.UserRoleVO
-	for rows.Next() {
-		var userRole entity.UserRoleVO
-		err := rows.Scan(&userRole.UserID, &userRole.RoleName, &userRole.GrantedType, &userRole.GrantedBy, &userRole.ExpiryDate)
-		if err != nil {
-			return nil, terr.Wrap(err)
-		}
-		userRoles = append(userRoles, userRole)
-	}
-
-	return userRoles, nil //TODO
+	return user, nil
 }

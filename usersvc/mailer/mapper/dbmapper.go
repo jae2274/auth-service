@@ -1,40 +1,26 @@
 package mapper
 
 import (
-	"bytes"
+	"context"
 	"database/sql"
-	"fmt"
-	"userService/usersvc/common/entity"
+	"userService/models"
+
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-func GetUserEMails(tx *sql.Tx, userIds []int64) ([]*entity.UserVO, error) {
+func GetUserEMails(ctx context.Context, exec boil.ContextExecutor, userIds []int) ([]*models.User, error) {
 	if len(userIds) == 0 {
-		return []*entity.UserVO{}, nil
+		return []*models.User{}, nil
 	}
 
-	buff := bytes.NewBuffer([]byte{})
-	for i, id := range userIds {
-		if i > 0 {
-			buff.WriteString(",")
-		}
-		buff.WriteString(fmt.Sprintf("%d", id))
-	}
-	rows, err := tx.Query("SELECT user_id, email FROM user WHERE user_id IN (?) AND agree_mail=?", buff.String(), true)
+	users, err := models.Users(qm.Where(models.UserColumns.UserID+" IN ?", userIds, qm.And(models.UserColumns.AgreeMail+"=?", true))).All(ctx, exec)
 
 	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var userEMails []*entity.UserVO
-	for rows.Next() {
-		var userEMail entity.UserVO
-		err := rows.Scan(&userEMail.UserID, &userEMail.Email)
-		if err != nil {
-			return nil, err
+		if err == sql.ErrNoRows {
+			return []*models.User{}, nil
 		}
-		userEMails = append(userEMails, &userEMail)
 	}
 
-	return userEMails, nil
+	return users, nil
 }

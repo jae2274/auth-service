@@ -1,14 +1,15 @@
 package mysqldb
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"testing"
 	"time"
+	"userService/models"
 	"userService/test/tinit"
 	"userService/test/tutils"
 	"userService/usersvc/common/domain"
-	"userService/usersvc/common/entity"
 	"userService/usersvc/restapi/mapper"
 
 	"github.com/go-sql-driver/mysql"
@@ -17,8 +18,8 @@ import (
 )
 
 func TestDBMapper(t *testing.T) {
-	willSavedUserVO := entity.UserVO{
-		AuthorizedBy: domain.GOOGLE,
+	willSavedUserVO := models.User{
+		AuthorizedBy: string(domain.GOOGLE),
 		AuthorizedID: "test",
 		Email:        "test@mail.com",
 	}
@@ -27,8 +28,9 @@ func TestDBMapper(t *testing.T) {
 		sqlDB := tinit.DB(t)
 		defer sqlDB.Close()
 
+		ctx := context.Background()
 		tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-			user, err := mapper.FindByAuthorized(tx, domain.GOOGLE, "test")
+			user, err := mapper.FindByAuthorized(ctx, tx, domain.GOOGLE, "test")
 			require.NoError(t, err)
 			require.Nil(t, user)
 		})
@@ -38,15 +40,17 @@ func TestDBMapper(t *testing.T) {
 		t.Run("In same tx", func(t *testing.T) {
 			sqlDB := tinit.DB(t)
 			defer sqlDB.Close()
+
+			ctx := context.Background()
 			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
 
-				require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
+				require.NoError(t, mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email))
 
-				user, err := mapper.FindByAuthorized(tx, domain.GOOGLE, "test")
+				user, err := mapper.FindByAuthorized(ctx, tx, domain.GOOGLE, "test")
 				require.NoError(t, err)
 				require.NotNil(t, user)
 
-				require.Equal(t, int64(1), user.UserID)
+				require.Equal(t, 1, user.UserID)
 				require.Equal(t, willSavedUserVO.Email, user.Email)
 				require.Equal(t, willSavedUserVO.AuthorizedBy, user.AuthorizedBy)
 				require.Equal(t, willSavedUserVO.AuthorizedID, user.AuthorizedID)
@@ -56,17 +60,18 @@ func TestDBMapper(t *testing.T) {
 		t.Run("In two tx", func(t *testing.T) {
 			sqlDB := tinit.DB(t)
 			defer sqlDB.Close()
-			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
 
-				require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
+			ctx := context.Background()
+			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
+				require.NoError(t, mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email))
 			})
 
 			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-				user, err := mapper.FindByAuthorized(tx, domain.GOOGLE, "test")
+				user, err := mapper.FindByAuthorized(ctx, tx, domain.GOOGLE, "test")
 				require.NoError(t, err)
 				require.NotNil(t, user)
 
-				require.Equal(t, int64(1), user.UserID)
+				require.Equal(t, 1, user.UserID)
 				require.Equal(t, willSavedUserVO.Email, user.Email)
 				require.Equal(t, willSavedUserVO.AuthorizedBy, user.AuthorizedBy)
 				require.Equal(t, willSavedUserVO.AuthorizedID, user.AuthorizedID)
@@ -79,12 +84,14 @@ func TestDBMapper(t *testing.T) {
 	t.Run("Save but rollback", func(t *testing.T) {
 		sqlDB := tinit.DB(t)
 		defer sqlDB.Close()
+
+		ctx := context.Background()
 		tutils.TxRollback(t, sqlDB, func(tx *sql.Tx) {
-			require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
+			require.NoError(t, mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email))
 		})
 
 		tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-			user, err := mapper.FindByAuthorized(tx, domain.GOOGLE, "test")
+			user, err := mapper.FindByAuthorized(ctx, tx, domain.GOOGLE, "test")
 			require.NoError(t, err)
 			require.Nil(t, user)
 		})
@@ -100,7 +107,7 @@ func TestDBMapper(t *testing.T) {
 			return false
 		}
 
-		sameUser := entity.UserVO{
+		sameUser := models.User{
 			AuthorizedBy: willSavedUserVO.AuthorizedBy,
 			AuthorizedID: willSavedUserVO.AuthorizedID,
 			Email:        "test2@naver.com",
@@ -110,9 +117,10 @@ func TestDBMapper(t *testing.T) {
 			sqlDB := tinit.DB(t)
 			defer sqlDB.Close()
 
+			ctx := context.Background()
 			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-				require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
-				err := mapper.SaveUser(tx, sameUser)
+				require.NoError(t, mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email))
+				err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(sameUser.AuthorizedBy), sameUser.AuthorizedID, sameUser.Email)
 				require.Error(t, err)
 				require.True(t, isDuplicate(err))
 			})
@@ -122,12 +130,13 @@ func TestDBMapper(t *testing.T) {
 			sqlDB := tinit.DB(t)
 			defer sqlDB.Close()
 
+			ctx := context.Background()
 			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-				require.NoError(t, mapper.SaveUser(tx, willSavedUserVO))
+				require.NoError(t, mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email))
 			})
 
 			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-				err := mapper.SaveUser(tx, sameUser)
+				err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(sameUser.AuthorizedBy), sameUser.AuthorizedID, sameUser.Email)
 				require.Error(t, err)
 				require.True(t, isDuplicate(err))
 			})

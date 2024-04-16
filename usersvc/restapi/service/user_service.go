@@ -1,16 +1,16 @@
 package service
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"userService/usersvc/common/domain"
-	"userService/usersvc/common/entity"
 	"userService/usersvc/restapi/mapper"
 )
 
 type UserService interface {
-	GetUser(authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, error)
-	SaveUser(authorizedBy domain.AuthorizedBy, authorizedID, email string) error
+	GetUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, error)
+	SaveUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID, email string) error
 }
 
 type UserServiceImpl struct {
@@ -23,13 +23,13 @@ func NewUserService(mysqlDB *sql.DB) UserService {
 	}
 }
 
-func (u *UserServiceImpl) GetUser(authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, error) {
-	tx, err := u.mysqlDB.Begin()
+func (u *UserServiceImpl) GetUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, error) {
+	tx, err := u.mysqlDB.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := u.getUser(tx, authorizedBy, authorizedID)
+	user, err := u.getUser(ctx, tx, authorizedBy, authorizedID)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -42,15 +42,15 @@ func (u *UserServiceImpl) GetUser(authorizedBy domain.AuthorizedBy, authorizedID
 	return user, nil
 }
 
-func (u *UserServiceImpl) getUser(tx *sql.Tx, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, error) {
-	user, err := mapper.FindByAuthorized(tx, authorizedBy, authorizedID)
+func (u *UserServiceImpl) getUser(ctx context.Context, tx *sql.Tx, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, error) {
+	user, err := mapper.FindByAuthorized(ctx, tx, authorizedBy, authorizedID)
 	if err != nil {
 		return nil, err
 	} else if user == nil {
 		return nil, nil
 	}
 
-	userRoles, err := mapper.FindAllUserRoles(tx, user.UserID)
+	userRoles, err := user.UserRoles().All(ctx, tx)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (u *UserServiceImpl) getUser(tx *sql.Tx, authorizedBy domain.AuthorizedBy, 
 
 	return &domain.User{
 		UserID:       fmt.Sprintf("%d", user.UserID),
-		AuthorizedBy: user.AuthorizedBy,
+		AuthorizedBy: domain.AuthorizedBy(user.AuthorizedBy),
 		AuthorizedID: user.AuthorizedID,
 		Email:        user.Email,
 		CreateDate:   user.CreateDate,
@@ -70,30 +70,6 @@ func (u *UserServiceImpl) getUser(tx *sql.Tx, authorizedBy domain.AuthorizedBy, 
 	}, nil
 }
 
-func (u *UserServiceImpl) SaveUser(authorizedBy domain.AuthorizedBy, authorizedID, email string) error {
-	tx, err := u.mysqlDB.Begin()
-	if err != nil {
-		return err
-	}
-
-	if err := u.saveUser(tx, authorizedBy, authorizedID, email); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (u *UserServiceImpl) saveUser(tx *sql.Tx, authorizedBy domain.AuthorizedBy, authorizedID, email string) error {
-	userVO := entity.UserVO{
-		AuthorizedBy: authorizedBy,
-		AuthorizedID: authorizedID,
-		Email:        email,
-	}
-
-	return mapper.SaveUser(tx, userVO)
+func (u *UserServiceImpl) SaveUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID, email string) error {
+	return mapper.SaveUser(ctx, u.mysqlDB, authorizedBy, authorizedID, email)
 }
