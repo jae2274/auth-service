@@ -68,29 +68,6 @@ var UserTableColumns = struct {
 
 // Generated where
 
-type whereHelperint8 struct{ field string }
-
-func (w whereHelperint8) EQ(x int8) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
-func (w whereHelperint8) NEQ(x int8) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
-func (w whereHelperint8) LT(x int8) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
-func (w whereHelperint8) LTE(x int8) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
-func (w whereHelperint8) GT(x int8) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
-func (w whereHelperint8) GTE(x int8) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
-func (w whereHelperint8) IN(slice []int8) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
-}
-func (w whereHelperint8) NIN(slice []int8) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
-}
-
 var UserWhere = struct {
 	UserID       whereHelperint
 	AuthorizedBy whereHelperstring
@@ -109,19 +86,29 @@ var UserWhere = struct {
 
 // UserRels is where relationship names are stored.
 var UserRels = struct {
-	UserRoles string
+	UserAgreements string
+	UserRoles      string
 }{
-	UserRoles: "UserRoles",
+	UserAgreements: "UserAgreements",
+	UserRoles:      "UserRoles",
 }
 
 // userR is where relationships are stored.
 type userR struct {
-	UserRoles UserRoleSlice `boil:"UserRoles" json:"UserRoles" toml:"UserRoles" yaml:"UserRoles"`
+	UserAgreements UserAgreementSlice `boil:"UserAgreements" json:"UserAgreements" toml:"UserAgreements" yaml:"UserAgreements"`
+	UserRoles      UserRoleSlice      `boil:"UserRoles" json:"UserRoles" toml:"UserRoles" yaml:"UserRoles"`
 }
 
 // NewStruct creates a new relationship struct
 func (*userR) NewStruct() *userR {
 	return &userR{}
+}
+
+func (r *userR) GetUserAgreements() UserAgreementSlice {
+	if r == nil {
+		return nil
+	}
+	return r.UserAgreements
 }
 
 func (r *userR) GetUserRoles() UserRoleSlice {
@@ -447,6 +434,20 @@ func (q userQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool,
 	return count > 0, nil
 }
 
+// UserAgreements retrieves all the user_agreement's UserAgreements with an executor.
+func (o *User) UserAgreements(mods ...qm.QueryMod) userAgreementQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("`user_agreement`.`user_id`=?", o.UserID),
+	)
+
+	return UserAgreements(queryMods...)
+}
+
 // UserRoles retrieves all the user_role's UserRoles with an executor.
 func (o *User) UserRoles(mods ...qm.QueryMod) userRoleQuery {
 	var queryMods []qm.QueryMod
@@ -459,6 +460,119 @@ func (o *User) UserRoles(mods ...qm.QueryMod) userRoleQuery {
 	)
 
 	return UserRoles(queryMods...)
+}
+
+// LoadUserAgreements allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadUserAgreements(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.UserID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.UserID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`user_agreement`),
+		qm.WhereIn(`user_agreement.user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load user_agreement")
+	}
+
+	var resultSlice []*UserAgreement
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice user_agreement")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on user_agreement")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for user_agreement")
+	}
+
+	if len(userAgreementAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.UserAgreements = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &userAgreementR{}
+			}
+			foreign.R.User = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.UserID == foreign.UserID {
+				local.R.UserAgreements = append(local.R.UserAgreements, foreign)
+				if foreign.R == nil {
+					foreign.R = &userAgreementR{}
+				}
+				foreign.R.User = local
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadUserRoles allows an eager lookup of values, cached into the
@@ -571,6 +685,59 @@ func (userL) LoadUserRoles(ctx context.Context, e boil.ContextExecutor, singular
 		}
 	}
 
+	return nil
+}
+
+// AddUserAgreements adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.UserAgreements.
+// Sets related.R.User appropriately.
+func (o *User) AddUserAgreements(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*UserAgreement) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.UserID = o.UserID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE `user_agreement` SET %s WHERE %s",
+				strmangle.SetParamNames("`", "`", 0, []string{"user_id"}),
+				strmangle.WhereClause("`", "`", 0, userAgreementPrimaryKeyColumns),
+			)
+			values := []interface{}{o.UserID, rel.UserID, rel.AgreementCode}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.UserID = o.UserID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			UserAgreements: related,
+		}
+	} else {
+		o.R.UserAgreements = append(o.R.UserAgreements, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &userAgreementR{
+				User: o,
+			}
+		} else {
+			rel.R.User = o
+		}
+	}
 	return nil
 }
 

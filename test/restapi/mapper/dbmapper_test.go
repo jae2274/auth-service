@@ -30,9 +30,9 @@ func TestDBMapper(t *testing.T) {
 
 		ctx := context.Background()
 		tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-			user, err := mapper.FindByAuthorized(ctx, tx, domain.GOOGLE, "test")
+			_, isExisted, err := mapper.FindUserByAuthorized(ctx, tx, domain.GOOGLE, "test")
 			require.NoError(t, err)
-			require.Nil(t, user)
+			require.False(t, isExisted)
 		})
 	})
 
@@ -46,9 +46,9 @@ func TestDBMapper(t *testing.T) {
 
 				require.NoError(t, mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email))
 
-				user, err := mapper.FindByAuthorized(ctx, tx, domain.GOOGLE, "test")
+				user, isExisted, err := mapper.FindUserByAuthorized(ctx, tx, domain.GOOGLE, "test")
 				require.NoError(t, err)
-				require.NotNil(t, user)
+				require.True(t, isExisted)
 
 				require.Equal(t, 1, user.UserID)
 				require.Equal(t, willSavedUserVO.Email, user.Email)
@@ -67,9 +67,9 @@ func TestDBMapper(t *testing.T) {
 			})
 
 			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-				user, err := mapper.FindByAuthorized(ctx, tx, domain.GOOGLE, "test")
+				user, isExisted, err := mapper.FindUserByAuthorized(ctx, tx, domain.GOOGLE, "test")
 				require.NoError(t, err)
-				require.NotNil(t, user)
+				require.True(t, isExisted)
 
 				require.Equal(t, 1, user.UserID)
 				require.Equal(t, willSavedUserVO.Email, user.Email)
@@ -91,9 +91,9 @@ func TestDBMapper(t *testing.T) {
 		})
 
 		tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-			user, err := mapper.FindByAuthorized(ctx, tx, domain.GOOGLE, "test")
+			_, isExisted, err := mapper.FindUserByAuthorized(ctx, tx, domain.GOOGLE, "test")
 			require.NoError(t, err)
-			require.Nil(t, user)
+			require.False(t, isExisted)
 		})
 	})
 

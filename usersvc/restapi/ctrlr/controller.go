@@ -8,18 +8,24 @@ import (
 	"net/http"
 	"text/template"
 	"userService/usersvc/common/domain"
+	"userService/usersvc/restapi/aescryptor"
+	"userService/usersvc/restapi/ctrlr/dto"
 	"userService/usersvc/restapi/jwtutils"
 	"userService/usersvc/restapi/ooauth"
 	"userService/usersvc/restapi/service"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/jae2274/goutils/llog"
+	"github.com/jae2274/goutils/terr"
+	"golang.org/x/oauth2"
 	"gopkg.in/validator.v2"
 )
 
 type Controller struct {
 	googleOauth        ooauth.Ooauth
 	jwtResolver        *jwtutils.JwtResolver
+	aesCryptor         *aescryptor.JsonAesCryptor
 	userService        service.UserService
 	router             *mux.Router
 	store              *sessions.CookieStore
@@ -84,6 +90,7 @@ func randToken() string {
 
 // TODO: error handling, 현재는 임의로 외부에 에러 내용을 노출하고 있다.
 func (c *Controller) Authenticate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	session, _ := c.store.Get(r, "session")
 	state := session.Values["state"]
 
@@ -91,61 +98,88 @@ func (c *Controller) Authenticate(w http.ResponseWriter, r *http.Request) {
 	session.Save(r, w)
 
 	if state != r.FormValue("state") {
-		http.Error(w, "Invalid session state", http.StatusUnauthorized)
+		c.loginFailed(ctx, w, terr.New("invalid status"))
 		return
 	}
 
 	token, err := c.googleOauth.GetToken(r.Context(), r.FormValue("code"))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.loginFailed(ctx, w, err)
+		return
+	}
+
+	if err != nil {
+		c.loginFailed(ctx, w, err)
 		return
 	}
 
 	userInfo, err := c.googleOauth.GetUserInfo(r.Context(), token)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.loginFailed(ctx, w, err)
 		return
 	}
 	if err := validator.Validate(userInfo); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.loginFailed(ctx, w, err)
 		return
 	}
 
-	user, err := c.getUser(r.Context(), userInfo.AuthorizedBy, userInfo.AuthorizedID, userInfo.Email)
+	user, isExisted, err := c.userService.GetUser(r.Context(), userInfo.AuthorizedBy, userInfo.AuthorizedID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		c.loginFailed(ctx, w, err)
 		return
 	}
 
-	jwt, err := c.jwtResolver.CreateToken(user) //TODO: userID 및 roles 설정
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if isExisted {
+		c.loginSuccess(ctx, w, user)
+		return
+	} else {
+		c.loginNewUser(ctx, w, token, userInfo)
 		return
 	}
-
-	// w.Header().Set("Content-Type", "application/json")
-	// json.NewEncoder(w).Encode(jwt)
-
-	c.afterLoginHtmlTmpl.Execute(w, jwt)
 }
 
-func (c *Controller) getUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string, email string) (domain.User, error) {
-	user, err := c.userService.GetUser(ctx, authorizedBy, authorizedID)
+func (c *Controller) loginSuccess(ctx context.Context, w http.ResponseWriter, user *domain.User) {
+	jwt, err := c.jwtResolver.CreateToken(user)
 	if err != nil {
-		return domain.User{}, err
+		c.loginFailed(ctx, w, err)
+		return
 	}
 
-	if user == nil {
-		err = c.userService.SaveUser(ctx, authorizedBy, authorizedID, email)
-		if err != nil {
-			return domain.User{}, err
-		}
+	viewVars := &dto.AfterLoginViewVars{}
 
-		user, err = c.userService.GetUser(ctx, authorizedBy, authorizedID)
-		if err != nil {
-			return domain.User{}, err
-		}
+	viewVars.LoginStatus = dto.LoginSuccess
+
+	viewVars.GrantType = jwt.GrantType
+	viewVars.AccessToken = jwt.AccessToken
+	viewVars.RefreshToken = jwt.RefreshToken
+
+	llog.Level(llog.DEBUG).Msg("login success").Data("user", user)
+	c.afterLoginHtmlTmpl.Execute(w, viewVars)
+}
+
+func (c *Controller) loginNewUser(ctx context.Context, w http.ResponseWriter, token *oauth2.Token, userInfo *ooauth.UserInfo) {
+	authToken, err := c.aesCryptor.Encrypt(token)
+	if err != nil {
+		c.loginFailed(ctx, w, err)
+		return
 	}
 
-	return *user, nil
+	viewVars := &dto.AfterLoginViewVars{}
+
+	viewVars.LoginStatus = dto.LoginNewUser
+
+	viewVars.AuthToken = authToken
+	viewVars.Email = userInfo.Email
+
+	llog.Level(llog.DEBUG).Msg("new user").Data("email", userInfo.Email)
+	c.afterLoginHtmlTmpl.Execute(w, viewVars)
+}
+
+func (c *Controller) loginFailed(ctx context.Context, w http.ResponseWriter, err error) {
+	viewVars := &dto.AfterLoginViewVars{}
+
+	viewVars.LoginStatus = dto.LoginFailed
+
+	llog.LogErr(ctx, err)
+	c.afterLoginHtmlTmpl.Execute(w, viewVars)
 }

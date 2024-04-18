@@ -36,8 +36,12 @@ if (!document.cookie) {
  console.log('new Cookie created !');
 }
 
+window.loginFail = function() {
+    alert("Login Fail");
+}
+
 // 쿠키 추가
-window.SetAccessToken = function(grantType, accessToken, refreshToken) {
+window.loginSuccess = function(grantType, accessToken, refreshToken) {
     setCookie("grant_type", grantType, { expires: new Date(Date.now() + 1000 * 60 * 60 * 24)});
     setCookie("access_token", accessToken, { expires: new Date(Date.now() + 1000 * 60 * 60 * 24)});
     setCookie("refresh_token", refreshToken, { expires: new Date(Date.now() + 1000 * 60 * 60 * 24) });
@@ -47,7 +51,10 @@ window.SetAccessToken = function(grantType, accessToken, refreshToken) {
     } else {
         window.location.href = "/";
     }
+}
 
+window.loginNewUser = function() {
+    //TODO: 신규 사용자 처리
 }
 
 </script>

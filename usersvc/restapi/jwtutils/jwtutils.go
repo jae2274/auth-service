@@ -29,7 +29,7 @@ func NewJwtUtils(secretKey string) *JwtResolver {
 	}
 }
 
-func (j *JwtResolver) CreateToken(user domain.User) (*TokenInfo, error) {
+func (j *JwtResolver) CreateToken(user *domain.User) (*TokenInfo, error) {
 	now := time.Now()
 
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256,

@@ -9,7 +9,7 @@ import (
 )
 
 type UserService interface {
-	GetUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, error)
+	GetUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, bool, error)
 	SaveUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID, email string) error
 }
 
@@ -23,36 +23,36 @@ func NewUserService(mysqlDB *sql.DB) UserService {
 	}
 }
 
-func (u *UserServiceImpl) GetUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, error) {
+func (u *UserServiceImpl) GetUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, bool, error) {
 	tx, err := u.mysqlDB.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	user, err := u.getUser(ctx, tx, authorizedBy, authorizedID)
+	user, isExisted, err := u.getUser(ctx, tx, authorizedBy, authorizedID)
 	if err != nil {
 		tx.Rollback()
-		return nil, err
+		return nil, false, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	return user, nil
+	return user, isExisted, nil
 }
 
-func (u *UserServiceImpl) getUser(ctx context.Context, tx *sql.Tx, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, error) {
-	user, err := mapper.FindByAuthorized(ctx, tx, authorizedBy, authorizedID)
+func (u *UserServiceImpl) getUser(ctx context.Context, tx *sql.Tx, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, bool, error) {
+	user, isExisted, err := mapper.FindUserByAuthorized(ctx, tx, authorizedBy, authorizedID)
 	if err != nil {
-		return nil, err
-	} else if user == nil {
-		return nil, nil
+		return nil, false, err
+	} else if !isExisted {
+		return nil, false, nil
 	}
 
 	userRoles, err := user.UserRoles().All(ctx, tx)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	roles := make([]string, len(userRoles))
@@ -67,7 +67,7 @@ func (u *UserServiceImpl) getUser(ctx context.Context, tx *sql.Tx, authorizedBy 
 		Email:        user.Email,
 		CreateDate:   user.CreateDate,
 		Roles:        roles,
-	}, nil
+	}, true, nil
 }
 
 func (u *UserServiceImpl) SaveUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID, email string) error {

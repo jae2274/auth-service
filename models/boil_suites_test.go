@@ -12,124 +12,160 @@ import "testing"
 // It does NOT run each operation group in parallel.
 // Separating the tests thusly grants avoidance of Postgres deadlocks.
 func TestParent(t *testing.T) {
+	t.Run("Agreements", testAgreements)
 	t.Run("RoleTickets", testRoleTickets)
 	t.Run("RoleTicketRoles", testRoleTicketRoles)
 	t.Run("Users", testUsers)
+	t.Run("UserAgreements", testUserAgreements)
 	t.Run("UserRoles", testUserRoles)
 }
 
 func TestDelete(t *testing.T) {
+	t.Run("Agreements", testAgreementsDelete)
 	t.Run("RoleTickets", testRoleTicketsDelete)
 	t.Run("RoleTicketRoles", testRoleTicketRolesDelete)
 	t.Run("Users", testUsersDelete)
+	t.Run("UserAgreements", testUserAgreementsDelete)
 	t.Run("UserRoles", testUserRolesDelete)
 }
 
 func TestQueryDeleteAll(t *testing.T) {
+	t.Run("Agreements", testAgreementsQueryDeleteAll)
 	t.Run("RoleTickets", testRoleTicketsQueryDeleteAll)
 	t.Run("RoleTicketRoles", testRoleTicketRolesQueryDeleteAll)
 	t.Run("Users", testUsersQueryDeleteAll)
+	t.Run("UserAgreements", testUserAgreementsQueryDeleteAll)
 	t.Run("UserRoles", testUserRolesQueryDeleteAll)
 }
 
 func TestSliceDeleteAll(t *testing.T) {
+	t.Run("Agreements", testAgreementsSliceDeleteAll)
 	t.Run("RoleTickets", testRoleTicketsSliceDeleteAll)
 	t.Run("RoleTicketRoles", testRoleTicketRolesSliceDeleteAll)
 	t.Run("Users", testUsersSliceDeleteAll)
+	t.Run("UserAgreements", testUserAgreementsSliceDeleteAll)
 	t.Run("UserRoles", testUserRolesSliceDeleteAll)
 }
 
 func TestExists(t *testing.T) {
+	t.Run("Agreements", testAgreementsExists)
 	t.Run("RoleTickets", testRoleTicketsExists)
 	t.Run("RoleTicketRoles", testRoleTicketRolesExists)
 	t.Run("Users", testUsersExists)
+	t.Run("UserAgreements", testUserAgreementsExists)
 	t.Run("UserRoles", testUserRolesExists)
 }
 
 func TestFind(t *testing.T) {
+	t.Run("Agreements", testAgreementsFind)
 	t.Run("RoleTickets", testRoleTicketsFind)
 	t.Run("RoleTicketRoles", testRoleTicketRolesFind)
 	t.Run("Users", testUsersFind)
+	t.Run("UserAgreements", testUserAgreementsFind)
 	t.Run("UserRoles", testUserRolesFind)
 }
 
 func TestBind(t *testing.T) {
+	t.Run("Agreements", testAgreementsBind)
 	t.Run("RoleTickets", testRoleTicketsBind)
 	t.Run("RoleTicketRoles", testRoleTicketRolesBind)
 	t.Run("Users", testUsersBind)
+	t.Run("UserAgreements", testUserAgreementsBind)
 	t.Run("UserRoles", testUserRolesBind)
 }
 
 func TestOne(t *testing.T) {
+	t.Run("Agreements", testAgreementsOne)
 	t.Run("RoleTickets", testRoleTicketsOne)
 	t.Run("RoleTicketRoles", testRoleTicketRolesOne)
 	t.Run("Users", testUsersOne)
+	t.Run("UserAgreements", testUserAgreementsOne)
 	t.Run("UserRoles", testUserRolesOne)
 }
 
 func TestAll(t *testing.T) {
+	t.Run("Agreements", testAgreementsAll)
 	t.Run("RoleTickets", testRoleTicketsAll)
 	t.Run("RoleTicketRoles", testRoleTicketRolesAll)
 	t.Run("Users", testUsersAll)
+	t.Run("UserAgreements", testUserAgreementsAll)
 	t.Run("UserRoles", testUserRolesAll)
 }
 
 func TestCount(t *testing.T) {
+	t.Run("Agreements", testAgreementsCount)
 	t.Run("RoleTickets", testRoleTicketsCount)
 	t.Run("RoleTicketRoles", testRoleTicketRolesCount)
 	t.Run("Users", testUsersCount)
+	t.Run("UserAgreements", testUserAgreementsCount)
 	t.Run("UserRoles", testUserRolesCount)
 }
 
 func TestHooks(t *testing.T) {
+	t.Run("Agreements", testAgreementsHooks)
 	t.Run("RoleTickets", testRoleTicketsHooks)
 	t.Run("RoleTicketRoles", testRoleTicketRolesHooks)
 	t.Run("Users", testUsersHooks)
+	t.Run("UserAgreements", testUserAgreementsHooks)
 	t.Run("UserRoles", testUserRolesHooks)
 }
 
 func TestInsert(t *testing.T) {
+	t.Run("Agreements", testAgreementsInsert)
+	t.Run("Agreements", testAgreementsInsertWhitelist)
 	t.Run("RoleTickets", testRoleTicketsInsert)
 	t.Run("RoleTickets", testRoleTicketsInsertWhitelist)
 	t.Run("RoleTicketRoles", testRoleTicketRolesInsert)
 	t.Run("RoleTicketRoles", testRoleTicketRolesInsertWhitelist)
 	t.Run("Users", testUsersInsert)
 	t.Run("Users", testUsersInsertWhitelist)
+	t.Run("UserAgreements", testUserAgreementsInsert)
+	t.Run("UserAgreements", testUserAgreementsInsertWhitelist)
 	t.Run("UserRoles", testUserRolesInsert)
 	t.Run("UserRoles", testUserRolesInsertWhitelist)
 }
 
 func TestReload(t *testing.T) {
+	t.Run("Agreements", testAgreementsReload)
 	t.Run("RoleTickets", testRoleTicketsReload)
 	t.Run("RoleTicketRoles", testRoleTicketRolesReload)
 	t.Run("Users", testUsersReload)
+	t.Run("UserAgreements", testUserAgreementsReload)
 	t.Run("UserRoles", testUserRolesReload)
 }
 
 func TestReloadAll(t *testing.T) {
+	t.Run("Agreements", testAgreementsReloadAll)
 	t.Run("RoleTickets", testRoleTicketsReloadAll)
 	t.Run("RoleTicketRoles", testRoleTicketRolesReloadAll)
 	t.Run("Users", testUsersReloadAll)
+	t.Run("UserAgreements", testUserAgreementsReloadAll)
 	t.Run("UserRoles", testUserRolesReloadAll)
 }
 
 func TestSelect(t *testing.T) {
+	t.Run("Agreements", testAgreementsSelect)
 	t.Run("RoleTickets", testRoleTicketsSelect)
 	t.Run("RoleTicketRoles", testRoleTicketRolesSelect)
 	t.Run("Users", testUsersSelect)
+	t.Run("UserAgreements", testUserAgreementsSelect)
 	t.Run("UserRoles", testUserRolesSelect)
 }
 
 func TestUpdate(t *testing.T) {
+	t.Run("Agreements", testAgreementsUpdate)
 	t.Run("RoleTickets", testRoleTicketsUpdate)
 	t.Run("RoleTicketRoles", testRoleTicketRolesUpdate)
 	t.Run("Users", testUsersUpdate)
+	t.Run("UserAgreements", testUserAgreementsUpdate)
 	t.Run("UserRoles", testUserRolesUpdate)
 }
 
 func TestSliceUpdateAll(t *testing.T) {
+	t.Run("Agreements", testAgreementsSliceUpdateAll)
 	t.Run("RoleTickets", testRoleTicketsSliceUpdateAll)
 	t.Run("RoleTicketRoles", testRoleTicketRolesSliceUpdateAll)
 	t.Run("Users", testUsersSliceUpdateAll)
+	t.Run("UserAgreements", testUserAgreementsSliceUpdateAll)
 	t.Run("UserRoles", testUserRolesSliceUpdateAll)
 }

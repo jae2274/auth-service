@@ -26,15 +26,24 @@ func SaveUser(ctx context.Context, exec boil.ContextExecutor, authorizedBy domai
 	return nil
 }
 
-func FindByAuthorized(ctx context.Context, exec boil.ContextExecutor, authorizedType domain.AuthorizedBy, authorizedID string) (*models.User, error) {
+func FindUserByAuthorized(ctx context.Context, exec boil.ContextExecutor, authorizedType domain.AuthorizedBy, authorizedID string) (*models.User, bool, error) {
 
 	user, err := models.Users(qm.Where(models.UserColumns.AuthorizedBy+"=?", authorizedType), qm.And(models.UserColumns.AuthorizedID+"=?", authorizedID)).One(ctx, exec)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, false, nil
 		}
+		return nil, false, terr.Wrap(err)
+	}
+
+	return user, true, nil
+}
+
+func FindAllAgreement(ctx context.Context, exec boil.ContextExecutor) ([]*models.Agreement, error) {
+	agreements, err := models.Agreements(qm.OrderBy(models.AgreementColumns.Priority)).All(ctx, exec)
+	if err != nil {
 		return nil, terr.Wrap(err)
 	}
 
-	return user, nil
+	return agreements, nil
 }
