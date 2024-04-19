@@ -6,10 +6,10 @@ import (
 	"errors"
 	"testing"
 	"time"
-	"userService/models"
 	"userService/test/tinit"
 	"userService/test/tutils"
 	"userService/usersvc/common/domain"
+	"userService/usersvc/models"
 	"userService/usersvc/restapi/mapper"
 
 	"github.com/go-sql-driver/mysql"

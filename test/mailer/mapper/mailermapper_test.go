@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"testing"
-	"userService/models"
 	"userService/test/tinit"
 	"userService/test/tutils"
 	"userService/usersvc/common/domain"
 	mailMapper "userService/usersvc/mailer/mapper"
+	"userService/usersvc/models"
 	restapiMapper "userService/usersvc/restapi/mapper"
 
 	"github.com/stretchr/testify/require"

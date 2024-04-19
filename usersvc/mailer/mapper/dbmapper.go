@@ -3,7 +3,7 @@ package mapper
 import (
 	"context"
 	"database/sql"
-	"userService/models"
+	"userService/usersvc/models"
 
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"

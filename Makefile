@@ -3,10 +3,12 @@ CODE_DIR=./usersvc
 
 include test.env
 
+sqlboiler:
+	@sqlboiler mysql --output ${CODE_DIR}/models
+
 ## build: Build binary
-build:
+build: sqlboiler
 	@echo "Building..."
-	@sqlboiler mysql
 	@go build -ldflags="-s -w" -o ${BINARY_NAME} ${CODE_DIR}
 	@echo "Built!"
 
@@ -40,9 +42,8 @@ proto:
 	@protoc usersvc/mailer/mailer_grpc/*.proto  --go_out=. --go-grpc_out=. --go-grpc_opt=paths=source_relative --go_opt=paths=source_relative  --proto_path=.
 
 ## test: runs all tests
-test:	
+test: sqlboiler
 	@echo "Testing..."
-	@sqlboiler mysql
 	@GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET} GOOGLE_REDIRECT_URL=${GOOGLE_REDIRECT_URL} SECRET_KEY=${SECRET_KEY} API_PORT=${API_PORT} DB_HOST=${DB_HOST} DB_PORT=${DB_PORT} DB_NAME=${DB_NAME} DB_USERNAME=${DB_USERNAME} DB_PASSWORD=${DB_PASSWORD} go test -p 1 -timeout 600s ./test/...
 	
 

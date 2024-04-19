@@ -3,8 +3,8 @@ package mapper
 import (
 	"context"
 	"database/sql"
-	"userService/models"
 	"userService/usersvc/common/domain"
+	"userService/usersvc/models"
 
 	"github.com/jae2274/goutils/terr"
 	"github.com/volatiletech/sqlboiler/v4/boil"
