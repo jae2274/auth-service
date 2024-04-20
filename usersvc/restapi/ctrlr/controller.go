@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"text/template"
-	"userService/usersvc/common/domain"
 	"userService/usersvc/restapi/aescryptor"
 	"userService/usersvc/restapi/ctrlr/dto"
 	"userService/usersvc/restapi/jwtutils"
@@ -90,194 +89,79 @@ func randToken() string {
 
 func (c *Controller) Authenticate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	var err error
-	defer func() {
-		if err != nil {
-			c.authFailed(ctx, w, err)
-		}
-	}()
 
-	session, _ := c.store.Get(r, "session")
-	state := session.Values["state"]
+	session, err := c.store.Get(r, "session")
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	state, ok := session.Values["state"]
+	if !ok {
+		errorHandler(ctx, w, fmt.Errorf("state not found"))
+		return
+	}
 
 	delete(session.Values, "state")
 	session.Save(r, w)
 
 	if state != r.FormValue("state") {
-		err = fmt.Errorf("invalid state. state: %v, r.FormValue('state'): %s", state, r.FormValue("state"))
+		errorHandler(ctx, w, fmt.Errorf("invalid state. state: %v, r.FormValue('state'): %s", state, r.FormValue("state")))
 		return
 	}
 
-	token, err := c.googleOauth.GetToken(r.Context(), r.FormValue("code"))
-	if err != nil {
+	res, err := c.userService.Authenticate(ctx, r.FormValue("code"))
+	if errorHandler(ctx, w, err) {
 		return
 	}
 
-	authToken, err := c.aesCryptor.Encrypt(token)
-	if err != nil {
+	err = c.afterAuthHtmlTmpl.Execute(w, res)
+	if errorHandler(ctx, w, err) {
 		return
 	}
-
-	c.authSuccess(ctx, w, authToken)
-}
-
-func (c *Controller) authFailed(ctx context.Context, w http.ResponseWriter, err error) {
-	llog.LogErr(ctx, err)
-	c.afterAuthHtmlTmpl.Execute(w, &dto.AfterAuthViewVars{
-		AuthStatus: dto.AuthFailed,
-	})
-}
-
-func (c *Controller) authSuccess(ctx context.Context, w http.ResponseWriter, authToken string) {
-	c.afterAuthHtmlTmpl.Execute(w, &dto.AfterAuthViewVars{
-		AuthStatus: dto.AuthSuccess,
-		AuthToken:  authToken,
-	})
 }
 
 func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	var err error
-	defer func() {
-		if err != nil {
-			c.signInError(ctx, w, err)
-		}
-	}()
 
 	var req dto.SignInRequest
-	err = json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if errorHandler(ctx, w, err) {
 		return
 	}
 
-	token := &ooauth.OauthToken{}
-	err = c.aesCryptor.Decrypt(req.AuthToken, token)
-	if err != nil {
+	res, err := c.userService.SignIn(ctx, req.AuthToken)
+	if errorHandler(ctx, w, err) {
 		return
-	}
-
-	user, err := c.googleOauth.GetUserInfo(ctx, token)
-	if err != nil {
-		return
-	}
-
-	userinfo, isExisted, err := c.userService.GetUser(ctx, user.AuthorizedBy, user.AuthorizedID)
-	if err != nil {
-		return
-	}
-
-	if isExisted {
-		c.signInSuccess(ctx, w, userinfo)
-		return
-	}
-
-	agreements, err := c.userService.GetAgreements(ctx)
-	if err != nil {
-		return
-	}
-
-	c.signInNewUser(ctx, w, user.Email, agreements)
-}
-
-func (c *Controller) signInSuccess(ctx context.Context, w http.ResponseWriter, user *domain.User) {
-	jwt, err := c.jwtResolver.CreateToken(user)
-	if err != nil {
-		c.signInError(ctx, w, err)
-		return
-	}
-
-	res := &dto.SignInResponse{
-		SignInStatus: dto.SignInSuccess,
-		SuccessRes: &dto.SignInSuccessRes{
-			GrantType:    jwt.GrantType,
-			AccessToken:  jwt.AccessToken,
-			RefreshToken: jwt.RefreshToken,
-		},
 	}
 
 	err = json.NewEncoder(w).Encode(res)
-	if err != nil {
-		c.signInError(ctx, w, err)
+	if errorHandler(ctx, w, err) {
 		return
-	}
-}
-
-func (c *Controller) signInNewUser(ctx context.Context, w http.ResponseWriter, email string, ags []*domain.Agreement) {
-	agreements := make([]*dto.AgreementRes, len(ags))
-	for i, ag := range ags {
-		agreements[i] = &dto.AgreementRes{
-			AgreementCode: ag.AgreementCode,
-			IsRequired:    ag.IsRequired,
-			Summary:       ag.Summary,
-		}
-	}
-
-	res := &dto.SignInResponse{
-		SignInStatus: dto.SignInNewUser,
-		NewUserRes: &dto.SignInNewUserRes{
-			Email:      email,
-			Agreements: agreements,
-		},
-	}
-
-	err := json.NewEncoder(w).Encode(res)
-	if err != nil {
-		c.signInError(ctx, w, err)
-		return
-	}
-}
-
-func (c *Controller) signInError(ctx context.Context, w http.ResponseWriter, err error) {
-	llog.LogErr(ctx, err)
-
-	res := &dto.SignInResponse{
-		SignInStatus: dto.SignInFailed,
-	}
-
-	err = json.NewEncoder(w).Encode(res)
-	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
 
 func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	var err error
-	defer func() {
-		if err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-		}
-	}()
 
 	var req dto.SignUpRequest
-	err = json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if errorHandler(ctx, w, err) {
 		return
 	}
 
-	token := &ooauth.OauthToken{}
-	err = c.aesCryptor.Decrypt(req.AuthToken, token)
-	if err != nil {
+	err = c.userService.SignUp(ctx, req)
+	if errorHandler(ctx, w, err) {
 		return
 	}
 
-	user, err := c.googleOauth.GetUserInfo(ctx, token)
+	w.WriteHeader(http.StatusOK)
+}
+
+func errorHandler(ctx context.Context, w http.ResponseWriter, err error) bool {
 	if err != nil {
-		return
+		llog.LogErr(ctx, err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return true
 	}
-
-	ags := make([]*domain.UserAgreement, len(req.Agreements))
-	for i, ag := range req.Agreements {
-		ags[i] = &domain.UserAgreement{
-			AgreementID: ag.AgreementID,
-			IsAgree:     ag.IsAgree,
-		}
-	}
-
-	err = c.userService.SaveUser(ctx, user.AuthorizedBy, user.AuthorizedID, user.Email, ags)
-	if err != nil {
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
+	return false
 }

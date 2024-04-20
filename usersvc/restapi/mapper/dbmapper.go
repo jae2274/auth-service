@@ -28,7 +28,7 @@ func SaveUser(ctx context.Context, exec boil.ContextExecutor, authorizedBy domai
 
 func FindUserByAuthorized(ctx context.Context, exec boil.ContextExecutor, authorizedType domain.AuthorizedBy, authorizedID string) (*models.User, bool, error) {
 
-	user, err := models.Users(qm.Where(models.UserColumns.AuthorizedBy+"=?", authorizedType), qm.And(models.UserColumns.AuthorizedID+"=?", authorizedID)).One(ctx, exec)
+	user, err := models.Users(qm.Where(models.UserColumns.AuthorizedBy+"=?", authorizedType), qm.And(models.UserColumns.AuthorizedID+"=?", authorizedID), qm.Load(models.UserRels.UserRoles)).One(ctx, exec)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, false, nil

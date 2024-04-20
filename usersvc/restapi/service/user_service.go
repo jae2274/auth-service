@@ -3,20 +3,29 @@ package service
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"strconv"
+	"time"
 	"userService/usersvc/common/domain"
 	"userService/usersvc/models"
+	"userService/usersvc/restapi/aescryptor"
+	"userService/usersvc/restapi/ctrlr/dto"
+	"userService/usersvc/restapi/jwtutils"
 	"userService/usersvc/restapi/mapper"
+	"userService/usersvc/restapi/ooauth"
+	"userService/usersvc/utils"
 )
 
 type UserService interface {
-	GetUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, bool, error)
-	SaveUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID, email string, agreements []*domain.UserAgreement) error
-	GetAgreements(ctx context.Context) ([]*domain.Agreement, error)
+	Authenticate(ctx context.Context, code string) (*dto.AuthenticateResponse, error)
+	SignIn(ctx context.Context, authToken string) (*dto.SignInResponse, error)
+	SignUp(ctx context.Context, req dto.SignUpRequest) error
 }
 
 type UserServiceImpl struct {
-	mysqlDB *sql.DB
+	mysqlDB     *sql.DB
+	aesCryptor  *aescryptor.JsonAesCryptor
+	googleOauth ooauth.Ooauth
+	jwtResolver *jwtutils.JwtResolver
 }
 
 func NewUserService(mysqlDB *sql.DB) UserService {
@@ -25,61 +34,131 @@ func NewUserService(mysqlDB *sql.DB) UserService {
 	}
 }
 
-func (u *UserServiceImpl) GetUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, bool, error) {
-	tx, err := u.mysqlDB.BeginTx(ctx, nil)
+func (u *UserServiceImpl) Authenticate(ctx context.Context, code string) (*dto.AuthenticateResponse, error) {
+	token, err := u.googleOauth.GetToken(ctx, code)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	user, isExisted, err := u.getUser(ctx, tx, authorizedBy, authorizedID)
+	authToken, err := u.aesCryptor.Encrypt(token)
 	if err != nil {
-		tx.Rollback()
-		return nil, false, err
+		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, false, err
-	}
-
-	return user, isExisted, nil
+	return &dto.AuthenticateResponse{
+		AuthToken: authToken,
+	}, nil
 }
 
-func (u *UserServiceImpl) getUser(ctx context.Context, tx *sql.Tx, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, bool, error) {
-	user, isExisted, err := mapper.FindUserByAuthorized(ctx, tx, authorizedBy, authorizedID)
+func (u *UserServiceImpl) SignIn(ctx context.Context, authToken string) (*dto.SignInResponse, error) {
+	token := &ooauth.OauthToken{}
+	err := u.aesCryptor.Decrypt(authToken, token)
 	if err != nil {
-		return nil, false, err
-	} else if !isExisted {
-		return nil, false, nil
+		return nil, err
 	}
 
-	userRoles, err := user.UserRoles().All(ctx, tx)
+	userinfo, err := u.googleOauth.GetUserInfo(ctx, token)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	roles := make([]string, len(userRoles))
-	for i, role := range userRoles {
-		roles[i] = role.RoleName
+	user, isExisted, err := mapper.FindUserByAuthorized(ctx, u.mysqlDB, userinfo.AuthorizedBy, userinfo.AuthorizedID)
+	if err != nil {
+		return nil, err
 	}
 
-	return &domain.User{
-		UserID:       fmt.Sprintf("%d", user.UserID),
-		AuthorizedBy: domain.AuthorizedBy(user.AuthorizedBy),
-		AuthorizedID: user.AuthorizedID,
-		Email:        user.Email,
-		CreateDate:   user.CreateDate,
-		Roles:        roles,
-	}, true, nil
+	if isExisted {
+		return u.signInSuccess(ctx, user)
+	} else {
+		return u.signInNewUser(ctx, userinfo.Email)
+	}
 }
 
-func (u *UserServiceImpl) SaveUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID, email string, agreements []*domain.UserAgreement) (err error) {
+func (u *UserServiceImpl) signInSuccess(ctx context.Context, user *models.User) (*dto.SignInResponse, error) {
+	roleNames := make([]string, 0)
+	for _, userRole := range user.R.GetUserRoles() {
+		if userRole.ExpiryDate.IsZero() || userRole.ExpiryDate.Time.After(time.Now()) { //TODO: 임의로 애플리케이션에서 필터링, 추후 DB에서 필터링으로 변경
+			roleNames = append(roleNames, userRole.RoleName)
+		}
+	}
+
+	jwtToken, err := u.jwtResolver.CreateToken(strconv.Itoa(user.UserID), user.Email, roleNames)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.SignInResponse{
+		SignInStatus: dto.SignInSuccess,
+		SuccessRes: &dto.SignInSuccessRes{
+			GrantType:    jwtToken.GrantType,
+			AccessToken:  jwtToken.AccessToken,
+			RefreshToken: jwtToken.RefreshToken,
+		},
+	}, nil
+}
+
+func (u *UserServiceImpl) signInNewUser(ctx context.Context, email string) (*dto.SignInResponse, error) {
+	agreements, err := mapper.FindAllAgreement(ctx, u.mysqlDB)
+	if err != nil {
+		return nil, err
+	}
+
+	agreementRes := make([]*dto.AgreementRes, len(agreements))
+	for i, agreement := range agreements {
+		agreementRes[i] = &dto.AgreementRes{
+			AgreementCode: agreement.AgreementCode,
+			IsRequired:    utils.TinyIntToBool(agreement.IsRequired),
+			Summary:       agreement.Summary,
+		}
+	}
+
+	return &dto.SignInResponse{
+		SignInStatus: dto.SignInNewUser,
+		NewUserRes: &dto.SignInNewUserRes{
+			Email:      email,
+			Agreements: agreementRes,
+		},
+	}, nil
+}
+
+func saveUser(ctx context.Context, tx *sql.Tx, authorizedBy domain.AuthorizedBy, authorizedID, email string, agreements []*dto.UserAgreementReq) (err error) {
+	user, err := mapper.SaveUser(ctx, tx, authorizedBy, authorizedID, email)
+	if err != nil {
+		return err
+	}
+
+	mAgs := make([]*models.UserAgreement, len(agreements))
+	for i, ag := range agreements {
+		mAgs[i] = &models.UserAgreement{
+			UserID:      user.UserID,
+			AgreementID: ag.AgreementID,
+			IsAgree:     utils.BoolToTinyInt(ag.IsAgree),
+		}
+	}
+
+	return user.AddUserAgreements(ctx, tx, true, mAgs...)
+}
+
+func (u *UserServiceImpl) SignUp(ctx context.Context, req dto.SignUpRequest) error {
+	token := &ooauth.OauthToken{}
+	err := u.aesCryptor.Decrypt(req.AuthToken, token)
+	if err != nil {
+		return err
+	}
+
+	userinfo, err := u.googleOauth.GetUserInfo(ctx, token)
+	if err != nil {
+		return err
+	}
+
 	tx, err := u.mysqlDB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	if err := saveUser(ctx, tx, authorizedBy, authorizedID, email, agreements); err != nil {
+	if err := saveUser(ctx, tx, userinfo.AuthorizedBy, userinfo.AuthorizedID, userinfo.Email, req.Agreements); err != nil {
 		tx.Rollback()
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -87,46 +166,4 @@ func (u *UserServiceImpl) SaveUser(ctx context.Context, authorizedBy domain.Auth
 	}
 
 	return nil
-}
-
-func saveUser(ctx context.Context, tx *sql.Tx, authorizedBy domain.AuthorizedBy, authorizedID, email string, agreements []*domain.UserAgreement) (err error) {
-	user, err := mapper.SaveUser(ctx, tx, authorizedBy, authorizedID, email)
-	if err != nil {
-		return err
-	}
-
-	mAgs := make([]*models.UserAgreement, len(agreements))
-	for _, ag := range agreements {
-		isAgree := int8(0)
-		if ag.IsAgree {
-			isAgree = 1
-		}
-
-		mAgs = append(mAgs, &models.UserAgreement{
-			UserID:      user.UserID,
-			AgreementID: ag.AgreementID,
-			IsAgree:     isAgree,
-		})
-	}
-
-	return user.AddUserAgreements(ctx, tx, true, mAgs...)
-}
-
-func (u *UserServiceImpl) GetAgreements(ctx context.Context) ([]*domain.Agreement, error) {
-	mAgs, err := mapper.FindAllAgreement(ctx, u.mysqlDB)
-	if err != nil {
-		return nil, err
-	}
-
-	ags := make([]*domain.Agreement, len(mAgs))
-
-	for i, mAg := range mAgs {
-		ags[i] = &domain.Agreement{
-			AgreementCode: mAg.AgreementCode,
-			IsRequired:    mAg.IsRequired != 0,
-			Summary:       mAg.Summary,
-		}
-	}
-
-	return ags, nil
 }

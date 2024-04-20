@@ -4,8 +4,21 @@ import (
 	"github.com/jae2274/goutils/enum"
 )
 
-type AuthenticateResponse struct {
-	AuthToken string
+type AuthStatusValues struct{}
+type AuthStatus enum.Enum[AuthStatusValues]
+
+const (
+	AuthSuccess = AuthStatus("success")
+	AuthFailed  = AuthStatus("failed")
+)
+
+func (AuthStatusValues) Values() []string {
+	return []string{string(AuthSuccess), string(AuthFailed)}
+}
+
+type AfterAuthViewVars struct {
+	AuthStatus AuthStatus
+	AuthToken  string
 }
 
 type AuthCodeUrlsResponse struct {
@@ -26,11 +39,12 @@ type SignInStatus enum.Enum[SignInStatusValues]
 
 const (
 	SignInSuccess = SignInStatus("success")
+	SignInFailed  = SignInStatus("failed")
 	SignInNewUser = SignInStatus("new_user")
 )
 
 func (SignInStatusValues) Values() []string {
-	return []string{string(SignInSuccess), string(SignInNewUser)}
+	return []string{string(SignInSuccess), string(SignInFailed), string(SignInNewUser)}
 }
 
 type SignInResponse struct {
