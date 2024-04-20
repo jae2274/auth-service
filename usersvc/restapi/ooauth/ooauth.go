@@ -13,9 +13,15 @@ type UserInfo struct {
 	Email        string              `validate:"nonzero"`
 }
 
+type OauthToken struct {
+	AuthServer domain.AuthorizedBy `json:"authServer"`
+	Token      *oauth2.Token       `json:"authToken"`
+}
+
 type Ooauth interface {
+	GetAuthServer() domain.AuthorizedBy
 	GetLoginURL(state string) string
 	Oauth2Config() *oauth2.Config
-	GetToken(ctx context.Context, code string) (*oauth2.Token, error)
-	GetUserInfo(ctx context.Context, authToken *oauth2.Token) (*UserInfo, error)
+	GetToken(ctx context.Context, code string) (*OauthToken, error)
+	GetUserInfo(ctx context.Context, authToken *OauthToken) (*UserInfo, error)
 }

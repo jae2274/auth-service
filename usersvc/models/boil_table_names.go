@@ -5,6 +5,7 @@ package models
 
 var TableNames = struct {
 	Agreement      string
+	AuthServer     string
 	RoleTicket     string
 	RoleTicketRole string
 	User           string
@@ -12,6 +13,7 @@ var TableNames = struct {
 	UserRole       string
 }{
 	Agreement:      "agreement",
+	AuthServer:     "auth_server",
 	RoleTicket:     "role_ticket",
 	RoleTicketRole: "role_ticket_role",
 	User:           "user",

@@ -1,10 +1,10 @@
 package aescryptor
 
 import (
-	"crypto/sha256"
 	"testing"
 	"time"
 	"userService/usersvc/restapi/aescryptor"
+	"userService/usersvc/utils"
 
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +27,7 @@ func TestJsonAesCryptor(t *testing.T) {
 	}
 
 	t.Run("encrypt and decrypt", func(t *testing.T) {
-		key := createHash("testkey")
+		key := utils.CreateHash("testkey")
 		cryptor, err := aescryptor.NewJsonAesCryptor(key)
 		require.NoError(t, err)
 
@@ -47,14 +47,14 @@ func TestJsonAesCryptor(t *testing.T) {
 
 	t.Run("encrypt and decrypt with different key", func(t *testing.T) {
 
-		key := createHash("testkey")
+		key := utils.CreateHash("testkey")
 		cryptor, err := aescryptor.NewJsonAesCryptor(key)
 		require.NoError(t, err)
 
 		encrypted, err := cryptor.Encrypt(sample)
 		require.NoError(t, err)
 
-		anotherKey := createHash("anotherkey")
+		anotherKey := utils.CreateHash("anotherkey")
 		anotherCryptor, err := aescryptor.NewJsonAesCryptor(anotherKey)
 		require.NoError(t, err)
 
@@ -62,14 +62,4 @@ func TestJsonAesCryptor(t *testing.T) {
 		err = anotherCryptor.Decrypt(encrypted, decrypted)
 		require.Error(t, err)
 	})
-}
-
-func createHash(key string) []byte {
-	return createHashWithLen(key, 32)
-}
-
-func createHashWithLen(key string, length int) []byte {
-	hasher := sha256.New()
-	hasher.Write([]byte(key))
-	return hasher.Sum(nil)[:length]
 }

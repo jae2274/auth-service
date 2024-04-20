@@ -15,12 +15,13 @@ type DBVars struct {
 }
 
 type Vars struct {
-	GoogleClientID     string
-	GoogleClientSecret string
-	GoogleRedirectUrl  string
-	SecretKey          string
-	DbVars             *DBVars
-	ApiPort            int
+	GoogleClientID           string
+	GoogleClientSecret       string
+	GoogleRedirectUrl        string
+	SecretKey                string
+	DbVars                   *DBVars
+	ApiPort                  int
+	AccessControlAllowOrigin *string
 }
 
 type ErrNotExistedVar struct {
@@ -72,13 +73,16 @@ func Variables() (*Vars, error) {
 		return nil, err
 	}
 
+	accessControlAllowOrigin := getFromEnvPtr("ACCESS_CONTROL_ALLOW_ORIGIN")
+
 	return &Vars{
-		GoogleClientID:     googleClientID,
-		GoogleClientSecret: googleClientSecret,
-		GoogleRedirectUrl:  googleRedirectUrl,
-		SecretKey:          SecretKey,
-		ApiPort:            int(userSvcPortInt),
-		DbVars:             dbVars,
+		GoogleClientID:           googleClientID,
+		GoogleClientSecret:       googleClientSecret,
+		GoogleRedirectUrl:        googleRedirectUrl,
+		SecretKey:                SecretKey,
+		ApiPort:                  int(userSvcPortInt),
+		DbVars:                   dbVars,
+		AccessControlAllowOrigin: accessControlAllowOrigin,
 	}, nil
 }
 
@@ -130,4 +134,14 @@ func getFromEnv(envVar string) (string, error) {
 	}
 
 	return ev, nil
+}
+
+func getFromEnvPtr(envVar string) *string {
+	ev := os.Getenv(envVar)
+
+	if ev == "" {
+		return nil
+	}
+
+	return &ev
 }

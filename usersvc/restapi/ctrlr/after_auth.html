@@ -1,0 +1,14 @@
+<script>
+    const authStatus = "{{ .AuthStatus }}";
+    const authToken = "{{ .AuthToken }}";
+
+    if (authStatus === "success"){
+        window.opener.postMessage(authToken, "*");
+    }else if (authStatus === "failed"){
+        alert("인증에 실패하였습니다.")
+    }else{
+        alert("Unknown login status");
+    }
+
+    window.close();
+</script>

@@ -9,7 +9,7 @@ import "testing"
 // or deadlocks can occur.
 func TestToOne(t *testing.T) {
 	t.Run("RoleTicketRoleToRoleTicketUsingRoleTicket", testRoleTicketRoleToOneRoleTicketUsingRoleTicket)
-	t.Run("UserAgreementToAgreementUsingAgreementCodeAgreement", testUserAgreementToOneAgreementUsingAgreementCodeAgreement)
+	t.Run("UserAgreementToAgreementUsingAgreement", testUserAgreementToOneAgreementUsingAgreement)
 	t.Run("UserAgreementToUserUsingUser", testUserAgreementToOneUserUsingUser)
 	t.Run("UserRoleToUserUsingUser", testUserRoleToOneUserUsingUser)
 }
@@ -23,7 +23,7 @@ func TestOneToOne(t *testing.T) {
 // TestToMany tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToMany(t *testing.T) {
-	t.Run("AgreementToAgreementCodeUserAgreements", testAgreementToManyAgreementCodeUserAgreements)
+	t.Run("AgreementToUserAgreements", testAgreementToManyUserAgreements)
 	t.Run("UserToUserAgreements", testUserToManyUserAgreements)
 	t.Run("UserToUserRoles", testUserToManyUserRoles)
 }
@@ -32,7 +32,7 @@ func TestToMany(t *testing.T) {
 // or deadlocks can occur.
 func TestToOneSet(t *testing.T) {
 	t.Run("RoleTicketRoleToRoleTicketUsingRoleTicketRole", testRoleTicketRoleToOneSetOpRoleTicketUsingRoleTicket)
-	t.Run("UserAgreementToAgreementUsingAgreementCodeUserAgreements", testUserAgreementToOneSetOpAgreementUsingAgreementCodeAgreement)
+	t.Run("UserAgreementToAgreementUsingUserAgreements", testUserAgreementToOneSetOpAgreementUsingAgreement)
 	t.Run("UserAgreementToUserUsingUserAgreements", testUserAgreementToOneSetOpUserUsingUser)
 	t.Run("UserRoleToUserUsingUserRoles", testUserRoleToOneSetOpUserUsingUser)
 }
@@ -54,7 +54,7 @@ func TestOneToOneRemove(t *testing.T) {}
 // TestToManyAdd tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToManyAdd(t *testing.T) {
-	t.Run("AgreementToAgreementCodeUserAgreements", testAgreementToManyAddOpAgreementCodeUserAgreements)
+	t.Run("AgreementToUserAgreements", testAgreementToManyAddOpUserAgreements)
 	t.Run("UserToUserAgreements", testUserToManyAddOpUserAgreements)
 	t.Run("UserToUserRoles", testUserToManyAddOpUserRoles)
 }

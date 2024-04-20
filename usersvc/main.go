@@ -7,11 +7,14 @@ import (
 	"os"
 	"userService/usersvc/common/mysqldb"
 	"userService/usersvc/common/vars"
+	"userService/usersvc/restapi/aescryptor"
 	"userService/usersvc/restapi/ctrlr"
 	"userService/usersvc/restapi/jwtutils"
 	"userService/usersvc/restapi/ooauth"
 	"userService/usersvc/restapi/service"
+	"userService/usersvc/utils"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jae2274/goutils/llog"
 	"github.com/jae2274/goutils/mw"
@@ -57,15 +60,29 @@ func main() {
 	userService := service.NewUserService(db)
 
 	googleAuth := ooauth.NewGoogleOauth(envVars.GoogleClientID, envVars.GoogleClientSecret, envVars.GoogleRedirectUrl)
-	jwtResolver := jwtutils.NewJwtUtils(envVars.SecretKey)
+
+	secretKey := utils.CreateHash(envVars.SecretKey)
+	jwtResolver := jwtutils.NewJwtUtils(secretKey)
+	aesCryptor, err := aescryptor.NewJsonAesCryptor(secretKey)
+	check(mainCtx, err)
+
 	router := mux.NewRouter()
 	router.Use(httpmw.SetTraceIdMW()) //TODO: 불필요한 파라미터가 잘못 포함되어 있어 이후 라이브러리 수정 필요
 
-	controller := ctrlr.NewController(googleAuth, router, jwtResolver, userService)
+	controller := ctrlr.NewController(googleAuth, router, jwtResolver, aesCryptor, userService)
 	controller.RegisterRoutes()
 
+	var allowOrigins []string
+	if envVars.AccessControlAllowOrigin != nil {
+		allowOrigins = append(allowOrigins, *envVars.AccessControlAllowOrigin)
+	}
+	originsOk := handlers.AllowedOrigins(allowOrigins)
+	credentialsOk := handlers.AllowCredentials()
+	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+
 	llog.Msg("Start api server").Data("port", envVars.ApiPort).Log(mainCtx)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", envVars.ApiPort), router)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", envVars.ApiPort), handlers.CORS(originsOk, credentialsOk, headersOk, methodsOk)(router))
 	check(mainCtx, err)
 }
 

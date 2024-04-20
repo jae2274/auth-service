@@ -27,8 +27,9 @@ func TestMailerDBMapper(t *testing.T) {
 
 		ctx := context.Background()
 		tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-			err := restapiMapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email)
+			u, err := restapiMapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email)
 			require.NoError(t, err)
+			require.NotZero(t, u.UserID)
 
 			userEMails, err := mailMapper.GetUserEMails(ctx, tx, []int{1})
 			require.NoError(t, err)

@@ -23,9 +23,9 @@ type TokenInfo struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
-func NewJwtUtils(secretKey string) *JwtResolver {
+func NewJwtUtils(secretKey []byte) *JwtResolver {
 	return &JwtResolver{
-		secretKey: []byte(secretKey),
+		secretKey: secretKey,
 	}
 }
 

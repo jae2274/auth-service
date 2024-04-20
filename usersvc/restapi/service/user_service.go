@@ -5,12 +5,14 @@ import (
 	"database/sql"
 	"fmt"
 	"userService/usersvc/common/domain"
+	"userService/usersvc/models"
 	"userService/usersvc/restapi/mapper"
 )
 
 type UserService interface {
 	GetUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*domain.User, bool, error)
-	SaveUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID, email string) error
+	SaveUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID, email string, agreements []*domain.UserAgreement) error
+	GetAgreements(ctx context.Context) ([]*domain.Agreement, error)
 }
 
 type UserServiceImpl struct {
@@ -70,6 +72,61 @@ func (u *UserServiceImpl) getUser(ctx context.Context, tx *sql.Tx, authorizedBy 
 	}, true, nil
 }
 
-func (u *UserServiceImpl) SaveUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID, email string) error {
-	return mapper.SaveUser(ctx, u.mysqlDB, authorizedBy, authorizedID, email)
+func (u *UserServiceImpl) SaveUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID, email string, agreements []*domain.UserAgreement) (err error) {
+	tx, err := u.mysqlDB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	if err := saveUser(ctx, tx, authorizedBy, authorizedID, email, agreements); err != nil {
+		tx.Rollback()
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func saveUser(ctx context.Context, tx *sql.Tx, authorizedBy domain.AuthorizedBy, authorizedID, email string, agreements []*domain.UserAgreement) (err error) {
+	user, err := mapper.SaveUser(ctx, tx, authorizedBy, authorizedID, email)
+	if err != nil {
+		return err
+	}
+
+	mAgs := make([]*models.UserAgreement, len(agreements))
+	for _, ag := range agreements {
+		isAgree := int8(0)
+		if ag.IsAgree {
+			isAgree = 1
+		}
+
+		mAgs = append(mAgs, &models.UserAgreement{
+			UserID:      user.UserID,
+			AgreementID: ag.AgreementID,
+			IsAgree:     isAgree,
+		})
+	}
+
+	return user.AddUserAgreements(ctx, tx, true, mAgs...)
+}
+
+func (u *UserServiceImpl) GetAgreements(ctx context.Context) ([]*domain.Agreement, error) {
+	mAgs, err := mapper.FindAllAgreement(ctx, u.mysqlDB)
+	if err != nil {
+		return nil, err
+	}
+
+	ags := make([]*domain.Agreement, len(mAgs))
+
+	for i, mAg := range mAgs {
+		ags[i] = &domain.Agreement{
+			AgreementCode: mAg.AgreementCode,
+			IsRequired:    mAg.IsRequired != 0,
+			Summary:       mAg.Summary,
+		}
+	}
+
+	return ags, nil
 }

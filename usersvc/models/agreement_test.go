@@ -149,7 +149,7 @@ func testAgreementsExists(t *testing.T) {
 		t.Error(err)
 	}
 
-	e, err := AgreementExists(ctx, tx, o.AgreementCode)
+	e, err := AgreementExists(ctx, tx, o.AgreementID)
 	if err != nil {
 		t.Errorf("Unable to check if Agreement exists: %s", err)
 	}
@@ -175,7 +175,7 @@ func testAgreementsFind(t *testing.T) {
 		t.Error(err)
 	}
 
-	agreementFound, err := FindAgreement(ctx, tx, o.AgreementCode)
+	agreementFound, err := FindAgreement(ctx, tx, o.AgreementID)
 	if err != nil {
 		t.Error(err)
 	}
@@ -494,7 +494,7 @@ func testAgreementsInsertWhitelist(t *testing.T) {
 	}
 }
 
-func testAgreementToManyAgreementCodeUserAgreements(t *testing.T) {
+func testAgreementToManyUserAgreements(t *testing.T) {
 	var err error
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
@@ -519,8 +519,8 @@ func testAgreementToManyAgreementCodeUserAgreements(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b.AgreementCode = a.AgreementCode
-	c.AgreementCode = a.AgreementCode
+	b.AgreementID = a.AgreementID
+	c.AgreementID = a.AgreementID
 
 	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Fatal(err)
@@ -529,17 +529,17 @@ func testAgreementToManyAgreementCodeUserAgreements(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	check, err := a.AgreementCodeUserAgreements().All(ctx, tx)
+	check, err := a.UserAgreements().All(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	bFound, cFound := false, false
 	for _, v := range check {
-		if v.AgreementCode == b.AgreementCode {
+		if v.AgreementID == b.AgreementID {
 			bFound = true
 		}
-		if v.AgreementCode == c.AgreementCode {
+		if v.AgreementID == c.AgreementID {
 			cFound = true
 		}
 	}
@@ -552,18 +552,18 @@ func testAgreementToManyAgreementCodeUserAgreements(t *testing.T) {
 	}
 
 	slice := AgreementSlice{&a}
-	if err = a.L.LoadAgreementCodeUserAgreements(ctx, tx, false, (*[]*Agreement)(&slice), nil); err != nil {
+	if err = a.L.LoadUserAgreements(ctx, tx, false, (*[]*Agreement)(&slice), nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(a.R.AgreementCodeUserAgreements); got != 2 {
+	if got := len(a.R.UserAgreements); got != 2 {
 		t.Error("number of eager loaded records wrong, got:", got)
 	}
 
-	a.R.AgreementCodeUserAgreements = nil
-	if err = a.L.LoadAgreementCodeUserAgreements(ctx, tx, true, &a, nil); err != nil {
+	a.R.UserAgreements = nil
+	if err = a.L.LoadUserAgreements(ctx, tx, true, &a, nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(a.R.AgreementCodeUserAgreements); got != 2 {
+	if got := len(a.R.UserAgreements); got != 2 {
 		t.Error("number of eager loaded records wrong, got:", got)
 	}
 
@@ -572,7 +572,7 @@ func testAgreementToManyAgreementCodeUserAgreements(t *testing.T) {
 	}
 }
 
-func testAgreementToManyAddOpAgreementCodeUserAgreements(t *testing.T) {
+func testAgreementToManyAddOpUserAgreements(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
@@ -609,7 +609,7 @@ func testAgreementToManyAddOpAgreementCodeUserAgreements(t *testing.T) {
 	}
 
 	for i, x := range foreignersSplitByInsertion {
-		err = a.AddAgreementCodeUserAgreements(ctx, tx, i != 0, x...)
+		err = a.AddUserAgreements(ctx, tx, i != 0, x...)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -617,28 +617,28 @@ func testAgreementToManyAddOpAgreementCodeUserAgreements(t *testing.T) {
 		first := x[0]
 		second := x[1]
 
-		if a.AgreementCode != first.AgreementCode {
-			t.Error("foreign key was wrong value", a.AgreementCode, first.AgreementCode)
+		if a.AgreementID != first.AgreementID {
+			t.Error("foreign key was wrong value", a.AgreementID, first.AgreementID)
 		}
-		if a.AgreementCode != second.AgreementCode {
-			t.Error("foreign key was wrong value", a.AgreementCode, second.AgreementCode)
+		if a.AgreementID != second.AgreementID {
+			t.Error("foreign key was wrong value", a.AgreementID, second.AgreementID)
 		}
 
-		if first.R.AgreementCodeAgreement != &a {
+		if first.R.Agreement != &a {
 			t.Error("relationship was not added properly to the foreign slice")
 		}
-		if second.R.AgreementCodeAgreement != &a {
+		if second.R.Agreement != &a {
 			t.Error("relationship was not added properly to the foreign slice")
 		}
 
-		if a.R.AgreementCodeUserAgreements[i*2] != first {
+		if a.R.UserAgreements[i*2] != first {
 			t.Error("relationship struct slice not set to correct value")
 		}
-		if a.R.AgreementCodeUserAgreements[i*2+1] != second {
+		if a.R.UserAgreements[i*2+1] != second {
 			t.Error("relationship struct slice not set to correct value")
 		}
 
-		count, err := a.AgreementCodeUserAgreements().Count(ctx, tx)
+		count, err := a.UserAgreements().Count(ctx, tx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -722,7 +722,7 @@ func testAgreementsSelect(t *testing.T) {
 }
 
 var (
-	agreementDBTypes = map[string]string{`AgreementCode`: `varchar`, `IsRequired`: `tinyint`, `Priority`: `int`}
+	agreementDBTypes = map[string]string{`AgreementID`: `int`, `AgreementCode`: `varchar`, `Summary`: `varchar`, `IsRequired`: `tinyint`, `Priority`: `int`}
 	_                = bytes.MinRead
 )
 

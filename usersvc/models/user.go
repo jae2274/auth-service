@@ -706,7 +706,7 @@ func (o *User) AddUserAgreements(ctx context.Context, exec boil.ContextExecutor,
 				strmangle.SetParamNames("`", "`", 0, []string{"user_id"}),
 				strmangle.WhereClause("`", "`", 0, userAgreementPrimaryKeyColumns),
 			)
-			values := []interface{}{o.UserID, rel.UserID, rel.AgreementCode}
+			values := []interface{}{o.UserID, rel.UserID, rel.AgreementID}
 
 			if boil.IsDebug(ctx) {
 				writer := boil.DebugWriterFrom(ctx)

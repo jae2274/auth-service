@@ -23,7 +23,9 @@ import (
 
 // Agreement is an object representing the database table.
 type Agreement struct {
+	AgreementID   int    `boil:"agreement_id" json:"agreement_id" toml:"agreement_id" yaml:"agreement_id"`
 	AgreementCode string `boil:"agreement_code" json:"agreement_code" toml:"agreement_code" yaml:"agreement_code"`
+	Summary       string `boil:"summary" json:"summary" toml:"summary" yaml:"summary"`
 	IsRequired    int8   `boil:"is_required" json:"is_required" toml:"is_required" yaml:"is_required"`
 	Priority      int    `boil:"priority" json:"priority" toml:"priority" yaml:"priority"`
 
@@ -32,26 +34,57 @@ type Agreement struct {
 }
 
 var AgreementColumns = struct {
+	AgreementID   string
 	AgreementCode string
+	Summary       string
 	IsRequired    string
 	Priority      string
 }{
+	AgreementID:   "agreement_id",
 	AgreementCode: "agreement_code",
+	Summary:       "summary",
 	IsRequired:    "is_required",
 	Priority:      "priority",
 }
 
 var AgreementTableColumns = struct {
+	AgreementID   string
 	AgreementCode string
+	Summary       string
 	IsRequired    string
 	Priority      string
 }{
+	AgreementID:   "agreement.agreement_id",
 	AgreementCode: "agreement.agreement_code",
+	Summary:       "agreement.summary",
 	IsRequired:    "agreement.is_required",
 	Priority:      "agreement.priority",
 }
 
 // Generated where
+
+type whereHelperint struct{ field string }
+
+func (w whereHelperint) EQ(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperint) NEQ(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperint) LT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperint) LTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperint) GT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperint) GTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
+func (w whereHelperint) IN(slice []int) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
+}
+func (w whereHelperint) NIN(slice []int) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
+}
 
 type whereHelperstring struct{ field string }
 
@@ -101,49 +134,30 @@ func (w whereHelperint8) NIN(slice []int8) qm.QueryMod {
 	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
 }
 
-type whereHelperint struct{ field string }
-
-func (w whereHelperint) EQ(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
-func (w whereHelperint) NEQ(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
-func (w whereHelperint) LT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
-func (w whereHelperint) LTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
-func (w whereHelperint) GT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
-func (w whereHelperint) GTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
-func (w whereHelperint) IN(slice []int) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
-}
-func (w whereHelperint) NIN(slice []int) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
-}
-
 var AgreementWhere = struct {
+	AgreementID   whereHelperint
 	AgreementCode whereHelperstring
+	Summary       whereHelperstring
 	IsRequired    whereHelperint8
 	Priority      whereHelperint
 }{
+	AgreementID:   whereHelperint{field: "`agreement`.`agreement_id`"},
 	AgreementCode: whereHelperstring{field: "`agreement`.`agreement_code`"},
+	Summary:       whereHelperstring{field: "`agreement`.`summary`"},
 	IsRequired:    whereHelperint8{field: "`agreement`.`is_required`"},
 	Priority:      whereHelperint{field: "`agreement`.`priority`"},
 }
 
 // AgreementRels is where relationship names are stored.
 var AgreementRels = struct {
-	AgreementCodeUserAgreements string
+	UserAgreements string
 }{
-	AgreementCodeUserAgreements: "AgreementCodeUserAgreements",
+	UserAgreements: "UserAgreements",
 }
 
 // agreementR is where relationships are stored.
 type agreementR struct {
-	AgreementCodeUserAgreements UserAgreementSlice `boil:"AgreementCodeUserAgreements" json:"AgreementCodeUserAgreements" toml:"AgreementCodeUserAgreements" yaml:"AgreementCodeUserAgreements"`
+	UserAgreements UserAgreementSlice `boil:"UserAgreements" json:"UserAgreements" toml:"UserAgreements" yaml:"UserAgreements"`
 }
 
 // NewStruct creates a new relationship struct
@@ -151,21 +165,21 @@ func (*agreementR) NewStruct() *agreementR {
 	return &agreementR{}
 }
 
-func (r *agreementR) GetAgreementCodeUserAgreements() UserAgreementSlice {
+func (r *agreementR) GetUserAgreements() UserAgreementSlice {
 	if r == nil {
 		return nil
 	}
-	return r.AgreementCodeUserAgreements
+	return r.UserAgreements
 }
 
 // agreementL is where Load methods for each relationship are stored.
 type agreementL struct{}
 
 var (
-	agreementAllColumns            = []string{"agreement_code", "is_required", "priority"}
-	agreementColumnsWithoutDefault = []string{"agreement_code", "is_required"}
+	agreementAllColumns            = []string{"agreement_id", "agreement_code", "summary", "is_required", "priority"}
+	agreementColumnsWithoutDefault = []string{"agreement_id", "agreement_code", "summary", "is_required"}
 	agreementColumnsWithDefault    = []string{"priority"}
-	agreementPrimaryKeyColumns     = []string{"agreement_code"}
+	agreementPrimaryKeyColumns     = []string{"agreement_id"}
 	agreementGeneratedColumns      = []string{}
 )
 
@@ -474,23 +488,23 @@ func (q agreementQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (
 	return count > 0, nil
 }
 
-// AgreementCodeUserAgreements retrieves all the user_agreement's UserAgreements with an executor via agreement_code column.
-func (o *Agreement) AgreementCodeUserAgreements(mods ...qm.QueryMod) userAgreementQuery {
+// UserAgreements retrieves all the user_agreement's UserAgreements with an executor.
+func (o *Agreement) UserAgreements(mods ...qm.QueryMod) userAgreementQuery {
 	var queryMods []qm.QueryMod
 	if len(mods) != 0 {
 		queryMods = append(queryMods, mods...)
 	}
 
 	queryMods = append(queryMods,
-		qm.Where("`user_agreement`.`agreement_code`=?", o.AgreementCode),
+		qm.Where("`user_agreement`.`agreement_id`=?", o.AgreementID),
 	)
 
 	return UserAgreements(queryMods...)
 }
 
-// LoadAgreementCodeUserAgreements allows an eager lookup of values, cached into the
+// LoadUserAgreements allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
-func (agreementL) LoadAgreementCodeUserAgreements(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAgreement interface{}, mods queries.Applicator) error {
+func (agreementL) LoadUserAgreements(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAgreement interface{}, mods queries.Applicator) error {
 	var slice []*Agreement
 	var object *Agreement
 
@@ -521,13 +535,13 @@ func (agreementL) LoadAgreementCodeUserAgreements(ctx context.Context, e boil.Co
 		if object.R == nil {
 			object.R = &agreementR{}
 		}
-		args[object.AgreementCode] = struct{}{}
+		args[object.AgreementID] = struct{}{}
 	} else {
 		for _, obj := range slice {
 			if obj.R == nil {
 				obj.R = &agreementR{}
 			}
-			args[obj.AgreementCode] = struct{}{}
+			args[obj.AgreementID] = struct{}{}
 		}
 	}
 
@@ -544,7 +558,7 @@ func (agreementL) LoadAgreementCodeUserAgreements(ctx context.Context, e boil.Co
 
 	query := NewQuery(
 		qm.From(`user_agreement`),
-		qm.WhereIn(`user_agreement.agreement_code in ?`, argsSlice...),
+		qm.WhereIn(`user_agreement.agreement_id in ?`, argsSlice...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -575,24 +589,24 @@ func (agreementL) LoadAgreementCodeUserAgreements(ctx context.Context, e boil.Co
 		}
 	}
 	if singular {
-		object.R.AgreementCodeUserAgreements = resultSlice
+		object.R.UserAgreements = resultSlice
 		for _, foreign := range resultSlice {
 			if foreign.R == nil {
 				foreign.R = &userAgreementR{}
 			}
-			foreign.R.AgreementCodeAgreement = object
+			foreign.R.Agreement = object
 		}
 		return nil
 	}
 
 	for _, foreign := range resultSlice {
 		for _, local := range slice {
-			if local.AgreementCode == foreign.AgreementCode {
-				local.R.AgreementCodeUserAgreements = append(local.R.AgreementCodeUserAgreements, foreign)
+			if local.AgreementID == foreign.AgreementID {
+				local.R.UserAgreements = append(local.R.UserAgreements, foreign)
 				if foreign.R == nil {
 					foreign.R = &userAgreementR{}
 				}
-				foreign.R.AgreementCodeAgreement = local
+				foreign.R.Agreement = local
 				break
 			}
 		}
@@ -601,25 +615,25 @@ func (agreementL) LoadAgreementCodeUserAgreements(ctx context.Context, e boil.Co
 	return nil
 }
 
-// AddAgreementCodeUserAgreements adds the given related objects to the existing relationships
+// AddUserAgreements adds the given related objects to the existing relationships
 // of the agreement, optionally inserting them as new records.
-// Appends related to o.R.AgreementCodeUserAgreements.
-// Sets related.R.AgreementCodeAgreement appropriately.
-func (o *Agreement) AddAgreementCodeUserAgreements(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*UserAgreement) error {
+// Appends related to o.R.UserAgreements.
+// Sets related.R.Agreement appropriately.
+func (o *Agreement) AddUserAgreements(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*UserAgreement) error {
 	var err error
 	for _, rel := range related {
 		if insert {
-			rel.AgreementCode = o.AgreementCode
+			rel.AgreementID = o.AgreementID
 			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
 				return errors.Wrap(err, "failed to insert into foreign table")
 			}
 		} else {
 			updateQuery := fmt.Sprintf(
 				"UPDATE `user_agreement` SET %s WHERE %s",
-				strmangle.SetParamNames("`", "`", 0, []string{"agreement_code"}),
+				strmangle.SetParamNames("`", "`", 0, []string{"agreement_id"}),
 				strmangle.WhereClause("`", "`", 0, userAgreementPrimaryKeyColumns),
 			)
-			values := []interface{}{o.AgreementCode, rel.UserID, rel.AgreementCode}
+			values := []interface{}{o.AgreementID, rel.UserID, rel.AgreementID}
 
 			if boil.IsDebug(ctx) {
 				writer := boil.DebugWriterFrom(ctx)
@@ -630,25 +644,25 @@ func (o *Agreement) AddAgreementCodeUserAgreements(ctx context.Context, exec boi
 				return errors.Wrap(err, "failed to update foreign table")
 			}
 
-			rel.AgreementCode = o.AgreementCode
+			rel.AgreementID = o.AgreementID
 		}
 	}
 
 	if o.R == nil {
 		o.R = &agreementR{
-			AgreementCodeUserAgreements: related,
+			UserAgreements: related,
 		}
 	} else {
-		o.R.AgreementCodeUserAgreements = append(o.R.AgreementCodeUserAgreements, related...)
+		o.R.UserAgreements = append(o.R.UserAgreements, related...)
 	}
 
 	for _, rel := range related {
 		if rel.R == nil {
 			rel.R = &userAgreementR{
-				AgreementCodeAgreement: o,
+				Agreement: o,
 			}
 		} else {
-			rel.R.AgreementCodeAgreement = o
+			rel.R.Agreement = o
 		}
 	}
 	return nil
@@ -667,7 +681,7 @@ func Agreements(mods ...qm.QueryMod) agreementQuery {
 
 // FindAgreement retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindAgreement(ctx context.Context, exec boil.ContextExecutor, agreementCode string, selectCols ...string) (*Agreement, error) {
+func FindAgreement(ctx context.Context, exec boil.ContextExecutor, agreementID int, selectCols ...string) (*Agreement, error) {
 	agreementObj := &Agreement{}
 
 	sel := "*"
@@ -675,10 +689,10 @@ func FindAgreement(ctx context.Context, exec boil.ContextExecutor, agreementCode
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from `agreement` where `agreement_code`=?", sel,
+		"select %s from `agreement` where `agreement_id`=?", sel,
 	)
 
-	q := queries.Raw(query, agreementCode)
+	q := queries.Raw(query, agreementID)
 
 	err := q.Bind(ctx, exec, agreementObj)
 	if err != nil {
@@ -767,7 +781,7 @@ func (o *Agreement) Insert(ctx context.Context, exec boil.ContextExecutor, colum
 	}
 
 	identifierCols = []interface{}{
-		o.AgreementCode,
+		o.AgreementID,
 	}
 
 	if boil.IsDebug(ctx) {
@@ -919,6 +933,7 @@ func (o AgreementSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor
 }
 
 var mySQLAgreementUniqueColumns = []string{
+	"agreement_id",
 	"agreement_code",
 }
 
@@ -1069,7 +1084,7 @@ func (o *Agreement) Delete(ctx context.Context, exec boil.ContextExecutor) (int6
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), agreementPrimaryKeyMapping)
-	sql := "DELETE FROM `agreement` WHERE `agreement_code`=?"
+	sql := "DELETE FROM `agreement` WHERE `agreement_id`=?"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1166,7 +1181,7 @@ func (o AgreementSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *Agreement) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindAgreement(ctx, exec, o.AgreementCode)
+	ret, err := FindAgreement(ctx, exec, o.AgreementID)
 	if err != nil {
 		return err
 	}
@@ -1205,16 +1220,16 @@ func (o *AgreementSlice) ReloadAll(ctx context.Context, exec boil.ContextExecuto
 }
 
 // AgreementExists checks if the Agreement row exists.
-func AgreementExists(ctx context.Context, exec boil.ContextExecutor, agreementCode string) (bool, error) {
+func AgreementExists(ctx context.Context, exec boil.ContextExecutor, agreementID int) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from `agreement` where `agreement_code`=? limit 1)"
+	sql := "select exists(select 1 from `agreement` where `agreement_id`=? limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, agreementCode)
+		fmt.Fprintln(writer, agreementID)
 	}
-	row := exec.QueryRowContext(ctx, sql, agreementCode)
+	row := exec.QueryRowContext(ctx, sql, agreementID)
 
 	err := row.Scan(&exists)
 	if err != nil {
@@ -1226,5 +1241,5 @@ func AgreementExists(ctx context.Context, exec boil.ContextExecutor, agreementCo
 
 // Exists checks if the Agreement row exists.
 func (o *Agreement) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, error) {
-	return AgreementExists(ctx, exec, o.AgreementCode)
+	return AgreementExists(ctx, exec, o.AgreementID)
 }

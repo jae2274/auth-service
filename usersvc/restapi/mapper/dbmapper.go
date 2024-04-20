@@ -11,8 +11,8 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-func SaveUser(ctx context.Context, exec boil.ContextExecutor, authorizedBy domain.AuthorizedBy, authorizedID, email string) error {
-	user := models.User{
+func SaveUser(ctx context.Context, exec boil.ContextExecutor, authorizedBy domain.AuthorizedBy, authorizedID, email string) (*models.User, error) {
+	user := &models.User{
 		AuthorizedBy: string(authorizedBy),
 		AuthorizedID: authorizedID,
 		Email:        email,
@@ -20,10 +20,10 @@ func SaveUser(ctx context.Context, exec boil.ContextExecutor, authorizedBy domai
 
 	err := user.Insert(ctx, exec, boil.Infer())
 	if err != nil {
-		return terr.Wrap(err)
+		return nil, terr.Wrap(err)
 	}
 
-	return nil
+	return user, nil
 }
 
 func FindUserByAuthorized(ctx context.Context, exec boil.ContextExecutor, authorizedType domain.AuthorizedBy, authorizedID string) (*models.User, bool, error) {

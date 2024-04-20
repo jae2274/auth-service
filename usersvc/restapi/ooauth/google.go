@@ -33,6 +33,10 @@ func NewGoogleOauth(clientId, clientSecret, redirectUrl string) Ooauth {
 	}
 }
 
+func (g *GoogleOauth) GetAuthServer() domain.AuthorizedBy {
+	return domain.GOOGLE
+}
+
 func (g *GoogleOauth) GetLoginURL(state string) string {
 	return g.Oauth2Config().AuthCodeURL(state)
 }
@@ -41,12 +45,15 @@ func (g *GoogleOauth) Oauth2Config() *oauth2.Config {
 	return g.oauthConfig
 }
 
-func (g *GoogleOauth) GetToken(ctx context.Context, code string) (*oauth2.Token, error) {
+func (g *GoogleOauth) GetToken(ctx context.Context, code string) (*OauthToken, error) {
 	token, err := g.Oauth2Config().Exchange(ctx, code)
 	if err != nil {
 		return nil, err
 	}
-	return token, nil
+	return &OauthToken{
+		AuthServer: g.GetAuthServer(),
+		Token:      token,
+	}, nil
 }
 
 type user struct {
@@ -54,8 +61,8 @@ type user struct {
 	Email string `json:"email"`
 }
 
-func (g *GoogleOauth) GetUserInfo(ctx context.Context, authToken *oauth2.Token) (*UserInfo, error) {
-	client := g.Oauth2Config().Client(ctx, authToken)
+func (g *GoogleOauth) GetUserInfo(ctx context.Context, authToken *OauthToken) (*UserInfo, error) {
+	client := g.Oauth2Config().Client(ctx, authToken.Token)
 	userInfoResp, err := client.Get(userInfoURL)
 	if err != nil {
 		return nil, err

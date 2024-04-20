@@ -149,7 +149,7 @@ func testUserAgreementsExists(t *testing.T) {
 		t.Error(err)
 	}
 
-	e, err := UserAgreementExists(ctx, tx, o.UserID, o.AgreementCode)
+	e, err := UserAgreementExists(ctx, tx, o.UserID, o.AgreementID)
 	if err != nil {
 		t.Errorf("Unable to check if UserAgreement exists: %s", err)
 	}
@@ -175,7 +175,7 @@ func testUserAgreementsFind(t *testing.T) {
 		t.Error(err)
 	}
 
-	userAgreementFound, err := FindUserAgreement(ctx, tx, o.UserID, o.AgreementCode)
+	userAgreementFound, err := FindUserAgreement(ctx, tx, o.UserID, o.AgreementID)
 	if err != nil {
 		t.Error(err)
 	}
@@ -494,7 +494,7 @@ func testUserAgreementsInsertWhitelist(t *testing.T) {
 	}
 }
 
-func testUserAgreementToOneAgreementUsingAgreementCodeAgreement(t *testing.T) {
+func testUserAgreementToOneAgreementUsingAgreement(t *testing.T) {
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
@@ -514,18 +514,18 @@ func testUserAgreementToOneAgreementUsingAgreementCodeAgreement(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	local.AgreementCode = foreign.AgreementCode
+	local.AgreementID = foreign.AgreementID
 	if err := local.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Fatal(err)
 	}
 
-	check, err := local.AgreementCodeAgreement().One(ctx, tx)
+	check, err := local.Agreement().One(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if check.AgreementCode != foreign.AgreementCode {
-		t.Errorf("want: %v, got %v", foreign.AgreementCode, check.AgreementCode)
+	if check.AgreementID != foreign.AgreementID {
+		t.Errorf("want: %v, got %v", foreign.AgreementID, check.AgreementID)
 	}
 
 	ranAfterSelectHook := false
@@ -535,18 +535,18 @@ func testUserAgreementToOneAgreementUsingAgreementCodeAgreement(t *testing.T) {
 	})
 
 	slice := UserAgreementSlice{&local}
-	if err = local.L.LoadAgreementCodeAgreement(ctx, tx, false, (*[]*UserAgreement)(&slice), nil); err != nil {
+	if err = local.L.LoadAgreement(ctx, tx, false, (*[]*UserAgreement)(&slice), nil); err != nil {
 		t.Fatal(err)
 	}
-	if local.R.AgreementCodeAgreement == nil {
+	if local.R.Agreement == nil {
 		t.Error("struct should have been eager loaded")
 	}
 
-	local.R.AgreementCodeAgreement = nil
-	if err = local.L.LoadAgreementCodeAgreement(ctx, tx, true, &local, nil); err != nil {
+	local.R.Agreement = nil
+	if err = local.L.LoadAgreement(ctx, tx, true, &local, nil); err != nil {
 		t.Fatal(err)
 	}
-	if local.R.AgreementCodeAgreement == nil {
+	if local.R.Agreement == nil {
 		t.Error("struct should have been eager loaded")
 	}
 
@@ -616,7 +616,7 @@ func testUserAgreementToOneUserUsingUser(t *testing.T) {
 	}
 }
 
-func testUserAgreementToOneSetOpAgreementUsingAgreementCodeAgreement(t *testing.T) {
+func testUserAgreementToOneSetOpAgreementUsingAgreement(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
@@ -645,23 +645,23 @@ func testUserAgreementToOneSetOpAgreementUsingAgreementCodeAgreement(t *testing.
 	}
 
 	for i, x := range []*Agreement{&b, &c} {
-		err = a.SetAgreementCodeAgreement(ctx, tx, i != 0, x)
+		err = a.SetAgreement(ctx, tx, i != 0, x)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if a.R.AgreementCodeAgreement != x {
+		if a.R.Agreement != x {
 			t.Error("relationship struct not set to correct value")
 		}
 
-		if x.R.AgreementCodeUserAgreements[0] != &a {
+		if x.R.UserAgreements[0] != &a {
 			t.Error("failed to append to foreign relationship struct")
 		}
-		if a.AgreementCode != x.AgreementCode {
-			t.Error("foreign key was wrong value", a.AgreementCode)
+		if a.AgreementID != x.AgreementID {
+			t.Error("foreign key was wrong value", a.AgreementID)
 		}
 
-		if exists, err := UserAgreementExists(ctx, tx, a.UserID, a.AgreementCode); err != nil {
+		if exists, err := UserAgreementExists(ctx, tx, a.UserID, a.AgreementID); err != nil {
 			t.Fatal(err)
 		} else if !exists {
 			t.Error("want 'a' to exist")
@@ -714,7 +714,7 @@ func testUserAgreementToOneSetOpUserUsingUser(t *testing.T) {
 			t.Error("foreign key was wrong value", a.UserID)
 		}
 
-		if exists, err := UserAgreementExists(ctx, tx, a.UserID, a.AgreementCode); err != nil {
+		if exists, err := UserAgreementExists(ctx, tx, a.UserID, a.AgreementID); err != nil {
 			t.Fatal(err)
 		} else if !exists {
 			t.Error("want 'a' to exist")
@@ -797,7 +797,7 @@ func testUserAgreementsSelect(t *testing.T) {
 }
 
 var (
-	userAgreementDBTypes = map[string]string{`UserID`: `int`, `AgreementCode`: `varchar`, `IsAgree`: `tinyint`}
+	userAgreementDBTypes = map[string]string{`UserID`: `int`, `AgreementID`: `int`, `IsAgree`: `tinyint`}
 	_                    = bytes.MinRead
 )
 

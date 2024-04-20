@@ -13,6 +13,7 @@ import "testing"
 // Separating the tests thusly grants avoidance of Postgres deadlocks.
 func TestParent(t *testing.T) {
 	t.Run("Agreements", testAgreements)
+	t.Run("AuthServers", testAuthServers)
 	t.Run("RoleTickets", testRoleTickets)
 	t.Run("RoleTicketRoles", testRoleTicketRoles)
 	t.Run("Users", testUsers)
@@ -22,6 +23,7 @@ func TestParent(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	t.Run("Agreements", testAgreementsDelete)
+	t.Run("AuthServers", testAuthServersDelete)
 	t.Run("RoleTickets", testRoleTicketsDelete)
 	t.Run("RoleTicketRoles", testRoleTicketRolesDelete)
 	t.Run("Users", testUsersDelete)
@@ -31,6 +33,7 @@ func TestDelete(t *testing.T) {
 
 func TestQueryDeleteAll(t *testing.T) {
 	t.Run("Agreements", testAgreementsQueryDeleteAll)
+	t.Run("AuthServers", testAuthServersQueryDeleteAll)
 	t.Run("RoleTickets", testRoleTicketsQueryDeleteAll)
 	t.Run("RoleTicketRoles", testRoleTicketRolesQueryDeleteAll)
 	t.Run("Users", testUsersQueryDeleteAll)
@@ -40,6 +43,7 @@ func TestQueryDeleteAll(t *testing.T) {
 
 func TestSliceDeleteAll(t *testing.T) {
 	t.Run("Agreements", testAgreementsSliceDeleteAll)
+	t.Run("AuthServers", testAuthServersSliceDeleteAll)
 	t.Run("RoleTickets", testRoleTicketsSliceDeleteAll)
 	t.Run("RoleTicketRoles", testRoleTicketRolesSliceDeleteAll)
 	t.Run("Users", testUsersSliceDeleteAll)
@@ -49,6 +53,7 @@ func TestSliceDeleteAll(t *testing.T) {
 
 func TestExists(t *testing.T) {
 	t.Run("Agreements", testAgreementsExists)
+	t.Run("AuthServers", testAuthServersExists)
 	t.Run("RoleTickets", testRoleTicketsExists)
 	t.Run("RoleTicketRoles", testRoleTicketRolesExists)
 	t.Run("Users", testUsersExists)
@@ -58,6 +63,7 @@ func TestExists(t *testing.T) {
 
 func TestFind(t *testing.T) {
 	t.Run("Agreements", testAgreementsFind)
+	t.Run("AuthServers", testAuthServersFind)
 	t.Run("RoleTickets", testRoleTicketsFind)
 	t.Run("RoleTicketRoles", testRoleTicketRolesFind)
 	t.Run("Users", testUsersFind)
@@ -67,6 +73,7 @@ func TestFind(t *testing.T) {
 
 func TestBind(t *testing.T) {
 	t.Run("Agreements", testAgreementsBind)
+	t.Run("AuthServers", testAuthServersBind)
 	t.Run("RoleTickets", testRoleTicketsBind)
 	t.Run("RoleTicketRoles", testRoleTicketRolesBind)
 	t.Run("Users", testUsersBind)
@@ -76,6 +83,7 @@ func TestBind(t *testing.T) {
 
 func TestOne(t *testing.T) {
 	t.Run("Agreements", testAgreementsOne)
+	t.Run("AuthServers", testAuthServersOne)
 	t.Run("RoleTickets", testRoleTicketsOne)
 	t.Run("RoleTicketRoles", testRoleTicketRolesOne)
 	t.Run("Users", testUsersOne)
@@ -85,6 +93,7 @@ func TestOne(t *testing.T) {
 
 func TestAll(t *testing.T) {
 	t.Run("Agreements", testAgreementsAll)
+	t.Run("AuthServers", testAuthServersAll)
 	t.Run("RoleTickets", testRoleTicketsAll)
 	t.Run("RoleTicketRoles", testRoleTicketRolesAll)
 	t.Run("Users", testUsersAll)
@@ -94,6 +103,7 @@ func TestAll(t *testing.T) {
 
 func TestCount(t *testing.T) {
 	t.Run("Agreements", testAgreementsCount)
+	t.Run("AuthServers", testAuthServersCount)
 	t.Run("RoleTickets", testRoleTicketsCount)
 	t.Run("RoleTicketRoles", testRoleTicketRolesCount)
 	t.Run("Users", testUsersCount)
@@ -103,6 +113,7 @@ func TestCount(t *testing.T) {
 
 func TestHooks(t *testing.T) {
 	t.Run("Agreements", testAgreementsHooks)
+	t.Run("AuthServers", testAuthServersHooks)
 	t.Run("RoleTickets", testRoleTicketsHooks)
 	t.Run("RoleTicketRoles", testRoleTicketRolesHooks)
 	t.Run("Users", testUsersHooks)
@@ -113,6 +124,8 @@ func TestHooks(t *testing.T) {
 func TestInsert(t *testing.T) {
 	t.Run("Agreements", testAgreementsInsert)
 	t.Run("Agreements", testAgreementsInsertWhitelist)
+	t.Run("AuthServers", testAuthServersInsert)
+	t.Run("AuthServers", testAuthServersInsertWhitelist)
 	t.Run("RoleTickets", testRoleTicketsInsert)
 	t.Run("RoleTickets", testRoleTicketsInsertWhitelist)
 	t.Run("RoleTicketRoles", testRoleTicketRolesInsert)
@@ -127,6 +140,7 @@ func TestInsert(t *testing.T) {
 
 func TestReload(t *testing.T) {
 	t.Run("Agreements", testAgreementsReload)
+	t.Run("AuthServers", testAuthServersReload)
 	t.Run("RoleTickets", testRoleTicketsReload)
 	t.Run("RoleTicketRoles", testRoleTicketRolesReload)
 	t.Run("Users", testUsersReload)
@@ -136,6 +150,7 @@ func TestReload(t *testing.T) {
 
 func TestReloadAll(t *testing.T) {
 	t.Run("Agreements", testAgreementsReloadAll)
+	t.Run("AuthServers", testAuthServersReloadAll)
 	t.Run("RoleTickets", testRoleTicketsReloadAll)
 	t.Run("RoleTicketRoles", testRoleTicketRolesReloadAll)
 	t.Run("Users", testUsersReloadAll)
@@ -145,6 +160,7 @@ func TestReloadAll(t *testing.T) {
 
 func TestSelect(t *testing.T) {
 	t.Run("Agreements", testAgreementsSelect)
+	t.Run("AuthServers", testAuthServersSelect)
 	t.Run("RoleTickets", testRoleTicketsSelect)
 	t.Run("RoleTicketRoles", testRoleTicketRolesSelect)
 	t.Run("Users", testUsersSelect)
@@ -154,6 +170,7 @@ func TestSelect(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	t.Run("Agreements", testAgreementsUpdate)
+	t.Run("AuthServers", testAuthServersUpdate)
 	t.Run("RoleTickets", testRoleTicketsUpdate)
 	t.Run("RoleTicketRoles", testRoleTicketRolesUpdate)
 	t.Run("Users", testUsersUpdate)
@@ -163,6 +180,7 @@ func TestUpdate(t *testing.T) {
 
 func TestSliceUpdateAll(t *testing.T) {
 	t.Run("Agreements", testAgreementsSliceUpdateAll)
+	t.Run("AuthServers", testAuthServersSliceUpdateAll)
 	t.Run("RoleTickets", testRoleTicketsSliceUpdateAll)
 	t.Run("RoleTicketRoles", testRoleTicketRolesSliceUpdateAll)
 	t.Run("Users", testUsersSliceUpdateAll)
