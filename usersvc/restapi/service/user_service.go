@@ -102,6 +102,8 @@ func (u *UserServiceImpl) signInSuccess(ctx context.Context, user *models.User) 
 	return &dto.SignInResponse{
 		SignInStatus: dto.SignInSuccess,
 		SuccessRes: &dto.SignInSuccessRes{
+			Username:     user.Name,
+			Roles:        roleNames,
 			GrantType:    jwtToken.GrantType,
 			AccessToken:  jwtToken.AccessToken,
 			RefreshToken: jwtToken.RefreshToken,

@@ -40,9 +40,11 @@ type SignInResponse struct {
 }
 
 type SignInSuccessRes struct {
-	GrantType    string `json:"grantType"`
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
+	Username     string   `json:"username"`
+	Roles        []string `json:"roles"`
+	GrantType    string   `json:"grantType"`
+	AccessToken  string   `json:"accessToken"`
+	RefreshToken string   `json:"refreshToken"`
 }
 
 type SignInNewUserRes struct {
