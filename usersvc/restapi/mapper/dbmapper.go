@@ -11,11 +11,12 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-func SaveUser(ctx context.Context, exec boil.ContextExecutor, authorizedBy domain.AuthorizedBy, authorizedID, email string) (*models.User, error) {
+func SaveUser(ctx context.Context, exec boil.ContextExecutor, authorizedBy domain.AuthorizedBy, authorizedID, email, username string) (*models.User, error) {
 	user := &models.User{
 		AuthorizedBy: string(authorizedBy),
 		AuthorizedID: authorizedID,
 		Email:        email,
+		Name:         username,
 	}
 
 	err := user.Insert(ctx, exec, boil.Infer())

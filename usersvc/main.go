@@ -57,19 +57,18 @@ func main() {
 	check(mainCtx, err)
 	defer db.Close()
 
-	userService := service.NewUserService(db)
-
 	googleAuth := ooauth.NewGoogleOauth(envVars.GoogleClientID, envVars.GoogleClientSecret, envVars.GoogleRedirectUrl)
-
 	secretKey := utils.CreateHash(envVars.SecretKey)
-	jwtResolver := jwtutils.NewJwtUtils(secretKey)
 	aesCryptor, err := aescryptor.NewJsonAesCryptor(secretKey)
+	jwtResolver := jwtutils.NewJwtUtils(secretKey)
+	userService := service.NewUserService(db, aesCryptor, googleAuth, jwtResolver)
+
 	check(mainCtx, err)
 
 	router := mux.NewRouter()
 	router.Use(httpmw.SetTraceIdMW()) //TODO: 불필요한 파라미터가 잘못 포함되어 있어 이후 라이브러리 수정 필요
 
-	controller := ctrlr.NewController(googleAuth, router, jwtResolver, aesCryptor, userService)
+	controller := ctrlr.NewController(router, userService)
 	controller.RegisterRoutes()
 
 	var allowOrigins []string

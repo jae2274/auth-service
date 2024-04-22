@@ -9,10 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"text/template"
-	"userService/usersvc/restapi/aescryptor"
 	"userService/usersvc/restapi/ctrlr/dto"
-	"userService/usersvc/restapi/jwtutils"
-	"userService/usersvc/restapi/ooauth"
 	"userService/usersvc/restapi/service"
 
 	"github.com/gorilla/mux"
@@ -21,9 +18,6 @@ import (
 )
 
 type Controller struct {
-	googleOauth       ooauth.Ooauth
-	jwtResolver       *jwtutils.JwtResolver
-	aesCryptor        *aescryptor.JsonAesCryptor
 	userService       service.UserService
 	router            *mux.Router
 	store             *sessions.CookieStore
@@ -33,7 +27,7 @@ type Controller struct {
 //go:embed after_auth.html
 var afterLoginHtml string
 
-func NewController(googleOauth ooauth.Ooauth, router *mux.Router, jwtResolver *jwtutils.JwtResolver, aesCryptor *aescryptor.JsonAesCryptor, userService service.UserService) *Controller {
+func NewController(router *mux.Router, userService service.UserService) *Controller {
 
 	afterLoginHtmlTmpl, err := template.New("afterLogin").Parse(afterLoginHtml)
 
@@ -42,10 +36,7 @@ func NewController(googleOauth ooauth.Ooauth, router *mux.Router, jwtResolver *j
 	}
 
 	return &Controller{
-		googleOauth:       googleOauth,
 		router:            router,
-		jwtResolver:       jwtResolver,
-		aesCryptor:        aesCryptor,
 		userService:       userService,
 		store:             sessions.NewCookieStore([]byte("secret")),
 		afterAuthHtmlTmpl: afterLoginHtmlTmpl,
@@ -69,14 +60,7 @@ func (c *Controller) AuthCodeUrls(w http.ResponseWriter, r *http.Request) {
 	session.Values["state"] = state
 	session.Save(r, w)
 
-	gottenState := session.Values["state"]
-	fmt.Printf("state: %v\n", gottenState)
-
-	res := &dto.AuthCodeUrlsResponse{
-		AuthCodeUrls: []*dto.AuthCodeUrlRes{
-			{AuthServer: string(c.googleOauth.GetAuthServer()), Url: c.googleOauth.GetLoginURL(state)},
-		},
-	}
+	res := c.userService.AuthCodeUrls(r.Context(), state)
 
 	json.NewEncoder(w).Encode(res)
 }
@@ -149,12 +133,12 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = c.userService.SignUp(ctx, req)
+	err = c.userService.SignUp(ctx, &req)
 	if errorHandler(ctx, w, err) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func errorHandler(ctx context.Context, w http.ResponseWriter, err error) bool {

@@ -177,8 +177,8 @@ type agreementL struct{}
 
 var (
 	agreementAllColumns            = []string{"agreement_id", "agreement_code", "summary", "is_required", "priority"}
-	agreementColumnsWithoutDefault = []string{"agreement_id", "agreement_code", "summary", "is_required"}
-	agreementColumnsWithDefault    = []string{"priority"}
+	agreementColumnsWithoutDefault = []string{"agreement_code", "summary", "is_required"}
+	agreementColumnsWithDefault    = []string{"agreement_id", "priority"}
 	agreementPrimaryKeyColumns     = []string{"agreement_id"}
 	agreementGeneratedColumns      = []string{}
 )
@@ -768,15 +768,26 @@ func (o *Agreement) Insert(ctx context.Context, exec boil.ContextExecutor, colum
 		fmt.Fprintln(writer, cache.query)
 		fmt.Fprintln(writer, vals)
 	}
-	_, err = exec.ExecContext(ctx, cache.query, vals...)
+	result, err := exec.ExecContext(ctx, cache.query, vals...)
 
 	if err != nil {
 		return errors.Wrap(err, "models: unable to insert into agreement")
 	}
 
+	var lastID int64
 	var identifierCols []interface{}
 
 	if len(cache.retMapping) == 0 {
+		goto CacheNoHooks
+	}
+
+	lastID, err = result.LastInsertId()
+	if err != nil {
+		return ErrSyncFail
+	}
+
+	o.AgreementID = int(lastID)
+	if lastID != 0 && len(cache.retMapping) == 1 && cache.retMapping[0] == agreementMapping["agreement_id"] {
 		goto CacheNoHooks
 	}
 
@@ -1033,16 +1044,27 @@ func (o *Agreement) Upsert(ctx context.Context, exec boil.ContextExecutor, updat
 		fmt.Fprintln(writer, cache.query)
 		fmt.Fprintln(writer, vals)
 	}
-	_, err = exec.ExecContext(ctx, cache.query, vals...)
+	result, err := exec.ExecContext(ctx, cache.query, vals...)
 
 	if err != nil {
 		return errors.Wrap(err, "models: unable to upsert for agreement")
 	}
 
+	var lastID int64
 	var uniqueMap []uint64
 	var nzUniqueCols []interface{}
 
 	if len(cache.retMapping) == 0 {
+		goto CacheNoHooks
+	}
+
+	lastID, err = result.LastInsertId()
+	if err != nil {
+		return ErrSyncFail
+	}
+
+	o.AgreementID = int(lastID)
+	if lastID != 0 && len(cache.retMapping) == 1 && cache.retMapping[0] == agreementMapping["agreement_id"] {
 		goto CacheNoHooks
 	}
 

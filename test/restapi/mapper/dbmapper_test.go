@@ -21,6 +21,7 @@ func TestDBMapper(t *testing.T) {
 	willSavedUserVO := models.User{
 		AuthorizedBy: string(domain.GOOGLE),
 		AuthorizedID: "test",
+		Name:         "testName",
 		Email:        "test@mail.com",
 	}
 
@@ -44,7 +45,7 @@ func TestDBMapper(t *testing.T) {
 			ctx := context.Background()
 			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
 
-				u, err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email)
+				u, err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email, willSavedUserVO.Name)
 				require.NoError(t, err)
 				require.NotZero(t, u.UserID)
 
@@ -65,7 +66,7 @@ func TestDBMapper(t *testing.T) {
 
 			ctx := context.Background()
 			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-				u, err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email)
+				u, err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email, willSavedUserVO.Name)
 				require.NoError(t, err)
 				require.NotZero(t, u.UserID)
 			})
@@ -91,7 +92,7 @@ func TestDBMapper(t *testing.T) {
 
 		ctx := context.Background()
 		tutils.TxRollback(t, sqlDB, func(tx *sql.Tx) {
-			u, err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email)
+			u, err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email, willSavedUserVO.Name)
 			require.NoError(t, err)
 			require.NotZero(t, u.UserID)
 		})
@@ -125,10 +126,10 @@ func TestDBMapper(t *testing.T) {
 
 			ctx := context.Background()
 			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-				u, err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email)
+				u, err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email, willSavedUserVO.Name)
 				require.NoError(t, err)
 				require.NotZero(t, u.UserID)
-				_, err = mapper.SaveUser(ctx, tx, domain.AuthorizedBy(sameUser.AuthorizedBy), sameUser.AuthorizedID, sameUser.Email)
+				_, err = mapper.SaveUser(ctx, tx, domain.AuthorizedBy(sameUser.AuthorizedBy), sameUser.AuthorizedID, sameUser.Email, sameUser.Name)
 				require.Error(t, err)
 				require.True(t, isDuplicate(err))
 			})
@@ -140,13 +141,13 @@ func TestDBMapper(t *testing.T) {
 
 			ctx := context.Background()
 			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-				u, err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email)
+				u, err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email, willSavedUserVO.Name)
 				require.NoError(t, err)
 				require.NotZero(t, u.UserID)
 			})
 
 			tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-				_, err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(sameUser.AuthorizedBy), sameUser.AuthorizedID, sameUser.Email)
+				_, err := mapper.SaveUser(ctx, tx, domain.AuthorizedBy(sameUser.AuthorizedBy), sameUser.AuthorizedID, sameUser.Email, sameUser.Name)
 				require.Error(t, err)
 				require.True(t, isDuplicate(err))
 			})

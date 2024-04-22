@@ -18,6 +18,7 @@ func TestMailerDBMapper(t *testing.T) {
 	willSavedUserVO := models.User{
 		AuthorizedBy: string(domain.GOOGLE),
 		AuthorizedID: "test",
+		Name:         "testName",
 		Email:        "test@mail.com",
 	}
 
@@ -27,7 +28,7 @@ func TestMailerDBMapper(t *testing.T) {
 
 		ctx := context.Background()
 		tutils.TxCommit(t, sqlDB, func(tx *sql.Tx) {
-			u, err := restapiMapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email)
+			u, err := restapiMapper.SaveUser(ctx, tx, domain.AuthorizedBy(willSavedUserVO.AuthorizedBy), willSavedUserVO.AuthorizedID, willSavedUserVO.Email, willSavedUserVO.Name)
 			require.NoError(t, err)
 			require.NotZero(t, u.UserID)
 

@@ -16,9 +16,10 @@ import (
 )
 
 type UserService interface {
+	AuthCodeUrls(ctx context.Context, state string) *dto.AuthCodeUrlsResponse
 	Authenticate(ctx context.Context, code string) (*dto.AuthenticateResponse, error)
 	SignIn(ctx context.Context, authToken string) (*dto.SignInResponse, error)
-	SignUp(ctx context.Context, req dto.SignUpRequest) error
+	SignUp(ctx context.Context, req *dto.SignUpRequest) error
 }
 
 type UserServiceImpl struct {
@@ -28,9 +29,20 @@ type UserServiceImpl struct {
 	jwtResolver *jwtutils.JwtResolver
 }
 
-func NewUserService(mysqlDB *sql.DB) UserService {
+func NewUserService(mysqlDB *sql.DB, aesCryptor *aescryptor.JsonAesCryptor, googleOauth ooauth.Ooauth, jwtResolver *jwtutils.JwtResolver) UserService {
 	return &UserServiceImpl{
-		mysqlDB: mysqlDB,
+		mysqlDB:     mysqlDB,
+		aesCryptor:  aesCryptor,
+		googleOauth: googleOauth,
+		jwtResolver: jwtResolver,
+	}
+}
+
+func (u *UserServiceImpl) AuthCodeUrls(ctx context.Context, state string) *dto.AuthCodeUrlsResponse {
+	return &dto.AuthCodeUrlsResponse{
+		AuthCodeUrls: []*dto.AuthCodeUrlRes{
+			{AuthServer: string(u.googleOauth.GetAuthServer()), Url: u.googleOauth.GetLoginURL(state)},
+		},
 	}
 }
 
@@ -106,9 +118,9 @@ func (u *UserServiceImpl) signInNewUser(ctx context.Context, email string) (*dto
 	agreementRes := make([]*dto.AgreementRes, len(agreements))
 	for i, agreement := range agreements {
 		agreementRes[i] = &dto.AgreementRes{
-			AgreementCode: agreement.AgreementCode,
-			IsRequired:    utils.TinyIntToBool(agreement.IsRequired),
-			Summary:       agreement.Summary,
+			AgreementId: agreement.AgreementID,
+			Required:    utils.TinyIntToBool(agreement.IsRequired),
+			Summary:     agreement.Summary,
 		}
 	}
 
@@ -121,17 +133,17 @@ func (u *UserServiceImpl) signInNewUser(ctx context.Context, email string) (*dto
 	}, nil
 }
 
-func saveUser(ctx context.Context, tx *sql.Tx, authorizedBy domain.AuthorizedBy, authorizedID, email string, agreements []*dto.UserAgreementReq) (err error) {
-	user, err := mapper.SaveUser(ctx, tx, authorizedBy, authorizedID, email)
+func saveUser(ctx context.Context, tx *sql.Tx, authorizedBy domain.AuthorizedBy, authorizedID, email string, req *dto.SignUpRequest) (err error) {
+	user, err := mapper.SaveUser(ctx, tx, authorizedBy, authorizedID, email, req.Username)
 	if err != nil {
 		return err
 	}
 
-	mAgs := make([]*models.UserAgreement, len(agreements))
-	for i, ag := range agreements {
+	mAgs := make([]*models.UserAgreement, len(req.Agreements))
+	for i, ag := range req.Agreements {
 		mAgs[i] = &models.UserAgreement{
 			UserID:      user.UserID,
-			AgreementID: ag.AgreementID,
+			AgreementID: ag.AgreementId,
 			IsAgree:     utils.BoolToTinyInt(ag.IsAgree),
 		}
 	}
@@ -139,7 +151,7 @@ func saveUser(ctx context.Context, tx *sql.Tx, authorizedBy domain.AuthorizedBy,
 	return user.AddUserAgreements(ctx, tx, true, mAgs...)
 }
 
-func (u *UserServiceImpl) SignUp(ctx context.Context, req dto.SignUpRequest) error {
+func (u *UserServiceImpl) SignUp(ctx context.Context, req *dto.SignUpRequest) error {
 	token := &ooauth.OauthToken{}
 	err := u.aesCryptor.Decrypt(req.AuthToken, token)
 	if err != nil {
@@ -156,7 +168,7 @@ func (u *UserServiceImpl) SignUp(ctx context.Context, req dto.SignUpRequest) err
 		return err
 	}
 
-	if err := saveUser(ctx, tx, userinfo.AuthorizedBy, userinfo.AuthorizedID, userinfo.Email, req.Agreements); err != nil {
+	if err := saveUser(ctx, tx, userinfo.AuthorizedBy, userinfo.AuthorizedID, userinfo.Email, req); err != nil {
 		tx.Rollback()
 		return err
 	}

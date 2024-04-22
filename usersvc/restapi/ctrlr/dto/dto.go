@@ -51,18 +51,19 @@ type SignInNewUserRes struct {
 }
 
 type AgreementRes struct {
-	AgreementCode string `json:"agreementCode"`
-	IsRequired    bool   `json:"isRequired"`
-	Summary       string `json:"summary"`
-	Priority      int    `json:"priority"`
+	AgreementId int    `json:"agreementId"`
+	Required    bool   `json:"required"`
+	Summary     string `json:"summary"`
+	Priority    int    `json:"priority"`
 }
 
 type SignUpRequest struct {
 	AuthToken  string              `json:"authToken"`
+	Username   string              `json:"username"`
 	Agreements []*UserAgreementReq `json:"agreements"`
 }
 
 type UserAgreementReq struct {
-	AgreementID int  `json:"agreementID"`
+	AgreementId int  `json:"agreementId"`
 	IsAgree     bool `json:"isAgree"`
 }
