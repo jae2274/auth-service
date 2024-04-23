@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"net/http"
 	"text/template"
+	"userService/usersvc/restapi/aescryptor"
 	"userService/usersvc/restapi/ctrlr/dto"
+	"userService/usersvc/restapi/ooauth"
 	"userService/usersvc/restapi/service"
 
 	"github.com/gorilla/mux"
@@ -22,12 +24,14 @@ type Controller struct {
 	router            *mux.Router
 	store             *sessions.CookieStore
 	afterAuthHtmlTmpl *template.Template
+	aesCryptor        *aescryptor.JsonAesCryptor
+	googleOauth       ooauth.Ooauth
 }
 
 //go:embed after_auth.html
 var afterLoginHtml string
 
-func NewController(router *mux.Router, userService service.UserService) *Controller {
+func NewController(router *mux.Router, userService service.UserService, aesCryptor *aescryptor.JsonAesCryptor, googleOauth ooauth.Ooauth) *Controller {
 
 	afterLoginHtmlTmpl, err := template.New("afterLogin").Parse(afterLoginHtml)
 
@@ -40,6 +44,8 @@ func NewController(router *mux.Router, userService service.UserService) *Control
 		userService:       userService,
 		store:             sessions.NewCookieStore([]byte("secret")),
 		afterAuthHtmlTmpl: afterLoginHtmlTmpl,
+		aesCryptor:        aesCryptor,
+		googleOauth:       googleOauth,
 	}
 }
 
@@ -60,9 +66,11 @@ func (c *Controller) AuthCodeUrls(w http.ResponseWriter, r *http.Request) {
 	session.Values["state"] = state
 	session.Save(r, w)
 
-	res := c.userService.AuthCodeUrls(r.Context(), state)
-
-	json.NewEncoder(w).Encode(res)
+	json.NewEncoder(w).Encode(&dto.AuthCodeUrlsResponse{
+		AuthCodeUrls: []*dto.AuthCodeUrlRes{
+			{AuthServer: string(c.googleOauth.GetAuthServer()), Url: c.googleOauth.GetLoginURL(state)},
+		},
+	})
 }
 
 func randToken() string {
@@ -93,12 +101,20 @@ func (c *Controller) Authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := c.userService.Authenticate(ctx, r.FormValue("code"))
+	token, err := c.googleOauth.GetToken(ctx, r.FormValue("code"))
 	if errorHandler(ctx, w, err) {
 		return
 	}
 
-	err = c.afterAuthHtmlTmpl.Execute(w, res)
+	authToken, err := c.aesCryptor.Encrypt(token)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	err = c.afterAuthHtmlTmpl.Execute(w, &dto.AuthenticateResponse{
+		AuthToken: authToken,
+	})
+
 	if errorHandler(ctx, w, err) {
 		return
 	}
@@ -113,7 +129,18 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := c.userService.SignIn(ctx, req.AuthToken)
+	token := &ooauth.OauthToken{}
+	err = c.aesCryptor.Decrypt(req.AuthToken, token)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	userinfo, err := c.googleOauth.GetUserInfo(ctx, token)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	res, err := c.userService.SignIn(ctx, userinfo.AuthorizedBy, userinfo.AuthorizedID, userinfo.Email)
 	if errorHandler(ctx, w, err) {
 		return
 	}
@@ -133,7 +160,18 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = c.userService.SignUp(ctx, &req)
+	token := &ooauth.OauthToken{}
+	err = c.aesCryptor.Decrypt(req.AuthToken, token)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	userinfo, err := c.googleOauth.GetUserInfo(ctx, token)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	err = c.userService.SignUp(ctx, &req, userinfo)
 	if errorHandler(ctx, w, err) {
 		return
 	}

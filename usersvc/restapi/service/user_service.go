@@ -7,7 +7,6 @@ import (
 	"time"
 	"userService/usersvc/common/domain"
 	"userService/usersvc/models"
-	"userService/usersvc/restapi/aescryptor"
 	"userService/usersvc/restapi/ctrlr/dto"
 	"userService/usersvc/restapi/jwtutils"
 	"userService/usersvc/restapi/mapper"
@@ -16,65 +15,25 @@ import (
 )
 
 type UserService interface {
-	AuthCodeUrls(ctx context.Context, state string) *dto.AuthCodeUrlsResponse
-	Authenticate(ctx context.Context, code string) (*dto.AuthenticateResponse, error)
-	SignIn(ctx context.Context, authToken string) (*dto.SignInResponse, error)
-	SignUp(ctx context.Context, req *dto.SignUpRequest) error
+	SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string, email string) (*dto.SignInResponse, error)
+	SignUp(ctx context.Context, req *dto.SignUpRequest, userinfo *ooauth.UserInfo) error
 }
 
 type UserServiceImpl struct {
 	mysqlDB     *sql.DB
-	aesCryptor  *aescryptor.JsonAesCryptor
-	googleOauth ooauth.Ooauth
 	jwtResolver *jwtutils.JwtResolver
 }
 
-func NewUserService(mysqlDB *sql.DB, aesCryptor *aescryptor.JsonAesCryptor, googleOauth ooauth.Ooauth, jwtResolver *jwtutils.JwtResolver) UserService {
+func NewUserService(mysqlDB *sql.DB, jwtResolver *jwtutils.JwtResolver) UserService {
 	return &UserServiceImpl{
 		mysqlDB:     mysqlDB,
-		aesCryptor:  aesCryptor,
-		googleOauth: googleOauth,
 		jwtResolver: jwtResolver,
 	}
 }
 
-func (u *UserServiceImpl) AuthCodeUrls(ctx context.Context, state string) *dto.AuthCodeUrlsResponse {
-	return &dto.AuthCodeUrlsResponse{
-		AuthCodeUrls: []*dto.AuthCodeUrlRes{
-			{AuthServer: string(u.googleOauth.GetAuthServer()), Url: u.googleOauth.GetLoginURL(state)},
-		},
-	}
-}
+func (u *UserServiceImpl) SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string, email string) (*dto.SignInResponse, error) {
 
-func (u *UserServiceImpl) Authenticate(ctx context.Context, code string) (*dto.AuthenticateResponse, error) {
-	token, err := u.googleOauth.GetToken(ctx, code)
-	if err != nil {
-		return nil, err
-	}
-
-	authToken, err := u.aesCryptor.Encrypt(token)
-	if err != nil {
-		return nil, err
-	}
-
-	return &dto.AuthenticateResponse{
-		AuthToken: authToken,
-	}, nil
-}
-
-func (u *UserServiceImpl) SignIn(ctx context.Context, authToken string) (*dto.SignInResponse, error) {
-	token := &ooauth.OauthToken{}
-	err := u.aesCryptor.Decrypt(authToken, token)
-	if err != nil {
-		return nil, err
-	}
-
-	userinfo, err := u.googleOauth.GetUserInfo(ctx, token)
-	if err != nil {
-		return nil, err
-	}
-
-	user, isExisted, err := mapper.FindUserByAuthorized(ctx, u.mysqlDB, userinfo.AuthorizedBy, userinfo.AuthorizedID)
+	user, isExisted, err := mapper.FindUserByAuthorized(ctx, u.mysqlDB, authorizedBy, authorizedId)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +66,7 @@ func (u *UserServiceImpl) SignIn(ctx context.Context, authToken string) (*dto.Si
 
 		return u.signInSuccess(ctx, user)
 	} else {
-		return u.signInNewUser(ctx, userinfo.Email)
+		return u.signInNewUser(ctx, email)
 	}
 }
 
@@ -119,7 +78,7 @@ func (u *UserServiceImpl) signInSuccess(ctx context.Context, user *models.User) 
 		}
 	}
 
-	jwtToken, err := u.jwtResolver.CreateToken(strconv.Itoa(user.UserID), user.Email, roleNames)
+	jwtToken, err := u.jwtResolver.CreateToken(strconv.Itoa(user.UserID), roleNames)
 	if err != nil {
 		return nil, err
 	}
@@ -179,8 +138,8 @@ func (u *UserServiceImpl) signInNewUser(ctx context.Context, email string) (*dto
 	}, nil
 }
 
-func saveUser(ctx context.Context, tx *sql.Tx, authorizedBy domain.AuthorizedBy, authorizedID, email string, req *dto.SignUpRequest) (err error) {
-	user, err := mapper.SaveUser(ctx, tx, authorizedBy, authorizedID, email, req.Username)
+func saveUser(ctx context.Context, tx *sql.Tx, req *dto.SignUpRequest, userinfo *ooauth.UserInfo) (err error) {
+	user, err := mapper.SaveUser(ctx, tx, userinfo.AuthorizedBy, userinfo.AuthorizedID, userinfo.Email, req.Username)
 	if err != nil {
 		return err
 	}
@@ -197,24 +156,14 @@ func saveUser(ctx context.Context, tx *sql.Tx, authorizedBy domain.AuthorizedBy,
 	return user.AddUserAgreements(ctx, tx, true, mAgs...)
 }
 
-func (u *UserServiceImpl) SignUp(ctx context.Context, req *dto.SignUpRequest) error {
-	token := &ooauth.OauthToken{}
-	err := u.aesCryptor.Decrypt(req.AuthToken, token)
-	if err != nil {
-		return err
-	}
-
-	userinfo, err := u.googleOauth.GetUserInfo(ctx, token)
-	if err != nil {
-		return err
-	}
+func (u *UserServiceImpl) SignUp(ctx context.Context, req *dto.SignUpRequest, userinfo *ooauth.UserInfo) error {
 
 	tx, err := u.mysqlDB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	if err := saveUser(ctx, tx, userinfo.AuthorizedBy, userinfo.AuthorizedID, userinfo.Email, req); err != nil {
+	if err := saveUser(ctx, tx, req, userinfo); err != nil {
 		tx.Rollback()
 		return err
 	}

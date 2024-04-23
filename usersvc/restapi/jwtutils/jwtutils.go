@@ -28,7 +28,7 @@ func NewJwtUtils(secretKey []byte) *JwtResolver {
 	}
 }
 
-func (j *JwtResolver) CreateToken(userId string, userEmail string, roles []string) (*TokenInfo, error) {
+func (j *JwtResolver) CreateToken(userId string, roles []string) (*TokenInfo, error) {
 	now := time.Now()
 
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256,
@@ -36,8 +36,7 @@ func (j *JwtResolver) CreateToken(userId string, userEmail string, roles []strin
 			UserId: userId,
 			Roles:  roles,
 			RegisteredClaims: jwt.RegisteredClaims{
-				Issuer:    "careerhub.jyo-liar.com", //TODO: 임의 설정
-				Subject:   userEmail,
+				Issuer:    "careerhub.jyo-liar.com",                    //TODO: 임의 설정
 				Audience:  []string{"careerhub.jyo-liar.com"},          //TODO: 임의 설정
 				ExpiresAt: jwt.NewNumericDate(now.Add(30 * time.Hour)), //TODO: 임의 설정
 				IssuedAt:  jwt.NewNumericDate(now),
