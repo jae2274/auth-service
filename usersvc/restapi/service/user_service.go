@@ -49,19 +49,19 @@ func (u *UserServiceImpl) SignIn(ctx context.Context, authorizedBy domain.Author
 		}
 
 		userAgreedsMap := make(map[int]bool)
-		requiredAgreements = []*models.Agreement{}
 		for _, userAgreed := range userAgreeds {
 			userAgreedsMap[userAgreed.AgreementID] = true
 		}
 
+		needAgreements := []*models.Agreement{}
 		for _, requiredAgreement := range requiredAgreements {
 			if _, ok := userAgreedsMap[requiredAgreement.AgreementID]; !ok {
-				requiredAgreements = append(requiredAgreements, requiredAgreement)
+				needAgreements = append(needAgreements, requiredAgreement)
 			}
 		}
 
-		if len(requiredAgreements) > 0 {
-			return u.signInRequireAgreement(ctx, requiredAgreements)
+		if len(needAgreements) > 0 {
+			return u.signInRequireAgreement(ctx, needAgreements)
 		}
 
 		return u.signInSuccess(ctx, user)
@@ -107,7 +107,7 @@ func (u *UserServiceImpl) signInRequireAgreement(ctx context.Context, requiredAg
 	}
 
 	return &dto.SignInResponse{
-		SignInStatus: dto.SignInNewUser,
+		SignInStatus: dto.SignInRequireAgreement,
 		RequireAgreementRes: &dto.RequireAgreementRes{
 			Agreements: agreementRes,
 		},
