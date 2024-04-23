@@ -11,6 +11,7 @@ type UserInfo struct {
 	AuthorizedBy domain.AuthorizedBy `validate:"nonzero"`
 	AuthorizedID string              `validate:"nonzero"`
 	Email        string              `validate:"nonzero"`
+	Username     string              `validate:"nonzero"`
 }
 
 type OauthToken struct {

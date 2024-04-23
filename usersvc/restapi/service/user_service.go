@@ -15,7 +15,7 @@ import (
 )
 
 type UserService interface {
-	SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string, email string) (*dto.SignInResponse, error)
+	SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string) (*dto.SignInResponse, error)
 	SignUp(ctx context.Context, req *dto.SignUpRequest, userinfo *ooauth.UserInfo) error
 }
 
@@ -31,7 +31,7 @@ func NewUserService(mysqlDB *sql.DB, jwtResolver *jwtutils.JwtResolver) UserServ
 	}
 }
 
-func (u *UserServiceImpl) SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string, email string) (*dto.SignInResponse, error) {
+func (u *UserServiceImpl) SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string) (*dto.SignInResponse, error) {
 
 	user, isExisted, err := mapper.FindUserByAuthorized(ctx, u.mysqlDB, authorizedBy, authorizedId)
 	if err != nil {
@@ -66,7 +66,7 @@ func (u *UserServiceImpl) SignIn(ctx context.Context, authorizedBy domain.Author
 
 		return u.signInSuccess(ctx, user)
 	} else {
-		return u.signInNewUser(ctx, email)
+		return u.signInNewUser(ctx)
 	}
 }
 
@@ -114,7 +114,7 @@ func (u *UserServiceImpl) signInRequireAgreement(ctx context.Context, requiredAg
 	}, nil
 }
 
-func (u *UserServiceImpl) signInNewUser(ctx context.Context, email string) (*dto.SignInResponse, error) {
+func (u *UserServiceImpl) signInNewUser(ctx context.Context) (*dto.SignInResponse, error) {
 	agreements, err := mapper.FindAllAgreement(ctx, u.mysqlDB)
 	if err != nil {
 		return nil, err
@@ -132,7 +132,6 @@ func (u *UserServiceImpl) signInNewUser(ctx context.Context, email string) (*dto
 	return &dto.SignInResponse{
 		SignInStatus: dto.SignInNewUser,
 		NewUserRes: &dto.SignInNewUserRes{
-			Email:      email,
 			Agreements: agreementRes,
 		},
 	}, nil

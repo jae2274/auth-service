@@ -51,6 +51,7 @@ func NewController(router *mux.Router, userService service.UserService, aesCrypt
 
 func (c *Controller) RegisterRoutes() {
 	c.router.HandleFunc("/auth/auth-code-urls", c.AuthCodeUrls)
+	c.router.HandleFunc("/auth/user-info", c.UserInfo)
 	c.router.HandleFunc("/auth/callback/google", c.Authenticate)
 	c.router.HandleFunc("/auth/sign-in", c.SignIn)
 	c.router.HandleFunc("/auth/sign-up", c.SignUp)
@@ -71,6 +72,33 @@ func (c *Controller) AuthCodeUrls(w http.ResponseWriter, r *http.Request) {
 			{AuthServer: string(c.googleOauth.GetAuthServer()), Url: c.googleOauth.GetLoginURL(state)},
 		},
 	})
+}
+
+func (c *Controller) UserInfo(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req dto.UserInfoRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	token := &ooauth.OauthToken{}
+	err = c.aesCryptor.Decrypt(req.AuthToken, token)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	userinfo, err := c.googleOauth.GetUserInfo(ctx, token)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	json.NewEncoder(w).Encode(&dto.UserInfoResponse{
+		Email:    userinfo.Email,
+		Username: userinfo.Username,
+	})
+
 }
 
 func randToken() string {
@@ -140,7 +168,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := c.userService.SignIn(ctx, userinfo.AuthorizedBy, userinfo.AuthorizedID, userinfo.Email)
+	res, err := c.userService.SignIn(ctx, userinfo.AuthorizedBy, userinfo.AuthorizedID)
 	if errorHandler(ctx, w, err) {
 		return
 	}

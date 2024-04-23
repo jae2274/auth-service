@@ -21,7 +21,7 @@ func TestUserService(t *testing.T) {
 		ctx := context.Background()
 		userSvc := service.NewUserService(tinit.DB(t), jwtutils.NewJwtUtils([]byte("secretKey")))
 
-		res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", "test@gmail.com")
+		res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
 		require.NoError(t, err)
 
 		require.Equal(t, dto.SignInNewUser, res.SignInStatus)
@@ -41,7 +41,7 @@ func TestUserService(t *testing.T) {
 				Email:        "",
 			})
 
-			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", "test@gmail.com")
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
 			require.NoError(t, err)
 
 			require.Equal(t, dto.SignInSuccess, res.SignInStatus)
@@ -70,7 +70,7 @@ func TestUserService(t *testing.T) {
 				Email:        "",
 			})
 
-			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", "test@gmail.com")
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
 			require.NoError(t, err)
 
 			require.Equal(t, dto.SignInSuccess, res.SignInStatus)
@@ -101,7 +101,7 @@ func TestUserService(t *testing.T) {
 				Email:        "",
 			})
 
-			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", "test@gmail.com")
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
 			require.NoError(t, err)
 
 			require.Equal(t, dto.SignInRequireAgreement, res.SignInStatus)

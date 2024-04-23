@@ -17,6 +17,15 @@ type AuthCodeUrlRes struct {
 	Url        string `json:"url"`
 }
 
+type UserInfoRequest struct {
+	AuthToken string `json:"authToken"`
+}
+
+type UserInfoResponse struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+}
+
 type SignInRequest struct {
 	AuthToken string `json:"authToken"`
 }
@@ -50,7 +59,6 @@ type SignInSuccessRes struct {
 }
 
 type SignInNewUserRes struct {
-	Email      string          `json:"email"`
 	Agreements []*AgreementRes `json:"agreements"`
 }
 

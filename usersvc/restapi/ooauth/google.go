@@ -59,6 +59,7 @@ func (g *GoogleOauth) GetToken(ctx context.Context, code string) (*OauthToken, e
 type user struct {
 	Sub   string `json:"sub"`
 	Email string `json:"email"`
+	Name  string `json:"name"`
 }
 
 func (g *GoogleOauth) GetUserInfo(ctx context.Context, authToken *OauthToken) (*UserInfo, error) {
@@ -79,5 +80,6 @@ func (g *GoogleOauth) GetUserInfo(ctx context.Context, authToken *OauthToken) (*
 		AuthorizedBy: domain.GOOGLE,
 		AuthorizedID: authUser.Sub,
 		Email:        authUser.Email,
+		Username:     authUser.Name,
 	}, nil
 }
