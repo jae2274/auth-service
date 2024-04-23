@@ -2,9 +2,12 @@ package tinit
 
 import (
 	"database/sql"
+	"fmt"
+	"reflect"
 	"testing"
 	"userService/usersvc/common/mysqldb"
 	"userService/usersvc/common/vars"
+	"userService/usersvc/models"
 )
 
 func DB(t *testing.T) *sql.DB {
@@ -34,9 +37,10 @@ func ClearDB(t *testing.T, db *sql.DB) {
 		checkErr(t, err)
 	}()
 
-	_, err = db.Exec("TRUNCATE TABLE user_role")
-	checkErr(t, err)
+	v := reflect.ValueOf(models.TableNames)
 
-	_, err = db.Exec("TRUNCATE TABLE user")
-	checkErr(t, err)
+	for i := 0; i < v.NumField(); i++ {
+		_, err = db.Exec(fmt.Sprintf("TRUNCATE TABLE %v", v.Field(i).Interface()))
+		checkErr(t, err)
+	}
 }
