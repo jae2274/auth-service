@@ -40,8 +40,26 @@ func FindUserByAuthorized(ctx context.Context, exec boil.ContextExecutor, author
 	return user, true, nil
 }
 
+func FindUserAgreements(ctx context.Context, exec boil.ContextExecutor, userID int, isAgree bool) ([]*models.UserAgreement, error) {
+	userAgreements, err := models.UserAgreements(qm.Where(models.UserAgreementColumns.UserID+"=?", userID), qm.And(models.UserAgreementColumns.IsAgree+"=?", isAgree)).All(ctx, exec)
+	if err != nil {
+		return nil, terr.Wrap(err)
+	}
+
+	return userAgreements, nil
+}
+
 func FindAllAgreement(ctx context.Context, exec boil.ContextExecutor) ([]*models.Agreement, error) {
 	agreements, err := models.Agreements(qm.OrderBy(models.AgreementColumns.Priority)).All(ctx, exec)
+	if err != nil {
+		return nil, terr.Wrap(err)
+	}
+
+	return agreements, nil
+}
+
+func FindRequiredAgreements(ctx context.Context, exec boil.ContextExecutor) ([]*models.Agreement, error) {
+	agreements, err := models.Agreements(qm.Where(models.AgreementColumns.IsRequired+"=?", true), qm.OrderBy(models.AgreementColumns.Priority)).All(ctx, exec)
 	if err != nil {
 		return nil, terr.Wrap(err)
 	}

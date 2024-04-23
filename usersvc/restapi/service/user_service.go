@@ -80,6 +80,31 @@ func (u *UserServiceImpl) SignIn(ctx context.Context, authToken string) (*dto.Si
 	}
 
 	if isExisted {
+		userAgreeds, err := mapper.FindUserAgreements(ctx, u.mysqlDB, user.UserID, true)
+		if err != nil {
+			return nil, err
+		}
+		requiredAgreements, err := mapper.FindRequiredAgreements(ctx, u.mysqlDB)
+		if err != nil {
+			return nil, err
+		}
+
+		userAgreedsMap := make(map[int]bool)
+		requiredAgreements = []*models.Agreement{}
+		for _, userAgreed := range userAgreeds {
+			userAgreedsMap[userAgreed.AgreementID] = true
+		}
+
+		for _, requiredAgreement := range requiredAgreements {
+			if _, ok := userAgreedsMap[requiredAgreement.AgreementID]; !ok {
+				requiredAgreements = append(requiredAgreements, requiredAgreement)
+			}
+		}
+
+		if len(requiredAgreements) > 0 {
+			return u.signInRequireAgreement(ctx, requiredAgreements)
+		}
+
 		return u.signInSuccess(ctx, user)
 	} else {
 		return u.signInNewUser(ctx, userinfo.Email)
@@ -107,6 +132,25 @@ func (u *UserServiceImpl) signInSuccess(ctx context.Context, user *models.User) 
 			GrantType:    jwtToken.GrantType,
 			AccessToken:  jwtToken.AccessToken,
 			RefreshToken: jwtToken.RefreshToken,
+		},
+	}, nil
+}
+
+// TODO: 나머지 구현 및 테스트코드 작성
+func (u *UserServiceImpl) signInRequireAgreement(ctx context.Context, requiredAgreements []*models.Agreement) (*dto.SignInResponse, error) {
+	agreementRes := make([]*dto.AgreementRes, len(requiredAgreements))
+	for i, agreement := range requiredAgreements {
+		agreementRes[i] = &dto.AgreementRes{
+			AgreementId: agreement.AgreementID,
+			Required:    utils.TinyIntToBool(agreement.IsRequired),
+			Summary:     agreement.Summary,
+		}
+	}
+
+	return &dto.SignInResponse{
+		SignInStatus: dto.SignInNewUser,
+		RequireAgreementRes: &dto.RequireAgreementRes{
+			Agreements: agreementRes,
 		},
 	}, nil
 }
