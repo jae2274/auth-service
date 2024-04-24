@@ -53,7 +53,6 @@ func NewController(router *mux.Router, userService service.UserService, aesCrypt
 func (c *Controller) RegisterRoutes() {
 	c.router.HandleFunc("/auth/auth-code-urls", c.AuthCodeUrls)
 	c.router.HandleFunc("/auth/callback/google", c.Authenticate)
-	c.router.HandleFunc("/auth/user-info", c.UserInfo)
 	c.router.HandleFunc("/auth/sign-in", c.SignIn)
 	c.router.HandleFunc("/auth/sign-up", c.SignUp)
 }
@@ -151,25 +150,6 @@ func pushSessionState(s *sessions.CookieStore, w http.ResponseWriter, r *http.Re
 	return nil
 }
 
-func (c *Controller) UserInfo(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var req dto.UserInfoRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if errorHandler(ctx, w, err) {
-		return
-	}
-
-	ooauthToken, err := decrypt(c.aesCryptor, req.AuthToken)
-	if errorHandler(ctx, w, err) {
-		return
-	}
-
-	json.NewEncoder(w).Encode(&dto.UserInfoResponse{
-		Email:    ooauthToken.UserInfo.Email,
-		Username: ooauthToken.UserInfo.Username,
-	})
-}
 func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -184,7 +164,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := c.userService.SignIn(ctx, ooauthToken.UserInfo.AuthorizedBy, ooauthToken.UserInfo.AuthorizedID, req.AdditionalAgreements)
+	res, err := c.userService.SignIn(ctx, ooauthToken.UserInfo, req.AdditionalAgreements)
 	if errorHandler(ctx, w, err) {
 		return
 	}
@@ -209,7 +189,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = c.userService.SignUp(ctx, req.Username, req.Agreements, ooauthToken.UserInfo.AuthorizedBy, ooauthToken.UserInfo.AuthorizedID, ooauthToken.UserInfo.Email)
+	err = c.userService.SignUp(ctx, ooauthToken.UserInfo, req.Agreements)
 	if errorHandler(ctx, w, err) {
 		return
 	}

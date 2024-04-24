@@ -60,6 +60,8 @@ type SignInSuccessRes struct {
 }
 
 type SignInNewUserRes struct {
+	Email      string          `json:"email"`
+	Username   string          `json:"username"`
 	Agreements []*AgreementRes `json:"agreements"`
 }
 

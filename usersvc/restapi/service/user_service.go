@@ -5,19 +5,19 @@ import (
 	"database/sql"
 	"strconv"
 	"time"
-	"userService/usersvc/common/domain"
 	"userService/usersvc/models"
 	"userService/usersvc/restapi/ctrlr/dto"
 	"userService/usersvc/restapi/jwtutils"
 	"userService/usersvc/restapi/mapper"
+	"userService/usersvc/restapi/ooauth"
 	"userService/usersvc/utils"
 
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
 type UserService interface {
-	SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string, addAgreements []*dto.UserAgreementReq) (*dto.SignInResponse, error)
-	SignUp(ctx context.Context, username string, additionalAgreements []*dto.UserAgreementReq, authBy domain.AuthorizedBy, authId string, email string) error
+	SignIn(ctx context.Context, userinfo *ooauth.UserInfo, addAgreements []*dto.UserAgreementReq) (*dto.SignInResponse, error)
+	SignUp(ctx context.Context, userinfo *ooauth.UserInfo, additionalAgreements []*dto.UserAgreementReq) error
 }
 
 type UserServiceImpl struct {
@@ -60,9 +60,9 @@ func (u *UserServiceImpl) applyUserAgreements(ctx context.Context, tx *sql.Tx, u
 	return nil
 }
 
-func (u *UserServiceImpl) SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string, additionalAgreements []*dto.UserAgreementReq) (*dto.SignInResponse, error) {
+func (u *UserServiceImpl) SignIn(ctx context.Context, userinfo *ooauth.UserInfo, additionalAgreements []*dto.UserAgreementReq) (*dto.SignInResponse, error) {
 
-	user, isExisted, err := mapper.FindUserByAuthorized(ctx, u.mysqlDB, authorizedBy, authorizedId)
+	user, isExisted, err := mapper.FindUserByAuthorized(ctx, u.mysqlDB, userinfo.AuthorizedBy, userinfo.AuthorizedID)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (u *UserServiceImpl) SignIn(ctx context.Context, authorizedBy domain.Author
 
 		return u.signInSuccess(ctx, user)
 	} else {
-		return u.signInNewUser(ctx)
+		return u.signInNewUser(ctx, userinfo)
 	}
 }
 
@@ -139,7 +139,7 @@ func (u *UserServiceImpl) signInRequireAgreement(ctx context.Context, requiredAg
 	}, nil
 }
 
-func (u *UserServiceImpl) signInNewUser(ctx context.Context) (*dto.SignInResponse, error) {
+func (u *UserServiceImpl) signInNewUser(ctx context.Context, userinfo *ooauth.UserInfo) (*dto.SignInResponse, error) {
 	agreements, err := mapper.FindAllAgreement(ctx, u.mysqlDB)
 	if err != nil {
 		return nil, err
@@ -157,6 +157,8 @@ func (u *UserServiceImpl) signInNewUser(ctx context.Context) (*dto.SignInRespons
 	return &dto.SignInResponse{
 		SignInStatus: dto.SignInNewUser,
 		NewUserRes: &dto.SignInNewUserRes{
+			Email:      userinfo.Email,
+			Username:   userinfo.Username,
 			Agreements: agreementRes,
 		},
 	}, nil
@@ -189,14 +191,14 @@ func (u *UserServiceImpl) necessaryAgreements(ctx context.Context, userId int) (
 	return necessaryAgreements, nil
 }
 
-func (u *UserServiceImpl) SignUp(ctx context.Context, username string, agreements []*dto.UserAgreementReq, authBy domain.AuthorizedBy, authId string, email string) error {
+func (u *UserServiceImpl) SignUp(ctx context.Context, userinfo *ooauth.UserInfo, agreements []*dto.UserAgreementReq) error {
 
 	tx, err := u.mysqlDB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	if err := signUp(ctx, tx, username, agreements, authBy, authId, email); err != nil {
+	if err := signUp(ctx, tx, userinfo, agreements); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -208,8 +210,8 @@ func (u *UserServiceImpl) SignUp(ctx context.Context, username string, agreement
 	return nil
 }
 
-func signUp(ctx context.Context, tx *sql.Tx, username string, agreements []*dto.UserAgreementReq, authBy domain.AuthorizedBy, authId string, email string) (err error) {
-	user, err := mapper.SaveUser(ctx, tx, authBy, authId, email, username)
+func signUp(ctx context.Context, tx *sql.Tx, userinfo *ooauth.UserInfo, agreements []*dto.UserAgreementReq) (err error) {
+	user, err := mapper.SaveUser(ctx, tx, userinfo.AuthorizedBy, userinfo.AuthorizedID, userinfo.Email, userinfo.Username)
 	if err != nil {
 		return err
 	}
