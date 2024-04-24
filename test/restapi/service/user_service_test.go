@@ -8,7 +8,6 @@ import (
 	"userService/usersvc/models"
 	"userService/usersvc/restapi/ctrlr/dto"
 	"userService/usersvc/restapi/jwtutils"
-	"userService/usersvc/restapi/ooauth"
 	"userService/usersvc/restapi/service"
 
 	"github.com/stretchr/testify/require"
@@ -16,6 +15,18 @@ import (
 )
 
 func TestUsers(t *testing.T) {
+	initRequiredAgreementFunc := func(t *testing.T) (context.Context, service.UserService, models.AgreementSlice) {
+		//Given
+		ctx := context.Background()
+		db := tinit.DB(t)
+		userSvc := service.NewUserService(db, jwtutils.NewJwtUtils([]byte("secretKey")))
+		var requiredAgreements models.AgreementSlice = newRequiredAgreements()
+		for _, agreement := range requiredAgreements {
+			err := agreement.Insert(ctx, db, boil.Infer())
+			require.NoError(t, err)
+		}
+		return ctx, userSvc, requiredAgreements
+	}
 
 	t.Run("return new_user", func(t *testing.T) {
 		ctx := context.Background()
@@ -32,14 +43,12 @@ func TestUsers(t *testing.T) {
 			ctx := context.Background()
 			userSvc := service.NewUserService(tinit.DB(t), jwtutils.NewJwtUtils([]byte("secretKey")))
 
-			userSvc.SignUp(ctx, &dto.SignUpRequest{
-				Username:   "testUsername",
-				Agreements: []*dto.UserAgreementReq{},
-			}, &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "",
-			})
+			userSvc.SignUp(ctx,
+				"testUsername",
+				[]*dto.UserAgreementReq{},
+				domain.GOOGLE,
+				"authId",
+				"email")
 
 			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
 			require.NoError(t, err)
@@ -48,27 +57,17 @@ func TestUsers(t *testing.T) {
 		})
 
 		t.Run("if all required agreements are agreed", func(t *testing.T) {
-			ctx := context.Background()
-			db := tinit.DB(t)
-			userSvc := service.NewUserService(db, jwtutils.NewJwtUtils([]byte("secretKey")))
-			var requiredAgreements models.AgreementSlice = newRequiredAgreements()
-			for _, agreement := range requiredAgreements {
-				err := agreement.Insert(ctx, db, boil.Infer())
-				require.NoError(t, err)
-			}
+			ctx, userSvc, requiredAgreements := initRequiredAgreementFunc(t)
 
-			userSvc.SignUp(ctx, &dto.SignUpRequest{
-				Username: "testUsername",
-				Agreements: []*dto.UserAgreementReq{
+			userSvc.SignUp(ctx,
+				"testUsername",
+				[]*dto.UserAgreementReq{
 					{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
 					{AgreementId: requiredAgreements[1].AgreementID, IsAgree: true},
-					{AgreementId: requiredAgreements[2].AgreementID, IsAgree: false},
 				},
-			}, &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "",
-			})
+				domain.GOOGLE,
+				"authId",
+				"email")
 
 			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
 			require.NoError(t, err)
@@ -79,27 +78,17 @@ func TestUsers(t *testing.T) {
 
 	t.Run("return require_agreement ", func(t *testing.T) {
 		t.Run("if not all required agreements are now agreed", func(t *testing.T) {
-			ctx := context.Background()
-			db := tinit.DB(t)
-			userSvc := service.NewUserService(db, jwtutils.NewJwtUtils([]byte("secretKey")))
-			var requiredAgreements models.AgreementSlice = newRequiredAgreements()
-			for _, agreement := range requiredAgreements {
-				err := agreement.Insert(ctx, db, boil.Infer())
-				require.NoError(t, err)
-			}
+			ctx, userSvc, requiredAgreements := initRequiredAgreementFunc(t)
 
-			userSvc.SignUp(ctx, &dto.SignUpRequest{
-				Username: "testUsername",
-				Agreements: []*dto.UserAgreementReq{
+			userSvc.SignUp(ctx,
+				"testUsername",
+				[]*dto.UserAgreementReq{
 					{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
 					{AgreementId: requiredAgreements[1].AgreementID, IsAgree: false},
-					{AgreementId: requiredAgreements[2].AgreementID, IsAgree: false},
 				},
-			}, &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "",
-			})
+				domain.GOOGLE,
+				"authId",
+				"email")
 
 			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
 			require.NoError(t, err)
@@ -127,13 +116,12 @@ func TestAgreements(t *testing.T) {
 		//Given
 		ctx, userSvc, requiredAgreements := initFunc(t)
 
-		userSvc.SignUp(ctx, &dto.SignUpRequest{
-			Username:   "testUsername",
-			Agreements: []*dto.UserAgreementReq{}, //empty
-		}, &ooauth.UserInfo{
-			AuthorizedBy: domain.GOOGLE,
-			AuthorizedID: "authId",
-		})
+		userSvc.SignUp(ctx,
+			"testUsername",
+			[]*dto.UserAgreementReq{}, //empty
+			domain.GOOGLE,
+			"authId",
+			"email")
 
 		//When
 		agreementsRes, err := userSvc.RequiredAgreements(ctx, domain.GOOGLE, "authId")
@@ -149,16 +137,15 @@ func TestAgreements(t *testing.T) {
 		//Given
 		ctx, userSvc, requiredAgreements := initFunc(t)
 
-		userSvc.SignUp(ctx, &dto.SignUpRequest{
-			Username: "testUsername",
-			Agreements: []*dto.UserAgreementReq{
+		userSvc.SignUp(ctx,
+			"testUsername",
+			[]*dto.UserAgreementReq{
 				{AgreementId: requiredAgreements[0].AgreementID, IsAgree: false},
 				{AgreementId: requiredAgreements[1].AgreementID, IsAgree: false},
 			},
-		}, &ooauth.UserInfo{
-			AuthorizedBy: domain.GOOGLE,
-			AuthorizedID: "authId",
-		})
+			domain.GOOGLE,
+			"authId",
+			"email")
 
 		//When
 		agreementsRes, err := userSvc.RequiredAgreements(ctx, domain.GOOGLE, "authId")
@@ -174,16 +161,15 @@ func TestAgreements(t *testing.T) {
 		//Given
 		ctx, userSvc, requiredAgreements := initFunc(t)
 
-		userSvc.SignUp(ctx, &dto.SignUpRequest{
-			Username: "testUsername",
-			Agreements: []*dto.UserAgreementReq{
+		userSvc.SignUp(ctx,
+			"testUsername",
+			[]*dto.UserAgreementReq{
 				{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
 				{AgreementId: requiredAgreements[1].AgreementID, IsAgree: false},
 			},
-		}, &ooauth.UserInfo{
-			AuthorizedBy: domain.GOOGLE,
-			AuthorizedID: "authId",
-		})
+			domain.GOOGLE,
+			"authId",
+			"email")
 
 		//When
 		agreementsRes, err := userSvc.RequiredAgreements(ctx, domain.GOOGLE, "authId")
@@ -205,16 +191,15 @@ func TestAgreements(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		userSvc.SignUp(ctx, &dto.SignUpRequest{
-			Username: "testUsername",
-			Agreements: []*dto.UserAgreementReq{
+		userSvc.SignUp(ctx,
+			"testUsername",
+			[]*dto.UserAgreementReq{
 				{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
 				{AgreementId: requiredAgreements[1].AgreementID, IsAgree: true},
 			},
-		}, &ooauth.UserInfo{
-			AuthorizedBy: domain.GOOGLE,
-			AuthorizedID: "authId",
-		})
+			domain.GOOGLE,
+			"authId",
+			"email")
 
 		//When
 		agreementsRes, err := userSvc.RequiredAgreements(ctx, domain.GOOGLE, "authId")
@@ -230,6 +215,12 @@ func newRequiredAgreements() []*models.Agreement {
 	return []*models.Agreement{
 		{AgreementCode: "code1", Summary: "summary1", IsRequired: 1},
 		{AgreementCode: "code2", Summary: "summary2", IsRequired: 1},
+	}
+}
+
+func newOptionalAgreements() []*models.Agreement {
+	return []*models.Agreement{
 		{AgreementCode: "code3", Summary: "summary3", IsRequired: 0},
+		{AgreementCode: "code4", Summary: "summary4", IsRequired: 0},
 	}
 }

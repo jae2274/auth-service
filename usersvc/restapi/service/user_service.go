@@ -10,14 +10,13 @@ import (
 	"userService/usersvc/restapi/ctrlr/dto"
 	"userService/usersvc/restapi/jwtutils"
 	"userService/usersvc/restapi/mapper"
-	"userService/usersvc/restapi/ooauth"
 	"userService/usersvc/utils"
 )
 
 type UserService interface {
 	SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string) (*dto.SignInResponse, error)
 	RequiredAgreements(ctx context.Context, authBy domain.AuthorizedBy, authId string) (*dto.RequireAgreementResponse, error)
-	SignUp(ctx context.Context, req *dto.SignUpRequest, userinfo *ooauth.UserInfo) error
+	SignUp(ctx context.Context, username string, agreements []*dto.UserAgreementReq, authBy domain.AuthorizedBy, authId string, email string) error
 }
 
 type UserServiceImpl struct {
@@ -177,14 +176,14 @@ func (u *UserServiceImpl) RequiredAgreements(ctx context.Context, authBy domain.
 	}, nil
 }
 
-func (u *UserServiceImpl) SignUp(ctx context.Context, req *dto.SignUpRequest, userinfo *ooauth.UserInfo) error {
+func (u *UserServiceImpl) SignUp(ctx context.Context, username string, agreements []*dto.UserAgreementReq, authBy domain.AuthorizedBy, authId string, email string) error {
 
 	tx, err := u.mysqlDB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	if err := saveUser(ctx, tx, req, userinfo); err != nil {
+	if err := signUp(ctx, tx, username, agreements, authBy, authId, email); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -196,14 +195,14 @@ func (u *UserServiceImpl) SignUp(ctx context.Context, req *dto.SignUpRequest, us
 	return nil
 }
 
-func saveUser(ctx context.Context, tx *sql.Tx, req *dto.SignUpRequest, userinfo *ooauth.UserInfo) (err error) {
-	user, err := mapper.SaveUser(ctx, tx, userinfo.AuthorizedBy, userinfo.AuthorizedID, userinfo.Email, req.Username)
+func signUp(ctx context.Context, tx *sql.Tx, username string, agreements []*dto.UserAgreementReq, authBy domain.AuthorizedBy, authId string, email string) (err error) {
+	user, err := mapper.SaveUser(ctx, tx, authBy, authId, email, username)
 	if err != nil {
 		return err
 	}
 
-	mAgs := make([]*models.UserAgreement, len(req.Agreements))
-	for i, ag := range req.Agreements {
+	mAgs := make([]*models.UserAgreement, len(agreements))
+	for i, ag := range agreements {
 		mAgs[i] = &models.UserAgreement{
 			UserID:      user.UserID,
 			AgreementID: ag.AgreementId,
