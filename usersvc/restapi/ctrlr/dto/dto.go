@@ -27,7 +27,8 @@ type UserInfoResponse struct {
 }
 
 type SignInRequest struct {
-	AuthToken string `json:"authToken"`
+	AuthToken            string              `json:"authToken"`
+	AdditionalAgreements []*UserAgreementReq `json:"additionalAgreements"`
 }
 
 type SignInStatusValues struct{}

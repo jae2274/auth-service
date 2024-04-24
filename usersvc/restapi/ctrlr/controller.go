@@ -184,7 +184,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := c.userService.SignIn(ctx, ooauthToken.UserInfo.AuthorizedBy, ooauthToken.UserInfo.AuthorizedID)
+	res, err := c.userService.SignIn(ctx, ooauthToken.UserInfo.AuthorizedBy, ooauthToken.UserInfo.AuthorizedID, req.AdditionalAgreements)
 	if errorHandler(ctx, w, err) {
 		return
 	}

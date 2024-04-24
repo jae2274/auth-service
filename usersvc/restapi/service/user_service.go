@@ -11,11 +11,13 @@ import (
 	"userService/usersvc/restapi/jwtutils"
 	"userService/usersvc/restapi/mapper"
 	"userService/usersvc/utils"
+
+	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
 type UserService interface {
-	SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string) (*dto.SignInResponse, error)
-	SignUp(ctx context.Context, username string, agreements []*dto.UserAgreementReq, authBy domain.AuthorizedBy, authId string, email string) error
+	SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string, addAgreements []*dto.UserAgreementReq) (*dto.SignInResponse, error)
+	SignUp(ctx context.Context, username string, additionalAgreements []*dto.UserAgreementReq, authBy domain.AuthorizedBy, authId string, email string) error
 }
 
 type UserServiceImpl struct {
@@ -30,7 +32,35 @@ func NewUserService(mysqlDB *sql.DB, jwtResolver *jwtutils.JwtResolver) UserServ
 	}
 }
 
-func (u *UserServiceImpl) SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string) (*dto.SignInResponse, error) {
+func (u *UserServiceImpl) applyUserAgreements(ctx context.Context, tx *sql.Tx, userId int, agreements []*dto.UserAgreementReq) error {
+	for _, addAgreement := range agreements {
+		userAgreement := models.UserAgreement{
+			UserID:      userId,
+			AgreementID: addAgreement.AgreementId,
+			IsAgree:     utils.BoolToTinyInt(addAgreement.IsAgree),
+		}
+		isExisted, err := userAgreement.Exists(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if isExisted {
+			_, err := userAgreement.Update(ctx, tx, boil.Infer())
+			if err != nil {
+				return err
+			}
+		} else {
+			err := userAgreement.Insert(ctx, tx, boil.Infer())
+			if err != nil {
+				return err
+			}
+
+		}
+	}
+
+	return nil
+}
+
+func (u *UserServiceImpl) SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string, additionalAgreements []*dto.UserAgreementReq) (*dto.SignInResponse, error) {
 
 	user, isExisted, err := mapper.FindUserByAuthorized(ctx, u.mysqlDB, authorizedBy, authorizedId)
 	if err != nil {
@@ -38,6 +68,18 @@ func (u *UserServiceImpl) SignIn(ctx context.Context, authorizedBy domain.Author
 	}
 
 	if isExisted {
+		tx, err := u.mysqlDB.BeginTx(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		if err := u.applyUserAgreements(ctx, tx, user.UserID, additionalAgreements); err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+
 		nAgreements, err := u.necessaryAgreements(ctx, user.UserID)
 		if err != nil {
 			return nil, err

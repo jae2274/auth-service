@@ -36,11 +36,11 @@ func initAgreementFunc(t *testing.T) (context.Context, service.UserService, mode
 
 func TestUsers(t *testing.T) {
 	t.Run("return new_user", func(t *testing.T) {
-		t.Run("when agreements not existed", func(t *testing.T) {
+		t.Run("when agreements empty", func(t *testing.T) {
 			ctx := context.Background()
 			userSvc := service.NewUserService(tinit.DB(t), jwtutils.NewJwtUtils([]byte("secretKey")))
 
-			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", []*dto.UserAgreementReq{})
 			require.NoError(t, err)
 
 			require.Equal(t, dto.SignInNewUser, res.SignInStatus)
@@ -51,7 +51,7 @@ func TestUsers(t *testing.T) {
 			ctx, userSvc, requireAgreement, optionalAgreement := initAgreementFunc(t)
 			savedAgreements := append(requireAgreement, optionalAgreement...)
 
-			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", []*dto.UserAgreementReq{})
 			require.NoError(t, err)
 
 			require.Equal(t, dto.SignInNewUser, res.SignInStatus)
@@ -65,7 +65,7 @@ func TestUsers(t *testing.T) {
 	})
 
 	t.Run("return success", func(t *testing.T) {
-		t.Run("if required agreements not existed", func(t *testing.T) {
+		t.Run("if required agreements empty", func(t *testing.T) {
 			ctx := context.Background()
 			userSvc := service.NewUserService(tinit.DB(t), jwtutils.NewJwtUtils([]byte("secretKey")))
 
@@ -76,7 +76,7 @@ func TestUsers(t *testing.T) {
 				"authId",
 				"email")
 
-			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", []*dto.UserAgreementReq{})
 			require.NoError(t, err)
 
 			require.Equal(t, dto.SignInSuccess, res.SignInStatus)
@@ -95,7 +95,47 @@ func TestUsers(t *testing.T) {
 				"authId",
 				"email")
 
-			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", []*dto.UserAgreementReq{})
+			require.NoError(t, err)
+
+			require.Equal(t, dto.SignInSuccess, res.SignInStatus)
+		})
+
+		t.Run("if one required agreement is not checked, but agreed when sign in ", func(t *testing.T) {
+			ctx, userSvc, requiredAgreements, _ := initAgreementFunc(t)
+
+			userSvc.SignUp(ctx,
+				"testUsername",
+				[]*dto.UserAgreementReq{
+					{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
+				},
+				domain.GOOGLE,
+				"authId",
+				"email")
+
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", []*dto.UserAgreementReq{
+				{AgreementId: requiredAgreements[1].AgreementID, IsAgree: true},
+			})
+			require.NoError(t, err)
+
+			require.Equal(t, dto.SignInSuccess, res.SignInStatus)
+		})
+		t.Run("if one required agreement is not agreed, but agreed when sign in", func(t *testing.T) {
+			ctx, userSvc, requiredAgreements, _ := initAgreementFunc(t)
+
+			userSvc.SignUp(ctx,
+				"testUsername",
+				[]*dto.UserAgreementReq{
+					{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
+					{AgreementId: requiredAgreements[1].AgreementID, IsAgree: false},
+				},
+				domain.GOOGLE,
+				"authId",
+				"email")
+
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", []*dto.UserAgreementReq{
+				{AgreementId: requiredAgreements[1].AgreementID, IsAgree: true},
+			})
 			require.NoError(t, err)
 
 			require.Equal(t, dto.SignInSuccess, res.SignInStatus)
@@ -113,7 +153,7 @@ func TestUsers(t *testing.T) {
 				"authId",
 				"email")
 
-			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", []*dto.UserAgreementReq{})
 			require.NoError(t, err)
 
 			require.Equal(t, dto.SignInNecessaryAgreements, res.SignInStatus)
@@ -134,7 +174,7 @@ func TestUsers(t *testing.T) {
 				"authId",
 				"email")
 
-			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", []*dto.UserAgreementReq{})
 			require.NoError(t, err)
 
 			require.Equal(t, dto.SignInNecessaryAgreements, res.SignInStatus)
@@ -156,7 +196,7 @@ func TestUsers(t *testing.T) {
 				"authId",
 				"email")
 
-			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId")
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", []*dto.UserAgreementReq{})
 			require.NoError(t, err)
 
 			require.Equal(t, dto.SignInNecessaryAgreements, res.SignInStatus)
@@ -164,6 +204,47 @@ func TestUsers(t *testing.T) {
 			require.Equal(t, requiredAgreements[1].AgreementID, res.NecessaryAgreementsRes.Agreements[0].AgreementId)
 		})
 
+		t.Run("if all required agreements are not checked, and one agreement agreed when sign in", func(t *testing.T) {
+			ctx, userSvc, requiredAgreements, _ := initAgreementFunc(t)
+
+			userSvc.SignUp(ctx,
+				"testUsername",
+				[]*dto.UserAgreementReq{},
+				domain.GOOGLE,
+				"authId",
+				"email")
+
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", []*dto.UserAgreementReq{
+				{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
+			})
+			require.NoError(t, err)
+
+			require.Equal(t, dto.SignInNecessaryAgreements, res.SignInStatus)
+			require.Len(t, res.NecessaryAgreementsRes.Agreements, 1)
+			require.Equal(t, requiredAgreements[1].AgreementID, res.NecessaryAgreementsRes.Agreements[0].AgreementId)
+		})
+		t.Run("if all required agreements are not agreed, and one agreement agreed when sign in", func(t *testing.T) {
+			ctx, userSvc, requiredAgreements, _ := initAgreementFunc(t)
+
+			userSvc.SignUp(ctx,
+				"testUsername",
+				[]*dto.UserAgreementReq{
+					{AgreementId: requiredAgreements[0].AgreementID, IsAgree: false},
+					{AgreementId: requiredAgreements[1].AgreementID, IsAgree: false},
+				},
+				domain.GOOGLE,
+				"authId",
+				"email")
+
+			res, err := userSvc.SignIn(ctx, domain.GOOGLE, "authId", []*dto.UserAgreementReq{
+				{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
+			})
+			require.NoError(t, err)
+
+			require.Equal(t, dto.SignInNecessaryAgreements, res.SignInStatus)
+			require.Len(t, res.NecessaryAgreementsRes.Agreements, 1)
+			require.Equal(t, requiredAgreements[1].AgreementID, res.NecessaryAgreementsRes.Agreements[0].AgreementId)
+		})
 	})
 }
 
