@@ -15,14 +15,14 @@ type UserInfo struct {
 }
 
 type OauthToken struct {
-	AuthServer domain.AuthorizedBy `json:"authServer"`
-	Token      *oauth2.Token       `json:"authToken"`
+	UserInfo *UserInfo     `json:"userInfo"`
+	Token    *oauth2.Token `json:"authToken"`
 }
 
 type Ooauth interface {
 	GetAuthServer() domain.AuthorizedBy
 	GetLoginURL(state string) string
 	Oauth2Config() *oauth2.Config
-	GetToken(ctx context.Context, code string) (*OauthToken, error)
+	GetToken(ctx context.Context, code string) (*oauth2.Token, error)
 	GetUserInfo(ctx context.Context, authToken *OauthToken) (*UserInfo, error)
 }

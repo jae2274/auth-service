@@ -45,15 +45,12 @@ func (g *GoogleOauth) Oauth2Config() *oauth2.Config {
 	return g.oauthConfig
 }
 
-func (g *GoogleOauth) GetToken(ctx context.Context, code string) (*OauthToken, error) {
+func (g *GoogleOauth) GetToken(ctx context.Context, code string) (*oauth2.Token, error) {
 	token, err := g.Oauth2Config().Exchange(ctx, code)
 	if err != nil {
 		return nil, err
 	}
-	return &OauthToken{
-		AuthServer: g.GetAuthServer(),
-		Token:      token,
-	}, nil
+	return token, nil
 }
 
 type user struct {
