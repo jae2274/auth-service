@@ -44,10 +44,9 @@ func (SignInStatusValues) Values() []string {
 }
 
 type SignInResponse struct {
-	SignInStatus        SignInStatus         `json:"signInStatus"`
-	SuccessRes          *SignInSuccessRes    `json:"successRes"`
-	NewUserRes          *SignInNewUserRes    `json:"newUserRes"`
-	RequireAgreementRes *RequireAgreementRes `json:"requireAgreementRes"`
+	SignInStatus SignInStatus      `json:"signInStatus"`
+	SuccessRes   *SignInSuccessRes `json:"successRes"`
+	NewUserRes   *SignInNewUserRes `json:"newUserRes"`
 }
 
 type SignInSuccessRes struct {
@@ -62,7 +61,7 @@ type SignInNewUserRes struct {
 	Agreements []*AgreementRes `json:"agreements"`
 }
 
-type RequireAgreementRes struct {
+type RequireAgreementResponse struct {
 	Agreements []*AgreementRes `json:"agreements"`
 }
 

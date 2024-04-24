@@ -54,6 +54,7 @@ func (c *Controller) RegisterRoutes() {
 	c.router.HandleFunc("/auth/auth-code-urls", c.AuthCodeUrls)
 	c.router.HandleFunc("/auth/callback/google", c.Authenticate)
 	c.router.HandleFunc("/auth/user-info", c.UserInfo)
+	c.router.HandleFunc("/auth/required_agreements", c.RequiredAgreements)
 	c.router.HandleFunc("/auth/sign-in", c.SignIn)
 	c.router.HandleFunc("/auth/sign-up", c.SignUp)
 }
@@ -169,6 +170,9 @@ func (c *Controller) UserInfo(w http.ResponseWriter, r *http.Request) {
 		Email:    ooauthToken.UserInfo.Email,
 		Username: ooauthToken.UserInfo.Username,
 	})
+}
+
+func (c *Controller) RequiredAgreements(w http.ResponseWriter, r *http.Request) {
 
 }
 
