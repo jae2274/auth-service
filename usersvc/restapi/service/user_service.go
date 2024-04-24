@@ -15,7 +15,6 @@ import (
 
 type UserService interface {
 	SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string) (*dto.SignInResponse, error)
-	NecessaryAgreements(ctx context.Context, authBy domain.AuthorizedBy, authId string) (*dto.RequireAgreementResponse, bool, error)
 	SignUp(ctx context.Context, username string, agreements []*dto.UserAgreementReq, authBy domain.AuthorizedBy, authId string, email string) error
 }
 
@@ -39,29 +38,13 @@ func (u *UserServiceImpl) SignIn(ctx context.Context, authorizedBy domain.Author
 	}
 
 	if isExisted {
-		userAgreeds, err := mapper.FindUserAgreements(ctx, u.mysqlDB, user.UserID, true)
-		if err != nil {
-			return nil, err
-		}
-		requiredAgreements, err := mapper.FindRequiredAgreements(ctx, u.mysqlDB)
+		nAgreements, err := u.necessaryAgreements(ctx, user.UserID)
 		if err != nil {
 			return nil, err
 		}
 
-		userAgreedsMap := make(map[int]bool)
-		for _, userAgreed := range userAgreeds {
-			userAgreedsMap[userAgreed.AgreementID] = true
-		}
-
-		needAgreements := []*models.Agreement{}
-		for _, requiredAgreement := range requiredAgreements {
-			if _, ok := userAgreedsMap[requiredAgreement.AgreementID]; !ok {
-				needAgreements = append(needAgreements, requiredAgreement)
-			}
-		}
-
-		if len(needAgreements) > 0 {
-			return u.signInRequireAgreement(ctx, needAgreements)
+		if len(nAgreements) > 0 {
+			return u.signInRequireAgreement(ctx, nAgreements)
 		}
 
 		return u.signInSuccess(ctx, user)
@@ -107,7 +90,10 @@ func (u *UserServiceImpl) signInRequireAgreement(ctx context.Context, requiredAg
 	}
 
 	return &dto.SignInResponse{
-		SignInStatus: dto.SignInRequireAgreement,
+		SignInStatus: dto.SignInNecessaryAgreements,
+		NecessaryAgreementsRes: &dto.SignInNecessaryAgreementsRes{
+			Agreements: agreementRes,
+		},
 	}, nil
 }
 
@@ -134,19 +120,16 @@ func (u *UserServiceImpl) signInNewUser(ctx context.Context) (*dto.SignInRespons
 	}, nil
 }
 
-func (u *UserServiceImpl) NecessaryAgreements(ctx context.Context, authBy domain.AuthorizedBy, authId string) (*dto.RequireAgreementResponse, bool, error) {
-	user, isExisted, err := mapper.FindUserByAuthorized(ctx, u.mysqlDB, authBy, authId)
+func (u *UserServiceImpl) necessaryAgreements(ctx context.Context, userId int) ([]*models.Agreement, error) {
+
+	userAgreeds, err := mapper.FindUserAgreements(ctx, u.mysqlDB, userId, true)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	if !isExisted {
-		return nil, false, nil
-	}
-
-	userAgreeds, err := mapper.FindUserAgreements(ctx, u.mysqlDB, user.UserID, true)
+	requiredAgreements, err := mapper.FindRequiredAgreements(ctx, u.mysqlDB)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	userAgreedsMap := make(map[int]bool)
@@ -154,26 +137,14 @@ func (u *UserServiceImpl) NecessaryAgreements(ctx context.Context, authBy domain
 		userAgreedsMap[userAgreed.AgreementID] = true
 	}
 
-	requiredAgreements, err := mapper.FindRequiredAgreements(ctx, u.mysqlDB)
-	if err != nil {
-		return nil, false, err
-	}
-
-	needAgreements := []*dto.AgreementRes{}
+	var necessaryAgreements []*models.Agreement
 	for _, requiredAgreement := range requiredAgreements {
 		if _, ok := userAgreedsMap[requiredAgreement.AgreementID]; !ok {
-			needAgreements = append(needAgreements, &dto.AgreementRes{
-				AgreementId: requiredAgreement.AgreementID,
-				Required:    utils.TinyIntToBool(requiredAgreement.IsRequired),
-				Summary:     requiredAgreement.Summary,
-				Priority:    requiredAgreement.Priority,
-			})
+			necessaryAgreements = append(necessaryAgreements, requiredAgreement)
 		}
 	}
 
-	return &dto.RequireAgreementResponse{
-		Agreements: needAgreements,
-	}, true, nil
+	return necessaryAgreements, nil
 }
 
 func (u *UserServiceImpl) SignUp(ctx context.Context, username string, agreements []*dto.UserAgreementReq, authBy domain.AuthorizedBy, authId string, email string) error {

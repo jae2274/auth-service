@@ -34,9 +34,9 @@ type SignInStatusValues struct{}
 type SignInStatus enum.Enum[SignInStatusValues]
 
 const (
-	SignInSuccess          = SignInStatus("success")
-	SignInNewUser          = SignInStatus("new_user")
-	SignInRequireAgreement = SignInStatus("require_agreement")
+	SignInSuccess             = SignInStatus("success")
+	SignInNewUser             = SignInStatus("new_user")
+	SignInNecessaryAgreements = SignInStatus("necessary_agreements")
 )
 
 func (SignInStatusValues) Values() []string {
@@ -44,9 +44,10 @@ func (SignInStatusValues) Values() []string {
 }
 
 type SignInResponse struct {
-	SignInStatus SignInStatus      `json:"signInStatus"`
-	SuccessRes   *SignInSuccessRes `json:"successRes"`
-	NewUserRes   *SignInNewUserRes `json:"newUserRes"`
+	SignInStatus           SignInStatus                  `json:"signInStatus"`
+	SuccessRes             *SignInSuccessRes             `json:"successRes"`
+	NewUserRes             *SignInNewUserRes             `json:"newUserRes"`
+	NecessaryAgreementsRes *SignInNecessaryAgreementsRes `json:"necessaryAgreementsRes"`
 }
 
 type SignInSuccessRes struct {
@@ -61,7 +62,7 @@ type SignInNewUserRes struct {
 	Agreements []*AgreementRes `json:"agreements"`
 }
 
-type RequireAgreementResponse struct {
+type SignInNecessaryAgreementsRes struct {
 	Agreements []*AgreementRes `json:"agreements"`
 }
 
