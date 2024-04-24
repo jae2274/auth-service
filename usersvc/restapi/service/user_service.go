@@ -15,7 +15,7 @@ import (
 
 type UserService interface {
 	SignIn(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedId string) (*dto.SignInResponse, error)
-	RequiredAgreements(ctx context.Context, authBy domain.AuthorizedBy, authId string) (*dto.RequireAgreementResponse, error)
+	NecessaryAgreements(ctx context.Context, authBy domain.AuthorizedBy, authId string) (*dto.RequireAgreementResponse, bool, error)
 	SignUp(ctx context.Context, username string, agreements []*dto.UserAgreementReq, authBy domain.AuthorizedBy, authId string, email string) error
 }
 
@@ -134,21 +134,21 @@ func (u *UserServiceImpl) signInNewUser(ctx context.Context) (*dto.SignInRespons
 	}, nil
 }
 
-func (u *UserServiceImpl) RequiredAgreements(ctx context.Context, authBy domain.AuthorizedBy, authId string) (*dto.RequireAgreementResponse, error) {
+func (u *UserServiceImpl) NecessaryAgreements(ctx context.Context, authBy domain.AuthorizedBy, authId string) (*dto.RequireAgreementResponse, bool, error) {
 	user, isExisted, err := mapper.FindUserByAuthorized(ctx, u.mysqlDB, authBy, authId)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	var userAgreeds []*models.UserAgreement
-	if isExisted {
-		userAgreeds, err = mapper.FindUserAgreements(ctx, u.mysqlDB, user.UserID, true)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		userAgreeds = []*models.UserAgreement{}
+	if !isExisted {
+		return nil, false, nil
 	}
+
+	userAgreeds, err := mapper.FindUserAgreements(ctx, u.mysqlDB, user.UserID, true)
+	if err != nil {
+		return nil, false, err
+	}
+
 	userAgreedsMap := make(map[int]bool)
 	for _, userAgreed := range userAgreeds {
 		userAgreedsMap[userAgreed.AgreementID] = true
@@ -156,7 +156,7 @@ func (u *UserServiceImpl) RequiredAgreements(ctx context.Context, authBy domain.
 
 	requiredAgreements, err := mapper.FindRequiredAgreements(ctx, u.mysqlDB)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	needAgreements := []*dto.AgreementRes{}
@@ -173,7 +173,7 @@ func (u *UserServiceImpl) RequiredAgreements(ctx context.Context, authBy domain.
 
 	return &dto.RequireAgreementResponse{
 		Agreements: needAgreements,
-	}, nil
+	}, true, nil
 }
 
 func (u *UserServiceImpl) SignUp(ctx context.Context, username string, agreements []*dto.UserAgreementReq, authBy domain.AuthorizedBy, authId string, email string) error {

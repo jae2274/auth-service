@@ -14,20 +14,27 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
-func TestUsers(t *testing.T) {
-	initRequiredAgreementFunc := func(t *testing.T) (context.Context, service.UserService, models.AgreementSlice) {
-		//Given
-		ctx := context.Background()
-		db := tinit.DB(t)
-		userSvc := service.NewUserService(db, jwtutils.NewJwtUtils([]byte("secretKey")))
-		var requiredAgreements models.AgreementSlice = newRequiredAgreements()
-		for _, agreement := range requiredAgreements {
-			err := agreement.Insert(ctx, db, boil.Infer())
-			require.NoError(t, err)
-		}
-		return ctx, userSvc, requiredAgreements
+func initAgreementFunc(t *testing.T) (context.Context, service.UserService, models.AgreementSlice, models.AgreementSlice) {
+	//Given
+	ctx := context.Background()
+	db := tinit.DB(t)
+	userSvc := service.NewUserService(db, jwtutils.NewJwtUtils([]byte("secretKey")))
+	var requiredAgreements models.AgreementSlice = newNecessaryAgreements()
+	for _, agreement := range requiredAgreements {
+		err := agreement.Insert(ctx, db, boil.Infer())
+		require.NoError(t, err)
 	}
 
+	optionalAgreements := newOptionalAgreements()
+	for _, agreement := range optionalAgreements {
+		err := agreement.Insert(ctx, db, boil.Infer())
+		require.NoError(t, err)
+	}
+
+	return ctx, userSvc, requiredAgreements, optionalAgreements
+}
+
+func TestUsers(t *testing.T) {
 	t.Run("return new_user", func(t *testing.T) {
 		ctx := context.Background()
 		userSvc := service.NewUserService(tinit.DB(t), jwtutils.NewJwtUtils([]byte("secretKey")))
@@ -57,7 +64,7 @@ func TestUsers(t *testing.T) {
 		})
 
 		t.Run("if all required agreements are agreed", func(t *testing.T) {
-			ctx, userSvc, requiredAgreements := initRequiredAgreementFunc(t)
+			ctx, userSvc, requiredAgreements, _ := initAgreementFunc(t)
 
 			userSvc.SignUp(ctx,
 				"testUsername",
@@ -78,7 +85,7 @@ func TestUsers(t *testing.T) {
 
 	t.Run("return require_agreement ", func(t *testing.T) {
 		t.Run("if not all required agreements are now agreed", func(t *testing.T) {
-			ctx, userSvc, requiredAgreements := initRequiredAgreementFunc(t)
+			ctx, userSvc, requiredAgreements, _ := initAgreementFunc(t)
 
 			userSvc.SignUp(ctx,
 				"testUsername",
@@ -99,22 +106,10 @@ func TestUsers(t *testing.T) {
 }
 
 func TestAgreements(t *testing.T) {
-	initFunc := func(t *testing.T) (context.Context, service.UserService, models.AgreementSlice) {
-		//Given
-		ctx := context.Background()
-		db := tinit.DB(t)
-		userSvc := service.NewUserService(db, jwtutils.NewJwtUtils([]byte("secretKey")))
-		var requiredAgreements models.AgreementSlice = newRequiredAgreements()
-		for _, agreement := range requiredAgreements {
-			err := agreement.Insert(ctx, db, boil.Infer())
-			require.NoError(t, err)
-		}
-		return ctx, userSvc, requiredAgreements
-	}
 
 	t.Run("return all required agreements if all required agreements are not checked", func(t *testing.T) {
 		//Given
-		ctx, userSvc, requiredAgreements := initFunc(t)
+		ctx, userSvc, requiredAgreements, _ := initAgreementFunc(t)
 
 		userSvc.SignUp(ctx,
 			"testUsername",
@@ -124,8 +119,9 @@ func TestAgreements(t *testing.T) {
 			"email")
 
 		//When
-		agreementsRes, err := userSvc.RequiredAgreements(ctx, domain.GOOGLE, "authId")
+		agreementsRes, isMember, err := userSvc.NecessaryAgreements(ctx, domain.GOOGLE, "authId")
 		require.NoError(t, err)
+		require.True(t, isMember)
 
 		//Then
 		require.Len(t, agreementsRes.Agreements, 2)
@@ -135,7 +131,7 @@ func TestAgreements(t *testing.T) {
 
 	t.Run("return all required agreements if all required agreements are not agreed", func(t *testing.T) {
 		//Given
-		ctx, userSvc, requiredAgreements := initFunc(t)
+		ctx, userSvc, requiredAgreements, _ := initAgreementFunc(t)
 
 		userSvc.SignUp(ctx,
 			"testUsername",
@@ -148,8 +144,9 @@ func TestAgreements(t *testing.T) {
 			"email")
 
 		//When
-		agreementsRes, err := userSvc.RequiredAgreements(ctx, domain.GOOGLE, "authId")
+		agreementsRes, isMember, err := userSvc.NecessaryAgreements(ctx, domain.GOOGLE, "authId")
 		require.NoError(t, err)
+		require.True(t, isMember)
 
 		//Then
 		require.Len(t, agreementsRes.Agreements, 2)
@@ -159,7 +156,7 @@ func TestAgreements(t *testing.T) {
 
 	t.Run("return one agreement that is not agreed", func(t *testing.T) {
 		//Given
-		ctx, userSvc, requiredAgreements := initFunc(t)
+		ctx, userSvc, requiredAgreements, _ := initAgreementFunc(t)
 
 		userSvc.SignUp(ctx,
 			"testUsername",
@@ -172,8 +169,9 @@ func TestAgreements(t *testing.T) {
 			"email")
 
 		//When
-		agreementsRes, err := userSvc.RequiredAgreements(ctx, domain.GOOGLE, "authId")
+		agreementsRes, isMember, err := userSvc.NecessaryAgreements(ctx, domain.GOOGLE, "authId")
 		require.NoError(t, err)
+		require.True(t, isMember)
 
 		//Then
 		require.Len(t, agreementsRes.Agreements, 1)
@@ -185,7 +183,7 @@ func TestAgreements(t *testing.T) {
 		ctx := context.Background()
 		db := tinit.DB(t)
 		userSvc := service.NewUserService(db, jwtutils.NewJwtUtils([]byte("secretKey")))
-		var requiredAgreements models.AgreementSlice = newRequiredAgreements()
+		var requiredAgreements models.AgreementSlice = newNecessaryAgreements()
 		for _, agreement := range requiredAgreements {
 			err := agreement.Insert(ctx, db, boil.Infer())
 			require.NoError(t, err)
@@ -202,8 +200,9 @@ func TestAgreements(t *testing.T) {
 			"email")
 
 		//When
-		agreementsRes, err := userSvc.RequiredAgreements(ctx, domain.GOOGLE, "authId")
+		agreementsRes, isMember, err := userSvc.NecessaryAgreements(ctx, domain.GOOGLE, "authId")
 		require.NoError(t, err)
+		require.True(t, isMember)
 
 		//Then
 		require.Len(t, agreementsRes.Agreements, 0)
@@ -211,7 +210,7 @@ func TestAgreements(t *testing.T) {
 
 }
 
-func newRequiredAgreements() []*models.Agreement {
+func newNecessaryAgreements() []*models.Agreement {
 	return []*models.Agreement{
 		{AgreementCode: "code1", Summary: "summary1", IsRequired: 1},
 		{AgreementCode: "code2", Summary: "summary2", IsRequired: 1},

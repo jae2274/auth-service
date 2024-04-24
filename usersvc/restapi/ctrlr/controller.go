@@ -54,7 +54,7 @@ func (c *Controller) RegisterRoutes() {
 	c.router.HandleFunc("/auth/auth-code-urls", c.AuthCodeUrls)
 	c.router.HandleFunc("/auth/callback/google", c.Authenticate)
 	c.router.HandleFunc("/auth/user-info", c.UserInfo)
-	c.router.HandleFunc("/auth/required_agreements", c.RequiredAgreements)
+	c.router.HandleFunc("/auth/agreements/necessary", c.NecessaryAgreements)
 	c.router.HandleFunc("/auth/sign-in", c.SignIn)
 	c.router.HandleFunc("/auth/sign-up", c.SignUp)
 }
@@ -172,7 +172,7 @@ func (c *Controller) UserInfo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (c *Controller) RequiredAgreements(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) NecessaryAgreements(w http.ResponseWriter, r *http.Request) {
 
 }
 
@@ -215,7 +215,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = c.userService.SignUp(ctx, &req, ooauthToken.UserInfo)
+	err = c.userService.SignUp(ctx, req.Username, req.Agreements, ooauthToken.UserInfo.AuthorizedBy, ooauthToken.UserInfo.AuthorizedID, ooauthToken.UserInfo.Email)
 	if errorHandler(ctx, w, err) {
 		return
 	}
