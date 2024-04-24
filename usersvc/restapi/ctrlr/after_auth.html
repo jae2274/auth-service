@@ -1,7 +1,7 @@
 <script>
     const authToken = "{{ .AuthToken }}";
 
-    window.opener.postMessage(authToken, "*");
+    window.opener.postMessage({authToken}, "*");
 
     window.close();
 </script>
