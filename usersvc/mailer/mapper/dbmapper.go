@@ -13,13 +13,18 @@ func GetUserEMails(ctx context.Context, exec boil.ContextExecutor, userIds []int
 	if len(userIds) == 0 {
 		return []*models.User{}, nil
 	}
+	convertedUserIds := make([]interface{}, len(userIds))
+	for i, v := range userIds {
+		convertedUserIds[i] = v
+	}
 
-	users, err := models.Users(qm.Where(models.UserColumns.UserID+" IN ?", userIds, qm.And(models.UserColumns.AgreeMail+"=?", true))).All(ctx, exec)
+	users, err := models.Users(qm.WhereIn(models.UserColumns.UserID+" IN ?", convertedUserIds...)).All(ctx, exec)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return []*models.User{}, nil
+			return users, nil
 		}
+		return users, err
 	}
 
 	return users, nil

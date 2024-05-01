@@ -21,6 +21,7 @@ type Vars struct {
 	SecretKey                string
 	DbVars                   *DBVars
 	ApiPort                  int
+	MailerGrpcPort           int
 	AccessControlAllowOrigin *string
 }
 
@@ -68,6 +69,16 @@ func Variables() (*Vars, error) {
 		return nil, fmt.Errorf("REST_API_PORT is not integer.\tREST_API_PORT: %s", apiPort)
 	}
 
+	mailerGrpcPort, err := getFromEnv("MAILER_GRPC_PORT")
+	if err != nil {
+		return nil, err
+	}
+
+	mailerGrpcPortInt, err := strconv.ParseInt(mailerGrpcPort, 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("MAILER_GRPC_PORT is not integer.\tMAILER_GRPC_PORT: %s", mailerGrpcPort)
+	}
+
 	dbVars, err := getDBVars()
 	if err != nil {
 		return nil, err
@@ -81,6 +92,7 @@ func Variables() (*Vars, error) {
 		GoogleRedirectUrl:        googleRedirectUrl,
 		SecretKey:                SecretKey,
 		ApiPort:                  int(userSvcPortInt),
+		MailerGrpcPort:           int(mailerGrpcPortInt),
 		DbVars:                   dbVars,
 		AccessControlAllowOrigin: accessControlAllowOrigin,
 	}, nil

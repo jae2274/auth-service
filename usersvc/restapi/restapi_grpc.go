@@ -19,7 +19,7 @@ import (
 	"github.com/jae2274/goutils/mw/httpmw"
 )
 
-func Run(ctx context.Context, grpcPort int, envVars *vars.Vars, db *sql.DB) error {
+func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 
 	jwtResolver := jwtutils.NewJwtUtils([]byte(envVars.SecretKey))
 	userService := service.NewUserService(db, jwtResolver)

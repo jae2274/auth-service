@@ -28,7 +28,6 @@ type User struct {
 	AuthorizedBy string    `boil:"authorized_by" json:"authorized_by" toml:"authorized_by" yaml:"authorized_by"`
 	AuthorizedID string    `boil:"authorized_id" json:"authorized_id" toml:"authorized_id" yaml:"authorized_id"`
 	Email        string    `boil:"email" json:"email" toml:"email" yaml:"email"`
-	AgreeMail    int8      `boil:"agree_mail" json:"agree_mail" toml:"agree_mail" yaml:"agree_mail"`
 	CreateDate   time.Time `boil:"create_date" json:"create_date" toml:"create_date" yaml:"create_date"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -41,7 +40,6 @@ var UserColumns = struct {
 	AuthorizedBy string
 	AuthorizedID string
 	Email        string
-	AgreeMail    string
 	CreateDate   string
 }{
 	UserID:       "user_id",
@@ -49,7 +47,6 @@ var UserColumns = struct {
 	AuthorizedBy: "authorized_by",
 	AuthorizedID: "authorized_id",
 	Email:        "email",
-	AgreeMail:    "agree_mail",
 	CreateDate:   "create_date",
 }
 
@@ -59,7 +56,6 @@ var UserTableColumns = struct {
 	AuthorizedBy string
 	AuthorizedID string
 	Email        string
-	AgreeMail    string
 	CreateDate   string
 }{
 	UserID:       "user.user_id",
@@ -67,7 +63,6 @@ var UserTableColumns = struct {
 	AuthorizedBy: "user.authorized_by",
 	AuthorizedID: "user.authorized_id",
 	Email:        "user.email",
-	AgreeMail:    "user.agree_mail",
 	CreateDate:   "user.create_date",
 }
 
@@ -79,7 +74,6 @@ var UserWhere = struct {
 	AuthorizedBy whereHelperstring
 	AuthorizedID whereHelperstring
 	Email        whereHelperstring
-	AgreeMail    whereHelperint8
 	CreateDate   whereHelpertime_Time
 }{
 	UserID:       whereHelperint{field: "`user`.`user_id`"},
@@ -87,7 +81,6 @@ var UserWhere = struct {
 	AuthorizedBy: whereHelperstring{field: "`user`.`authorized_by`"},
 	AuthorizedID: whereHelperstring{field: "`user`.`authorized_id`"},
 	Email:        whereHelperstring{field: "`user`.`email`"},
-	AgreeMail:    whereHelperint8{field: "`user`.`agree_mail`"},
 	CreateDate:   whereHelpertime_Time{field: "`user`.`create_date`"},
 }
 
@@ -129,9 +122,9 @@ func (r *userR) GetUserRoles() UserRoleSlice {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"user_id", "name", "authorized_by", "authorized_id", "email", "agree_mail", "create_date"}
+	userAllColumns            = []string{"user_id", "name", "authorized_by", "authorized_id", "email", "create_date"}
 	userColumnsWithoutDefault = []string{"name", "authorized_by", "authorized_id", "email"}
-	userColumnsWithDefault    = []string{"user_id", "agree_mail", "create_date"}
+	userColumnsWithDefault    = []string{"user_id", "create_date"}
 	userPrimaryKeyColumns     = []string{"user_id"}
 	userGeneratedColumns      = []string{}
 )
