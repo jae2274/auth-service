@@ -8,6 +8,7 @@ import (
 	"userService/usersvc/mailer/mailer_grpc"
 	mailerserver "userService/usersvc/mailer/mailer_server"
 
+	"github.com/jae2274/goutils/llog"
 	"github.com/jae2274/goutils/mw/grpcmw"
 	"github.com/jae2274/goutils/terr"
 	"google.golang.org/grpc"
@@ -37,6 +38,7 @@ func Run(ctx context.Context, grpcPort int, db *sql.DB) error {
 	grpcServer := grpc.NewServer(middlewares()...)
 	mailer_grpc.RegisterUserServer(grpcServer, server)
 
+	llog.Msg("Starting mailer grpc server...").Data("port", grpcPort).Log(ctx)
 	err = grpcServer.Serve(listener)
 	if err != nil {
 		return terr.Wrap(err)
