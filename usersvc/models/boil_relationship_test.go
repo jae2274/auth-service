@@ -8,7 +8,7 @@ import "testing"
 // TestToOne tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToOne(t *testing.T) {
-	t.Run("RoleTicketRoleToRoleTicketUsingRoleTicket", testRoleTicketRoleToOneRoleTicketUsingRoleTicket)
+	t.Run("TicketRoleToTicketUsingTicket", testTicketRoleToOneTicketUsingTicket)
 	t.Run("UserAgreementToAgreementUsingAgreement", testUserAgreementToOneAgreementUsingAgreement)
 	t.Run("UserAgreementToUserUsingUser", testUserAgreementToOneUserUsingUser)
 	t.Run("UserRoleToUserUsingUser", testUserRoleToOneUserUsingUser)
@@ -17,7 +17,7 @@ func TestToOne(t *testing.T) {
 // TestOneToOne tests cannot be run in parallel
 // or deadlocks can occur.
 func TestOneToOne(t *testing.T) {
-	t.Run("RoleTicketToRoleTicketRoleUsingRoleTicketRole", testRoleTicketOneToOneRoleTicketRoleUsingRoleTicketRole)
+	t.Run("TicketToTicketRoleUsingTicketRole", testTicketOneToOneTicketRoleUsingTicketRole)
 }
 
 // TestToMany tests cannot be run in parallel
@@ -31,7 +31,7 @@ func TestToMany(t *testing.T) {
 // TestToOneSet tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToOneSet(t *testing.T) {
-	t.Run("RoleTicketRoleToRoleTicketUsingRoleTicketRole", testRoleTicketRoleToOneSetOpRoleTicketUsingRoleTicket)
+	t.Run("TicketRoleToTicketUsingTicketRole", testTicketRoleToOneSetOpTicketUsingTicket)
 	t.Run("UserAgreementToAgreementUsingUserAgreements", testUserAgreementToOneSetOpAgreementUsingAgreement)
 	t.Run("UserAgreementToUserUsingUserAgreements", testUserAgreementToOneSetOpUserUsingUser)
 	t.Run("UserRoleToUserUsingUserRoles", testUserRoleToOneSetOpUserUsingUser)
@@ -44,7 +44,7 @@ func TestToOneRemove(t *testing.T) {}
 // TestOneToOneSet tests cannot be run in parallel
 // or deadlocks can occur.
 func TestOneToOneSet(t *testing.T) {
-	t.Run("RoleTicketToRoleTicketRoleUsingRoleTicketRole", testRoleTicketOneToOneSetOpRoleTicketRoleUsingRoleTicketRole)
+	t.Run("TicketToTicketRoleUsingTicketRole", testTicketOneToOneSetOpTicketRoleUsingTicketRole)
 }
 
 // TestOneToOneRemove tests cannot be run in parallel

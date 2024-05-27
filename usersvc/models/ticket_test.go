@@ -21,24 +21,24 @@ var (
 	_ = queries.Equal
 )
 
-func testRoleTickets(t *testing.T) {
+func testTickets(t *testing.T) {
 	t.Parallel()
 
-	query := RoleTickets()
+	query := Tickets()
 
 	if query.Query == nil {
 		t.Error("expected a query, got nothing")
 	}
 }
 
-func testRoleTicketsDelete(t *testing.T) {
+func testTicketsDelete(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -54,7 +54,7 @@ func testRoleTicketsDelete(t *testing.T) {
 		t.Error("should only have deleted one row, but affected:", rowsAff)
 	}
 
-	count, err := RoleTickets().Count(ctx, tx)
+	count, err := Tickets().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -64,14 +64,14 @@ func testRoleTicketsDelete(t *testing.T) {
 	}
 }
 
-func testRoleTicketsQueryDeleteAll(t *testing.T) {
+func testTicketsQueryDeleteAll(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -81,13 +81,13 @@ func testRoleTicketsQueryDeleteAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	if rowsAff, err := RoleTickets().DeleteAll(ctx, tx); err != nil {
+	if rowsAff, err := Tickets().DeleteAll(ctx, tx); err != nil {
 		t.Error(err)
 	} else if rowsAff != 1 {
 		t.Error("should only have deleted one row, but affected:", rowsAff)
 	}
 
-	count, err := RoleTickets().Count(ctx, tx)
+	count, err := Tickets().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -97,14 +97,14 @@ func testRoleTicketsQueryDeleteAll(t *testing.T) {
 	}
 }
 
-func testRoleTicketsSliceDeleteAll(t *testing.T) {
+func testTicketsSliceDeleteAll(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -114,7 +114,7 @@ func testRoleTicketsSliceDeleteAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	slice := RoleTicketSlice{o}
+	slice := TicketSlice{o}
 
 	if rowsAff, err := slice.DeleteAll(ctx, tx); err != nil {
 		t.Error(err)
@@ -122,7 +122,7 @@ func testRoleTicketsSliceDeleteAll(t *testing.T) {
 		t.Error("should only have deleted one row, but affected:", rowsAff)
 	}
 
-	count, err := RoleTickets().Count(ctx, tx)
+	count, err := Tickets().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -132,14 +132,14 @@ func testRoleTicketsSliceDeleteAll(t *testing.T) {
 	}
 }
 
-func testRoleTicketsExists(t *testing.T) {
+func testTicketsExists(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -149,23 +149,23 @@ func testRoleTicketsExists(t *testing.T) {
 		t.Error(err)
 	}
 
-	e, err := RoleTicketExists(ctx, tx, o.RoleTicketID)
+	e, err := TicketExists(ctx, tx, o.TicketID)
 	if err != nil {
-		t.Errorf("Unable to check if RoleTicket exists: %s", err)
+		t.Errorf("Unable to check if Ticket exists: %s", err)
 	}
 	if !e {
-		t.Errorf("Expected RoleTicketExists to return true, but got false.")
+		t.Errorf("Expected TicketExists to return true, but got false.")
 	}
 }
 
-func testRoleTicketsFind(t *testing.T) {
+func testTicketsFind(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -175,24 +175,24 @@ func testRoleTicketsFind(t *testing.T) {
 		t.Error(err)
 	}
 
-	roleTicketFound, err := FindRoleTicket(ctx, tx, o.RoleTicketID)
+	ticketFound, err := FindTicket(ctx, tx, o.TicketID)
 	if err != nil {
 		t.Error(err)
 	}
 
-	if roleTicketFound == nil {
+	if ticketFound == nil {
 		t.Error("want a record, got nil")
 	}
 }
 
-func testRoleTicketsBind(t *testing.T) {
+func testTicketsBind(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -202,19 +202,19 @@ func testRoleTicketsBind(t *testing.T) {
 		t.Error(err)
 	}
 
-	if err = RoleTickets().Bind(ctx, tx, o); err != nil {
+	if err = Tickets().Bind(ctx, tx, o); err != nil {
 		t.Error(err)
 	}
 }
 
-func testRoleTicketsOne(t *testing.T) {
+func testTicketsOne(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -224,38 +224,38 @@ func testRoleTicketsOne(t *testing.T) {
 		t.Error(err)
 	}
 
-	if x, err := RoleTickets().One(ctx, tx); err != nil {
+	if x, err := Tickets().One(ctx, tx); err != nil {
 		t.Error(err)
 	} else if x == nil {
 		t.Error("expected to get a non nil record")
 	}
 }
 
-func testRoleTicketsAll(t *testing.T) {
+func testTicketsAll(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	roleTicketOne := &RoleTicket{}
-	roleTicketTwo := &RoleTicket{}
-	if err = randomize.Struct(seed, roleTicketOne, roleTicketDBTypes, false, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	ticketOne := &Ticket{}
+	ticketTwo := &Ticket{}
+	if err = randomize.Struct(seed, ticketOne, ticketDBTypes, false, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
-	if err = randomize.Struct(seed, roleTicketTwo, roleTicketDBTypes, false, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	if err = randomize.Struct(seed, ticketTwo, ticketDBTypes, false, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
-	if err = roleTicketOne.Insert(ctx, tx, boil.Infer()); err != nil {
+	if err = ticketOne.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Error(err)
 	}
-	if err = roleTicketTwo.Insert(ctx, tx, boil.Infer()); err != nil {
+	if err = ticketTwo.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Error(err)
 	}
 
-	slice, err := RoleTickets().All(ctx, tx)
+	slice, err := Tickets().All(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -265,31 +265,31 @@ func testRoleTicketsAll(t *testing.T) {
 	}
 }
 
-func testRoleTicketsCount(t *testing.T) {
+func testTicketsCount(t *testing.T) {
 	t.Parallel()
 
 	var err error
 	seed := randomize.NewSeed()
-	roleTicketOne := &RoleTicket{}
-	roleTicketTwo := &RoleTicket{}
-	if err = randomize.Struct(seed, roleTicketOne, roleTicketDBTypes, false, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	ticketOne := &Ticket{}
+	ticketTwo := &Ticket{}
+	if err = randomize.Struct(seed, ticketOne, ticketDBTypes, false, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
-	if err = randomize.Struct(seed, roleTicketTwo, roleTicketDBTypes, false, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	if err = randomize.Struct(seed, ticketTwo, ticketDBTypes, false, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
-	if err = roleTicketOne.Insert(ctx, tx, boil.Infer()); err != nil {
+	if err = ticketOne.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Error(err)
 	}
-	if err = roleTicketTwo.Insert(ctx, tx, boil.Infer()); err != nil {
+	if err = ticketTwo.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Error(err)
 	}
 
-	count, err := RoleTickets().Count(ctx, tx)
+	count, err := Tickets().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -299,155 +299,155 @@ func testRoleTicketsCount(t *testing.T) {
 	}
 }
 
-func roleTicketBeforeInsertHook(ctx context.Context, e boil.ContextExecutor, o *RoleTicket) error {
-	*o = RoleTicket{}
+func ticketBeforeInsertHook(ctx context.Context, e boil.ContextExecutor, o *Ticket) error {
+	*o = Ticket{}
 	return nil
 }
 
-func roleTicketAfterInsertHook(ctx context.Context, e boil.ContextExecutor, o *RoleTicket) error {
-	*o = RoleTicket{}
+func ticketAfterInsertHook(ctx context.Context, e boil.ContextExecutor, o *Ticket) error {
+	*o = Ticket{}
 	return nil
 }
 
-func roleTicketAfterSelectHook(ctx context.Context, e boil.ContextExecutor, o *RoleTicket) error {
-	*o = RoleTicket{}
+func ticketAfterSelectHook(ctx context.Context, e boil.ContextExecutor, o *Ticket) error {
+	*o = Ticket{}
 	return nil
 }
 
-func roleTicketBeforeUpdateHook(ctx context.Context, e boil.ContextExecutor, o *RoleTicket) error {
-	*o = RoleTicket{}
+func ticketBeforeUpdateHook(ctx context.Context, e boil.ContextExecutor, o *Ticket) error {
+	*o = Ticket{}
 	return nil
 }
 
-func roleTicketAfterUpdateHook(ctx context.Context, e boil.ContextExecutor, o *RoleTicket) error {
-	*o = RoleTicket{}
+func ticketAfterUpdateHook(ctx context.Context, e boil.ContextExecutor, o *Ticket) error {
+	*o = Ticket{}
 	return nil
 }
 
-func roleTicketBeforeDeleteHook(ctx context.Context, e boil.ContextExecutor, o *RoleTicket) error {
-	*o = RoleTicket{}
+func ticketBeforeDeleteHook(ctx context.Context, e boil.ContextExecutor, o *Ticket) error {
+	*o = Ticket{}
 	return nil
 }
 
-func roleTicketAfterDeleteHook(ctx context.Context, e boil.ContextExecutor, o *RoleTicket) error {
-	*o = RoleTicket{}
+func ticketAfterDeleteHook(ctx context.Context, e boil.ContextExecutor, o *Ticket) error {
+	*o = Ticket{}
 	return nil
 }
 
-func roleTicketBeforeUpsertHook(ctx context.Context, e boil.ContextExecutor, o *RoleTicket) error {
-	*o = RoleTicket{}
+func ticketBeforeUpsertHook(ctx context.Context, e boil.ContextExecutor, o *Ticket) error {
+	*o = Ticket{}
 	return nil
 }
 
-func roleTicketAfterUpsertHook(ctx context.Context, e boil.ContextExecutor, o *RoleTicket) error {
-	*o = RoleTicket{}
+func ticketAfterUpsertHook(ctx context.Context, e boil.ContextExecutor, o *Ticket) error {
+	*o = Ticket{}
 	return nil
 }
 
-func testRoleTicketsHooks(t *testing.T) {
+func testTicketsHooks(t *testing.T) {
 	t.Parallel()
 
 	var err error
 
 	ctx := context.Background()
-	empty := &RoleTicket{}
-	o := &RoleTicket{}
+	empty := &Ticket{}
+	o := &Ticket{}
 
 	seed := randomize.NewSeed()
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, false); err != nil {
-		t.Errorf("Unable to randomize RoleTicket object: %s", err)
+	if err = randomize.Struct(seed, o, ticketDBTypes, false); err != nil {
+		t.Errorf("Unable to randomize Ticket object: %s", err)
 	}
 
-	AddRoleTicketHook(boil.BeforeInsertHook, roleTicketBeforeInsertHook)
+	AddTicketHook(boil.BeforeInsertHook, ticketBeforeInsertHook)
 	if err = o.doBeforeInsertHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doBeforeInsertHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected BeforeInsertHook function to empty object, but got: %#v", o)
 	}
-	roleTicketBeforeInsertHooks = []RoleTicketHook{}
+	ticketBeforeInsertHooks = []TicketHook{}
 
-	AddRoleTicketHook(boil.AfterInsertHook, roleTicketAfterInsertHook)
+	AddTicketHook(boil.AfterInsertHook, ticketAfterInsertHook)
 	if err = o.doAfterInsertHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doAfterInsertHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected AfterInsertHook function to empty object, but got: %#v", o)
 	}
-	roleTicketAfterInsertHooks = []RoleTicketHook{}
+	ticketAfterInsertHooks = []TicketHook{}
 
-	AddRoleTicketHook(boil.AfterSelectHook, roleTicketAfterSelectHook)
+	AddTicketHook(boil.AfterSelectHook, ticketAfterSelectHook)
 	if err = o.doAfterSelectHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doAfterSelectHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected AfterSelectHook function to empty object, but got: %#v", o)
 	}
-	roleTicketAfterSelectHooks = []RoleTicketHook{}
+	ticketAfterSelectHooks = []TicketHook{}
 
-	AddRoleTicketHook(boil.BeforeUpdateHook, roleTicketBeforeUpdateHook)
+	AddTicketHook(boil.BeforeUpdateHook, ticketBeforeUpdateHook)
 	if err = o.doBeforeUpdateHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doBeforeUpdateHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected BeforeUpdateHook function to empty object, but got: %#v", o)
 	}
-	roleTicketBeforeUpdateHooks = []RoleTicketHook{}
+	ticketBeforeUpdateHooks = []TicketHook{}
 
-	AddRoleTicketHook(boil.AfterUpdateHook, roleTicketAfterUpdateHook)
+	AddTicketHook(boil.AfterUpdateHook, ticketAfterUpdateHook)
 	if err = o.doAfterUpdateHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doAfterUpdateHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected AfterUpdateHook function to empty object, but got: %#v", o)
 	}
-	roleTicketAfterUpdateHooks = []RoleTicketHook{}
+	ticketAfterUpdateHooks = []TicketHook{}
 
-	AddRoleTicketHook(boil.BeforeDeleteHook, roleTicketBeforeDeleteHook)
+	AddTicketHook(boil.BeforeDeleteHook, ticketBeforeDeleteHook)
 	if err = o.doBeforeDeleteHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doBeforeDeleteHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected BeforeDeleteHook function to empty object, but got: %#v", o)
 	}
-	roleTicketBeforeDeleteHooks = []RoleTicketHook{}
+	ticketBeforeDeleteHooks = []TicketHook{}
 
-	AddRoleTicketHook(boil.AfterDeleteHook, roleTicketAfterDeleteHook)
+	AddTicketHook(boil.AfterDeleteHook, ticketAfterDeleteHook)
 	if err = o.doAfterDeleteHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doAfterDeleteHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected AfterDeleteHook function to empty object, but got: %#v", o)
 	}
-	roleTicketAfterDeleteHooks = []RoleTicketHook{}
+	ticketAfterDeleteHooks = []TicketHook{}
 
-	AddRoleTicketHook(boil.BeforeUpsertHook, roleTicketBeforeUpsertHook)
+	AddTicketHook(boil.BeforeUpsertHook, ticketBeforeUpsertHook)
 	if err = o.doBeforeUpsertHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doBeforeUpsertHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected BeforeUpsertHook function to empty object, but got: %#v", o)
 	}
-	roleTicketBeforeUpsertHooks = []RoleTicketHook{}
+	ticketBeforeUpsertHooks = []TicketHook{}
 
-	AddRoleTicketHook(boil.AfterUpsertHook, roleTicketAfterUpsertHook)
+	AddTicketHook(boil.AfterUpsertHook, ticketAfterUpsertHook)
 	if err = o.doAfterUpsertHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doAfterUpsertHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected AfterUpsertHook function to empty object, but got: %#v", o)
 	}
-	roleTicketAfterUpsertHooks = []RoleTicketHook{}
+	ticketAfterUpsertHooks = []TicketHook{}
 }
 
-func testRoleTicketsInsert(t *testing.T) {
+func testTicketsInsert(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -457,7 +457,7 @@ func testRoleTicketsInsert(t *testing.T) {
 		t.Error(err)
 	}
 
-	count, err := RoleTickets().Count(ctx, tx)
+	count, err := Tickets().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -467,24 +467,24 @@ func testRoleTicketsInsert(t *testing.T) {
 	}
 }
 
-func testRoleTicketsInsertWhitelist(t *testing.T) {
+func testTicketsInsertWhitelist(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
-	if err = o.Insert(ctx, tx, boil.Whitelist(roleTicketColumnsWithoutDefault...)); err != nil {
+	if err = o.Insert(ctx, tx, boil.Whitelist(ticketColumnsWithoutDefault...)); err != nil {
 		t.Error(err)
 	}
 
-	count, err := RoleTickets().Count(ctx, tx)
+	count, err := Tickets().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -494,59 +494,59 @@ func testRoleTicketsInsertWhitelist(t *testing.T) {
 	}
 }
 
-func testRoleTicketOneToOneRoleTicketRoleUsingRoleTicketRole(t *testing.T) {
+func testTicketOneToOneTicketRoleUsingTicketRole(t *testing.T) {
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
 
-	var foreign RoleTicketRole
-	var local RoleTicket
+	var foreign TicketRole
+	var local Ticket
 
 	seed := randomize.NewSeed()
-	if err := randomize.Struct(seed, &foreign, roleTicketRoleDBTypes, true, roleTicketRoleColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicketRole struct: %s", err)
+	if err := randomize.Struct(seed, &foreign, ticketRoleDBTypes, true, ticketRoleColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketRole struct: %s", err)
 	}
-	if err := randomize.Struct(seed, &local, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	if err := randomize.Struct(seed, &local, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	if err := local.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Fatal(err)
 	}
 
-	foreign.RoleTicketID = local.RoleTicketID
+	foreign.TicketID = local.TicketID
 	if err := foreign.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Fatal(err)
 	}
 
-	check, err := local.RoleTicketRole().One(ctx, tx)
+	check, err := local.TicketRole().One(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if check.RoleTicketID != foreign.RoleTicketID {
-		t.Errorf("want: %v, got %v", foreign.RoleTicketID, check.RoleTicketID)
+	if check.TicketID != foreign.TicketID {
+		t.Errorf("want: %v, got %v", foreign.TicketID, check.TicketID)
 	}
 
 	ranAfterSelectHook := false
-	AddRoleTicketRoleHook(boil.AfterSelectHook, func(ctx context.Context, e boil.ContextExecutor, o *RoleTicketRole) error {
+	AddTicketRoleHook(boil.AfterSelectHook, func(ctx context.Context, e boil.ContextExecutor, o *TicketRole) error {
 		ranAfterSelectHook = true
 		return nil
 	})
 
-	slice := RoleTicketSlice{&local}
-	if err = local.L.LoadRoleTicketRole(ctx, tx, false, (*[]*RoleTicket)(&slice), nil); err != nil {
+	slice := TicketSlice{&local}
+	if err = local.L.LoadTicketRole(ctx, tx, false, (*[]*Ticket)(&slice), nil); err != nil {
 		t.Fatal(err)
 	}
-	if local.R.RoleTicketRole == nil {
+	if local.R.TicketRole == nil {
 		t.Error("struct should have been eager loaded")
 	}
 
-	local.R.RoleTicketRole = nil
-	if err = local.L.LoadRoleTicketRole(ctx, tx, true, &local, nil); err != nil {
+	local.R.TicketRole = nil
+	if err = local.L.LoadTicketRole(ctx, tx, true, &local, nil); err != nil {
 		t.Fatal(err)
 	}
-	if local.R.RoleTicketRole == nil {
+	if local.R.TicketRole == nil {
 		t.Error("struct should have been eager loaded")
 	}
 
@@ -555,24 +555,24 @@ func testRoleTicketOneToOneRoleTicketRoleUsingRoleTicketRole(t *testing.T) {
 	}
 }
 
-func testRoleTicketOneToOneSetOpRoleTicketRoleUsingRoleTicketRole(t *testing.T) {
+func testTicketOneToOneSetOpTicketRoleUsingTicketRole(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
 
-	var a RoleTicket
-	var b, c RoleTicketRole
+	var a Ticket
+	var b, c TicketRole
 
 	seed := randomize.NewSeed()
-	if err = randomize.Struct(seed, &a, roleTicketDBTypes, false, strmangle.SetComplement(roleTicketPrimaryKeyColumns, roleTicketColumnsWithoutDefault)...); err != nil {
+	if err = randomize.Struct(seed, &a, ticketDBTypes, false, strmangle.SetComplement(ticketPrimaryKeyColumns, ticketColumnsWithoutDefault)...); err != nil {
 		t.Fatal(err)
 	}
-	if err = randomize.Struct(seed, &b, roleTicketRoleDBTypes, false, strmangle.SetComplement(roleTicketRolePrimaryKeyColumns, roleTicketRoleColumnsWithoutDefault)...); err != nil {
+	if err = randomize.Struct(seed, &b, ticketRoleDBTypes, false, strmangle.SetComplement(ticketRolePrimaryKeyColumns, ticketRoleColumnsWithoutDefault)...); err != nil {
 		t.Fatal(err)
 	}
-	if err = randomize.Struct(seed, &c, roleTicketRoleDBTypes, false, strmangle.SetComplement(roleTicketRolePrimaryKeyColumns, roleTicketRoleColumnsWithoutDefault)...); err != nil {
+	if err = randomize.Struct(seed, &c, ticketRoleDBTypes, false, strmangle.SetComplement(ticketRolePrimaryKeyColumns, ticketRoleColumnsWithoutDefault)...); err != nil {
 		t.Fatal(err)
 	}
 
@@ -583,31 +583,31 @@ func testRoleTicketOneToOneSetOpRoleTicketRoleUsingRoleTicketRole(t *testing.T) 
 		t.Fatal(err)
 	}
 
-	for i, x := range []*RoleTicketRole{&b, &c} {
-		err = a.SetRoleTicketRole(ctx, tx, i != 0, x)
+	for i, x := range []*TicketRole{&b, &c} {
+		err = a.SetTicketRole(ctx, tx, i != 0, x)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if a.R.RoleTicketRole != x {
+		if a.R.TicketRole != x {
 			t.Error("relationship struct not set to correct value")
 		}
-		if x.R.RoleTicket != &a {
+		if x.R.Ticket != &a {
 			t.Error("failed to append to foreign relationship struct")
 		}
 
-		if a.RoleTicketID != x.RoleTicketID {
-			t.Error("foreign key was wrong value", a.RoleTicketID)
+		if a.TicketID != x.TicketID {
+			t.Error("foreign key was wrong value", a.TicketID)
 		}
 
-		if exists, err := RoleTicketRoleExists(ctx, tx, x.RoleTicketID); err != nil {
+		if exists, err := TicketRoleExists(ctx, tx, x.TicketID); err != nil {
 			t.Fatal(err)
 		} else if !exists {
 			t.Error("want 'x' to exist")
 		}
 
-		if a.RoleTicketID != x.RoleTicketID {
-			t.Error("foreign key was wrong value", a.RoleTicketID, x.RoleTicketID)
+		if a.TicketID != x.TicketID {
+			t.Error("foreign key was wrong value", a.TicketID, x.TicketID)
 		}
 
 		if _, err = x.Delete(ctx, tx); err != nil {
@@ -616,14 +616,14 @@ func testRoleTicketOneToOneSetOpRoleTicketRoleUsingRoleTicketRole(t *testing.T) 
 	}
 }
 
-func testRoleTicketsReload(t *testing.T) {
+func testTicketsReload(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -638,14 +638,14 @@ func testRoleTicketsReload(t *testing.T) {
 	}
 }
 
-func testRoleTicketsReloadAll(t *testing.T) {
+func testTicketsReloadAll(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -655,21 +655,21 @@ func testRoleTicketsReloadAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	slice := RoleTicketSlice{o}
+	slice := TicketSlice{o}
 
 	if err = slice.ReloadAll(ctx, tx); err != nil {
 		t.Error(err)
 	}
 }
 
-func testRoleTicketsSelect(t *testing.T) {
+func testTicketsSelect(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -679,7 +679,7 @@ func testRoleTicketsSelect(t *testing.T) {
 		t.Error(err)
 	}
 
-	slice, err := RoleTickets().All(ctx, tx)
+	slice, err := Tickets().All(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -690,25 +690,25 @@ func testRoleTicketsSelect(t *testing.T) {
 }
 
 var (
-	roleTicketDBTypes = map[string]string{`RoleTicketID`: `int`, `UUID`: `varchar`, `UsedBy`: `int`, `CreateDate`: `datetime`}
-	_                 = bytes.MinRead
+	ticketDBTypes = map[string]string{`TicketID`: `int`, `UUID`: `varchar`, `UsedBy`: `int`, `CreateDate`: `datetime`}
+	_             = bytes.MinRead
 )
 
-func testRoleTicketsUpdate(t *testing.T) {
+func testTicketsUpdate(t *testing.T) {
 	t.Parallel()
 
-	if 0 == len(roleTicketPrimaryKeyColumns) {
+	if 0 == len(ticketPrimaryKeyColumns) {
 		t.Skip("Skipping table with no primary key columns")
 	}
-	if len(roleTicketAllColumns) == len(roleTicketPrimaryKeyColumns) {
+	if len(ticketAllColumns) == len(ticketPrimaryKeyColumns) {
 		t.Skip("Skipping table with only primary key columns")
 	}
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -718,7 +718,7 @@ func testRoleTicketsUpdate(t *testing.T) {
 		t.Error(err)
 	}
 
-	count, err := RoleTickets().Count(ctx, tx)
+	count, err := Tickets().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -727,8 +727,8 @@ func testRoleTicketsUpdate(t *testing.T) {
 		t.Error("want one record, got:", count)
 	}
 
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketPrimaryKeyColumns...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketPrimaryKeyColumns...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	if rowsAff, err := o.Update(ctx, tx, boil.Infer()); err != nil {
@@ -738,18 +738,18 @@ func testRoleTicketsUpdate(t *testing.T) {
 	}
 }
 
-func testRoleTicketsSliceUpdateAll(t *testing.T) {
+func testTicketsSliceUpdateAll(t *testing.T) {
 	t.Parallel()
 
-	if len(roleTicketAllColumns) == len(roleTicketPrimaryKeyColumns) {
+	if len(ticketAllColumns) == len(ticketPrimaryKeyColumns) {
 		t.Skip("Skipping table with only primary key columns")
 	}
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &RoleTicket{}
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := &Ticket{}
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -759,7 +759,7 @@ func testRoleTicketsSliceUpdateAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	count, err := RoleTickets().Count(ctx, tx)
+	count, err := Tickets().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -768,18 +768,18 @@ func testRoleTicketsSliceUpdateAll(t *testing.T) {
 		t.Error("want one record, got:", count)
 	}
 
-	if err = randomize.Struct(seed, o, roleTicketDBTypes, true, roleTicketPrimaryKeyColumns...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	if err = randomize.Struct(seed, o, ticketDBTypes, true, ticketPrimaryKeyColumns...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	// Remove Primary keys and unique columns from what we plan to update
 	var fields []string
-	if strmangle.StringSliceMatch(roleTicketAllColumns, roleTicketPrimaryKeyColumns) {
-		fields = roleTicketAllColumns
+	if strmangle.StringSliceMatch(ticketAllColumns, ticketPrimaryKeyColumns) {
+		fields = ticketAllColumns
 	} else {
 		fields = strmangle.SetComplement(
-			roleTicketAllColumns,
-			roleTicketPrimaryKeyColumns,
+			ticketAllColumns,
+			ticketPrimaryKeyColumns,
 		)
 	}
 
@@ -797,7 +797,7 @@ func testRoleTicketsSliceUpdateAll(t *testing.T) {
 		}
 	}
 
-	slice := RoleTicketSlice{o}
+	slice := TicketSlice{o}
 	if rowsAff, err := slice.UpdateAll(ctx, tx, updateMap); err != nil {
 		t.Error(err)
 	} else if rowsAff != 1 {
@@ -805,32 +805,32 @@ func testRoleTicketsSliceUpdateAll(t *testing.T) {
 	}
 }
 
-func testRoleTicketsUpsert(t *testing.T) {
+func testTicketsUpsert(t *testing.T) {
 	t.Parallel()
 
-	if len(roleTicketAllColumns) == len(roleTicketPrimaryKeyColumns) {
+	if len(ticketAllColumns) == len(ticketPrimaryKeyColumns) {
 		t.Skip("Skipping table with only primary key columns")
 	}
-	if len(mySQLRoleTicketUniqueColumns) == 0 {
+	if len(mySQLTicketUniqueColumns) == 0 {
 		t.Skip("Skipping table with no unique columns to conflict on")
 	}
 
 	seed := randomize.NewSeed()
 	var err error
 	// Attempt the INSERT side of an UPSERT
-	o := RoleTicket{}
-	if err = randomize.Struct(seed, &o, roleTicketDBTypes, false); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	o := Ticket{}
+	if err = randomize.Struct(seed, &o, ticketDBTypes, false); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
 	if err = o.Upsert(ctx, tx, boil.Infer(), boil.Infer()); err != nil {
-		t.Errorf("Unable to upsert RoleTicket: %s", err)
+		t.Errorf("Unable to upsert Ticket: %s", err)
 	}
 
-	count, err := RoleTickets().Count(ctx, tx)
+	count, err := Tickets().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -839,15 +839,15 @@ func testRoleTicketsUpsert(t *testing.T) {
 	}
 
 	// Attempt the UPDATE side of an UPSERT
-	if err = randomize.Struct(seed, &o, roleTicketDBTypes, false, roleTicketPrimaryKeyColumns...); err != nil {
-		t.Errorf("Unable to randomize RoleTicket struct: %s", err)
+	if err = randomize.Struct(seed, &o, ticketDBTypes, false, ticketPrimaryKeyColumns...); err != nil {
+		t.Errorf("Unable to randomize Ticket struct: %s", err)
 	}
 
 	if err = o.Upsert(ctx, tx, boil.Infer(), boil.Infer()); err != nil {
-		t.Errorf("Unable to upsert RoleTicket: %s", err)
+		t.Errorf("Unable to upsert Ticket: %s", err)
 	}
 
-	count, err = RoleTickets().Count(ctx, tx)
+	count, err = Tickets().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}

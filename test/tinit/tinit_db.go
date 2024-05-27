@@ -40,7 +40,8 @@ func ClearDB(t *testing.T, db *sql.DB) {
 	v := reflect.ValueOf(models.TableNames)
 
 	for i := 0; i < v.NumField(); i++ {
-		_, err = db.Exec(fmt.Sprintf("TRUNCATE TABLE %v", v.Field(i).Interface()))
+		rawSql := fmt.Sprintf("TRUNCATE TABLE %v", v.Field(i).Interface())
+		_, err = db.Exec(rawSql)
 		CheckErr(t, err)
 	}
 }
