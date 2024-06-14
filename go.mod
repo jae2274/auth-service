@@ -1,4 +1,4 @@
-module userService
+module github.com/jae2274/auth-service
 
 go 1.21.4
 

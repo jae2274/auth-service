@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
-	"userService/usersvc/common/mysqldb"
-	"userService/usersvc/common/vars"
-	"userService/usersvc/models"
+
+	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
+	"github.com/jae2274/auth-service/auth_service/common/vars"
+	"github.com/jae2274/auth-service/auth_service/models"
 )
 
 func DB(t *testing.T) *sql.DB {

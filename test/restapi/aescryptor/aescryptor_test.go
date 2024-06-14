@@ -3,8 +3,9 @@ package aescryptor
 import (
 	"testing"
 	"time"
-	"userService/usersvc/restapi/aescryptor"
-	"userService/usersvc/utils"
+
+	"github.com/jae2274/auth-service/auth_service/restapi/aescryptor"
+	"github.com/jae2274/auth-service/auth_service/utils"
 
 	"github.com/stretchr/testify/require"
 )

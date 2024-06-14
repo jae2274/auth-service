@@ -6,11 +6,12 @@ import (
 	"errors"
 	"testing"
 	"time"
-	"userService/test/tinit"
-	"userService/test/tutils"
-	"userService/usersvc/common/domain"
-	"userService/usersvc/models"
-	"userService/usersvc/restapi/mapper"
+
+	"github.com/jae2274/auth-service/auth_service/common/domain"
+	"github.com/jae2274/auth-service/auth_service/models"
+	"github.com/jae2274/auth-service/auth_service/restapi/mapper"
+	"github.com/jae2274/auth-service/test/tinit"
+	"github.com/jae2274/auth-service/test/tutils"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/jae2274/goutils/terr"

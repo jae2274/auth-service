@@ -3,12 +3,13 @@ package mapper
 import (
 	"context"
 	"testing"
-	"userService/test/tinit"
-	"userService/test/tutils"
-	"userService/usersvc/common/domain"
-	mailMapper "userService/usersvc/mailer/mapper"
-	"userService/usersvc/models"
-	restapiMapper "userService/usersvc/restapi/mapper"
+
+	"github.com/jae2274/auth-service/auth_service/common/domain"
+	mailMapper "github.com/jae2274/auth-service/auth_service/mailer/mapper"
+	"github.com/jae2274/auth-service/auth_service/models"
+	restapiMapper "github.com/jae2274/auth-service/auth_service/restapi/mapper"
+	"github.com/jae2274/auth-service/test/tinit"
+	"github.com/jae2274/auth-service/test/tutils"
 
 	"github.com/stretchr/testify/require"
 )

@@ -5,13 +5,14 @@ import (
 	"errors"
 	"strconv"
 	"testing"
-	"userService/test/tinit"
-	"userService/usersvc/common/domain"
-	"userService/usersvc/models"
-	"userService/usersvc/restapi/ctrlr/dto"
-	"userService/usersvc/restapi/jwtutils"
-	"userService/usersvc/restapi/ooauth"
-	"userService/usersvc/restapi/service"
+
+	"github.com/jae2274/auth-service/auth_service/common/domain"
+	"github.com/jae2274/auth-service/auth_service/models"
+	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
+	"github.com/jae2274/auth-service/auth_service/restapi/jwtutils"
+	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
+	"github.com/jae2274/auth-service/auth_service/restapi/service"
+	"github.com/jae2274/auth-service/test/tinit"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jae2274/goutils/terr"
@@ -62,10 +63,10 @@ func TestAdminService(t *testing.T) {
 		ctx := context.Background()
 		db := tinit.DB(t)
 		byteSecretKey := []byte("secretKey")
-		userSvc := service.NewUserService(db, jwtutils.NewJwtUtils(byteSecretKey))
+		auth_service := service.NewUserService(db, jwtutils.NewJwtUtils(byteSecretKey))
 		adminSvc := service.NewAdminService(db)
 
-		userId := signUpAndIn(t, ctx, userSvc, byteSecretKey, userinfo)
+		userId := signUpAndIn(t, ctx, auth_service, byteSecretKey, userinfo)
 
 		err := adminSvc.UseTicket(ctx, userId, "non-existed-ticket")
 		require.Error(t, err)
@@ -75,10 +76,10 @@ func TestAdminService(t *testing.T) {
 		ctx := context.Background()
 		db := tinit.DB(t)
 		byteSecretKey := []byte("secretKey")
-		userSvc := service.NewUserService(db, jwtutils.NewJwtUtils(byteSecretKey))
+		auth_service := service.NewUserService(db, jwtutils.NewJwtUtils(byteSecretKey))
 		adminSvc := service.NewAdminService(db)
 
-		userId := signUpAndIn(t, ctx, userSvc, byteSecretKey, userinfo)
+		userId := signUpAndIn(t, ctx, auth_service, byteSecretKey, userinfo)
 
 		ticketId, err := adminSvc.CreateRoleTicket(ctx, []*models.TicketRole{{RoleName: "ROLE_ADMIN"}})
 		require.NoError(t, err)
@@ -86,7 +87,7 @@ func TestAdminService(t *testing.T) {
 		err = adminSvc.UseTicket(ctx, userId, ticketId)
 		require.NoError(t, err)
 
-		claims := signIn(t, ctx, userSvc, byteSecretKey, userinfo)
+		claims := signIn(t, ctx, auth_service, byteSecretKey, userinfo)
 		require.Contains(t, claims.Roles, "ROLE_ADMIN")
 	})
 
@@ -94,10 +95,10 @@ func TestAdminService(t *testing.T) {
 		ctx := context.Background()
 		db := tinit.DB(t)
 		byteSecretKey := []byte("secretKey")
-		userSvc := service.NewUserService(db, jwtutils.NewJwtUtils(byteSecretKey))
+		auth_service := service.NewUserService(db, jwtutils.NewJwtUtils(byteSecretKey))
 		adminSvc := service.NewAdminService(db)
 
-		userId := signUpAndIn(t, ctx, userSvc, byteSecretKey, userinfo)
+		userId := signUpAndIn(t, ctx, auth_service, byteSecretKey, userinfo)
 
 		ticketId, err := adminSvc.CreateRoleTicket(ctx, []*models.TicketRole{{RoleName: "ROLE_ADMIN"}})
 		require.NoError(t, err)
@@ -108,11 +109,11 @@ func TestAdminService(t *testing.T) {
 	})
 }
 
-func signUpAndIn(t *testing.T, ctx context.Context, userSvc service.UserService, secretKey []byte, userinfo *ooauth.UserInfo) int {
-	err := userSvc.SignUp(ctx, userinfo, []*dto.UserAgreementReq{})
+func signUpAndIn(t *testing.T, ctx context.Context, auth_service service.UserService, secretKey []byte, userinfo *ooauth.UserInfo) int {
+	err := auth_service.SignUp(ctx, userinfo, []*dto.UserAgreementReq{})
 	require.NoError(t, err)
 
-	res, err := userSvc.SignIn(ctx, userinfo, []*dto.UserAgreementReq{})
+	res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{})
 	require.NoError(t, err)
 	require.Equal(t, res.SignInStatus, dto.SignInSuccess)
 
@@ -125,8 +126,8 @@ func signUpAndIn(t *testing.T, ctx context.Context, userSvc service.UserService,
 	return userIdInt
 }
 
-func signIn(t *testing.T, ctx context.Context, userSvc service.UserService, secretKey []byte, userinfo *ooauth.UserInfo) *jwtutils.CustomClaims {
-	res, err := userSvc.SignIn(ctx, userinfo, []*dto.UserAgreementReq{})
+func signIn(t *testing.T, ctx context.Context, auth_service service.UserService, secretKey []byte, userinfo *ooauth.UserInfo) *jwtutils.CustomClaims {
+	res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{})
 	require.NoError(t, err)
 	require.Equal(t, res.SignInStatus, dto.SignInSuccess)
 

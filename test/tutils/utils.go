@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"testing"
-	"userService/usersvc/common/domain"
-	"userService/usersvc/models"
+
+	"github.com/jae2274/auth-service/auth_service/common/domain"
+	"github.com/jae2274/auth-service/auth_service/models"
 
 	"github.com/stretchr/testify/require"
 )

@@ -1,5 +1,5 @@
 BINARY_NAME=myapp
-CODE_DIR=./usersvc
+CODE_DIR=./auth_service
 
 include test.env
 
@@ -15,7 +15,7 @@ build: sqlboiler
 ## run: builds and runs the application
 run: build
 	@echo "Starting..."
-	@GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET} GOOGLE_REDIRECT_URL=${GOOGLE_REDIRECT_URL} SECRET_KEY=${SECRET_KEY} API_PORT=${API_PORT} DB_HOST=${DB_HOST} DB_PORT=${DB_PORT} DB_NAME=${DB_NAME} DB_USERNAME=${DB_USERNAME} DB_PASSWORD=${DB_PASSWORD} ./${BINARY_NAME} 
+	@GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET} GOOGLE_REDIRECT_URL=${GOOGLE_REDIRECT_URL} SECRET_KEY=${SECRET_KEY} API_PORT=${API_PORT} DB_HOST=${DB_HOST} DB_PORT=${DB_PORT} DB_NAME=${DB_NAME} DB_USERNAME=${DB_USERNAME} DB_PASSWORD=${DB_PASSWORD} MAILER_GRPC_PORT=${MAILER_GRPC_PORT} ./${BINARY_NAME} 
 	@echo "Started!"
 
 ## clean: runs go clean and deletes binaries
@@ -39,11 +39,11 @@ restart: stop start
 
 proto:
 	@export PATH="$PATH:$(go env GOPATH)/bin"
-	@protoc usersvc/mailer/mailer_grpc/*.proto  --go_out=. --go-grpc_out=. --go-grpc_opt=paths=source_relative --go_opt=paths=source_relative  --proto_path=.
+	@protoc auth_service/mailer/mailer_grpc/*.proto  --go_out=. --go-grpc_out=. --go-grpc_opt=paths=source_relative --go_opt=paths=source_relative  --proto_path=.
 
 ## test: runs all tests
 test: sqlboiler
 	@echo "Testing..."
-	@GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET} GOOGLE_REDIRECT_URL=${GOOGLE_REDIRECT_URL} SECRET_KEY=${SECRET_KEY} API_PORT=${API_PORT} DB_HOST=${DB_HOST} DB_PORT=${DB_PORT} DB_NAME=${DB_NAME} DB_USERNAME=${DB_USERNAME} DB_PASSWORD=${DB_PASSWORD} go test -p 1 -timeout 600s ./test/...
+	@GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET} GOOGLE_REDIRECT_URL=${GOOGLE_REDIRECT_URL} SECRET_KEY=${SECRET_KEY} API_PORT=${API_PORT} DB_HOST=${DB_HOST} DB_PORT=${DB_PORT} DB_NAME=${DB_NAME} DB_USERNAME=${DB_USERNAME} DB_PASSWORD=${DB_PASSWORD} MAILER_GRPC_PORT=${MAILER_GRPC_PORT} go test -p 1 -timeout 600s ./test/...
 	
 

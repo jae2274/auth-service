@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"userService/usersvc/app"
-	"userService/usersvc/common/vars"
+
+	"github.com/jae2274/auth-service/auth_service/app"
+	"github.com/jae2274/auth-service/auth_service/common/vars"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
