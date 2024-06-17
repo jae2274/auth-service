@@ -1,6 +1,8 @@
 package dto
 
 import (
+	"time"
+
 	"github.com/jae2274/goutils/enum"
 )
 
@@ -79,4 +81,9 @@ type SignUpRequest struct {
 type UserAgreementReq struct {
 	AgreementID int  `json:"agreementID"`
 	IsAgree     bool `json:"isAgree"`
+}
+
+type UserRoleReq struct {
+	RoleName   string    `json:"roleName"`
+	ExpiryDate time.Time `json:"expiryDate"`
 }

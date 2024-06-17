@@ -9,7 +9,6 @@ import (
 	"github.com/jae2274/auth-service/auth_service/common/vars"
 	"github.com/jae2274/auth-service/auth_service/restapi/aescryptor"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr"
-	"github.com/jae2274/auth-service/auth_service/restapi/jwtutils"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
 	"github.com/jae2274/auth-service/auth_service/utils"
@@ -22,8 +21,8 @@ import (
 
 func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 
-	jwtResolver := jwtutils.NewJwtUtils([]byte(envVars.SecretKey))
-	userService := service.NewUserService(db, jwtResolver)
+	// jwtResolver := jwtutils.NewJwtUtils([]byte(envVars.SecretKey))
+	userService := service.NewUserService(db)
 
 	router := mux.NewRouter()
 	router.Use(httpmw.SetTraceIdMW()) //TODO: 불필요한 파라미터가 잘못 포함되어 있어 이후 라이브러리 수정 필요

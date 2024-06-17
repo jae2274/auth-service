@@ -683,7 +683,7 @@ func testUserRolesSelect(t *testing.T) {
 }
 
 var (
-	userRoleDBTypes = map[string]string{`UserID`: `int`, `RoleName`: `varchar`, `GrantedType`: `enum('ADMIN','TICKET')`, `GrantedBy`: `int`, `ExpiryDate`: `datetime`}
+	userRoleDBTypes = map[string]string{`UserID`: `int`, `RoleName`: `varchar`, `ExpiryDate`: `datetime`, `CreatedDate`: `timestamp`, `UpdatedDate`: `timestamp`}
 	_               = bytes.MinRead
 )
 

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jae2274/auth-service/auth_service/common/domain"
 	"github.com/jae2274/auth-service/auth_service/models"
 
 	"github.com/google/uuid"
@@ -126,11 +125,9 @@ func useTicket(ctx context.Context, tx *sql.Tx, userId int, ticketUuid string) e
 		}
 
 		userRole := models.UserRole{
-			UserID:      userId,
-			RoleName:    role.RoleName,
-			GrantedType: string(domain.TICKET),
-			GrantedBy:   ticket.TicketID,
-			ExpiryDate:  expiryDate,
+			UserID:     userId,
+			RoleName:   role.RoleName,
+			ExpiryDate: expiryDate,
 		}
 		err := userRole.Insert(ctx, tx, boil.Infer()) //TODO: bulk insert
 		if err != nil {

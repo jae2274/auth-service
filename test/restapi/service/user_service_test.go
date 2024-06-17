@@ -1,26 +1,39 @@
 package service
 
 import (
+	"cmp"
 	"context"
+	"database/sql"
+	"slices"
 	"testing"
+	"time"
 
 	"github.com/jae2274/auth-service/auth_service/common/domain"
 	"github.com/jae2274/auth-service/auth_service/models"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
-	"github.com/jae2274/auth-service/auth_service/restapi/jwtutils"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
 	"github.com/jae2274/auth-service/test/tinit"
-
+	"github.com/jae2274/goutils/ptr"
 	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
-func initAgreementFunc(t *testing.T) (context.Context, service.UserService, models.AgreementSlice, models.AgreementSlice) {
+func newNecessaryAgreements() []*models.Agreement {
+	return []*models.Agreement{
+		{AgreementCode: "code1", Summary: "summary1", IsRequired: 1},
+		{AgreementCode: "code2", Summary: "summary2", IsRequired: 1},
+	}
+}
+func newOptionalAgreements() []*models.Agreement {
+	return []*models.Agreement{
+		{AgreementCode: "code3", Summary: "summary3", IsRequired: 0},
+		{AgreementCode: "code4", Summary: "summary4", IsRequired: 0},
+	}
+}
+func initAgreementFunc(t *testing.T, db *sql.DB) (context.Context, []*models.Agreement, []*models.Agreement) { //TODO: 추후 실제 비즈니스 로직을 통해 DB에 저장하는 것으로 변경
 	//Given
 	ctx := context.Background()
-	db := tinit.DB(t)
-	auth_service := service.NewUserService(db, jwtutils.NewJwtUtils([]byte("secretKey")))
 	var requiredAgreements models.AgreementSlice = newNecessaryAgreements()
 	for _, agreement := range requiredAgreements {
 		err := agreement.Insert(ctx, db, boil.Infer())
@@ -33,253 +46,266 @@ func initAgreementFunc(t *testing.T) (context.Context, service.UserService, mode
 		require.NoError(t, err)
 	}
 
-	return ctx, auth_service, requiredAgreements, optionalAgreements
+	return ctx, requiredAgreements, optionalAgreements
 }
 
-func TestUsers(t *testing.T) {
-	t.Run("return new_user", func(t *testing.T) {
-		t.Run("when agreements empty", func(t *testing.T) {
-			ctx := context.Background()
-			auth_service := service.NewUserService(tinit.DB(t), jwtutils.NewJwtUtils([]byte("secretKey")))
-
-			userinfo := &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "email",
-				Username:     "username",
-			}
-			res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{})
-			require.NoError(t, err)
-
-			require.Equal(t, dto.SignInNewUser, res.SignInStatus)
-			require.Len(t, res.NewUserRes.Agreements, 0)
-			require.Equal(t, userinfo.Username, res.NewUserRes.Username)
-			require.Equal(t, userinfo.Email, res.NewUserRes.Email)
-		})
-
-		t.Run("when agreements existed", func(t *testing.T) {
-			ctx, auth_service, requireAgreement, optionalAgreement := initAgreementFunc(t)
-			savedAgreements := append(requireAgreement, optionalAgreement...)
-
-			userinfo := &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "email",
-				Username:     "username",
-			}
-			res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{})
-			require.NoError(t, err)
-
-			require.Equal(t, dto.SignInNewUser, res.SignInStatus)
-			require.Len(t, res.NewUserRes.Agreements, len(savedAgreements))
-			require.Equal(t, userinfo.Username, res.NewUserRes.Username)
-			require.Equal(t, userinfo.Email, res.NewUserRes.Email)
-
-			for i, agreement := range res.NewUserRes.Agreements {
-				require.Equal(t, savedAgreements[i].AgreementID, agreement.AgreementId)
-				require.Equal(t, savedAgreements[i].Summary, agreement.Summary)
-			}
-		})
-	})
-
-	t.Run("return success", func(t *testing.T) {
-		t.Run("if required agreements empty", func(t *testing.T) {
-			ctx := context.Background()
-			auth_service := service.NewUserService(tinit.DB(t), jwtutils.NewJwtUtils([]byte("secretKey")))
-
-			userinfo := &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "email",
-				Username:     "username",
-			}
-			auth_service.SignUp(ctx, userinfo, []*dto.UserAgreementReq{})
-			res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{})
-			require.NoError(t, err)
-
-			require.Equal(t, dto.SignInSuccess, res.SignInStatus)
-		})
-
-		t.Run("if all required agreements are agreed", func(t *testing.T) {
-			ctx, auth_service, requiredAgreements, _ := initAgreementFunc(t)
-			userinfo := &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "email",
-				Username:     "username",
-			}
-			auth_service.SignUp(ctx, userinfo, []*dto.UserAgreementReq{
-				{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
-				{AgreementId: requiredAgreements[1].AgreementID, IsAgree: true},
-			})
-			res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{})
-			require.NoError(t, err)
-
-			require.Equal(t, dto.SignInSuccess, res.SignInStatus)
-		})
-
-		t.Run("if all required agreement is not checked, but agreed when sign in ", func(t *testing.T) {
-			ctx, auth_service, requiredAgreements, _ := initAgreementFunc(t)
-
-			userinfo := &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "email",
-				Username:     "username",
-			}
-			auth_service.SignUp(ctx, userinfo, []*dto.UserAgreementReq{})
-			res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{
-				{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
-				{AgreementId: requiredAgreements[1].AgreementID, IsAgree: true},
-			})
-			require.NoError(t, err)
-
-			require.Equal(t, dto.SignInSuccess, res.SignInStatus)
-		})
-		t.Run("if all required agreement is not agreed, but agreed when sign in", func(t *testing.T) {
-			ctx, auth_service, requiredAgreements, _ := initAgreementFunc(t)
-
-			userinfo := &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "email",
-				Username:     "username",
-			}
-			auth_service.SignUp(ctx, userinfo, []*dto.UserAgreementReq{
-				{AgreementId: requiredAgreements[0].AgreementID, IsAgree: false},
-				{AgreementId: requiredAgreements[1].AgreementID, IsAgree: false},
-			})
-
-			res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{
-				{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
-				{AgreementId: requiredAgreements[1].AgreementID, IsAgree: true},
-			})
-			require.NoError(t, err)
-
-			require.Equal(t, dto.SignInSuccess, res.SignInStatus)
-		})
-	})
-
-	t.Run("return necessary_agreements ", func(t *testing.T) {
-		t.Run("if all required agreements are not checked", func(t *testing.T) {
-			ctx, auth_service, requiredAgreements, _ := initAgreementFunc(t)
-
-			userinfo := &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "email",
-				Username:     "username",
-			}
-			auth_service.SignUp(ctx, userinfo, []*dto.UserAgreementReq{})
-
-			res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{})
-			require.NoError(t, err)
-
-			require.Equal(t, dto.SignInNecessaryAgreements, res.SignInStatus)
-			require.Len(t, res.NecessaryAgreementsRes.Agreements, 2)
-			require.Equal(t, requiredAgreements[0].AgreementID, res.NecessaryAgreementsRes.Agreements[0].AgreementId)
-			require.Equal(t, requiredAgreements[1].AgreementID, res.NecessaryAgreementsRes.Agreements[1].AgreementId)
-		})
-		t.Run("if all required agreements are not agreed", func(t *testing.T) {
-			ctx, auth_service, requiredAgreements, _ := initAgreementFunc(t)
-
-			userinfo := &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "email",
-				Username:     "username",
-			}
-			auth_service.SignUp(ctx, userinfo, []*dto.UserAgreementReq{
-				{AgreementId: requiredAgreements[0].AgreementID, IsAgree: false},
-				{AgreementId: requiredAgreements[1].AgreementID, IsAgree: false},
-			})
-			res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{})
-			require.NoError(t, err)
-
-			require.Equal(t, dto.SignInNecessaryAgreements, res.SignInStatus)
-			require.Len(t, res.NecessaryAgreementsRes.Agreements, 2)
-			require.Equal(t, requiredAgreements[0].AgreementID, res.NecessaryAgreementsRes.Agreements[0].AgreementId)
-			require.Equal(t, requiredAgreements[1].AgreementID, res.NecessaryAgreementsRes.Agreements[1].AgreementId)
-		})
-
-		t.Run("if one required agreement is not agreed", func(t *testing.T) {
-			ctx, auth_service, requiredAgreements, _ := initAgreementFunc(t)
-
-			userinfo := &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "email",
-				Username:     "username",
-			}
-			auth_service.SignUp(ctx, userinfo,
-				[]*dto.UserAgreementReq{
-					{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
-					{AgreementId: requiredAgreements[1].AgreementID, IsAgree: false},
-				})
-			res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{})
-			require.NoError(t, err)
-
-			require.Equal(t, dto.SignInNecessaryAgreements, res.SignInStatus)
-			require.Len(t, res.NecessaryAgreementsRes.Agreements, 1)
-			require.Equal(t, requiredAgreements[1].AgreementID, res.NecessaryAgreementsRes.Agreements[0].AgreementId)
-		})
-
-		t.Run("if all required agreements are not checked, and one agreement agreed when sign in", func(t *testing.T) {
-			ctx, auth_service, requiredAgreements, _ := initAgreementFunc(t)
-
-			userinfo := &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "email",
-				Username:     "username",
-			}
-			auth_service.SignUp(ctx, userinfo, []*dto.UserAgreementReq{})
-
-			res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{
-				{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
-			})
-			require.NoError(t, err)
-
-			require.Equal(t, dto.SignInNecessaryAgreements, res.SignInStatus)
-			require.Len(t, res.NecessaryAgreementsRes.Agreements, 1)
-			require.Equal(t, requiredAgreements[1].AgreementID, res.NecessaryAgreementsRes.Agreements[0].AgreementId)
-		})
-		t.Run("if all required agreements are not agreed, and one agreement agreed when sign in", func(t *testing.T) {
-			ctx, auth_service, requiredAgreements, _ := initAgreementFunc(t)
-
-			userinfo := &ooauth.UserInfo{
-				AuthorizedBy: domain.GOOGLE,
-				AuthorizedID: "authId",
-				Email:        "email",
-				Username:     "username",
-			}
-			auth_service.SignUp(ctx, userinfo,
-				[]*dto.UserAgreementReq{
-					{AgreementId: requiredAgreements[0].AgreementID, IsAgree: false},
-					{AgreementId: requiredAgreements[1].AgreementID, IsAgree: false},
-				})
-			res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{
-				{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true},
-			})
-			require.NoError(t, err)
-
-			require.Equal(t, dto.SignInNecessaryAgreements, res.SignInStatus)
-			require.Len(t, res.NecessaryAgreementsRes.Agreements, 1)
-			require.Equal(t, requiredAgreements[1].AgreementID, res.NecessaryAgreementsRes.Agreements[0].AgreementId)
-		})
-	})
-}
-
-func newNecessaryAgreements() []*models.Agreement {
-	return []*models.Agreement{
-		{AgreementCode: "code1", Summary: "summary1", IsRequired: 1},
-		{AgreementCode: "code2", Summary: "summary2", IsRequired: 1},
+func TestUserService(t *testing.T) {
+	userinfo := ooauth.UserInfo{
+		AuthorizedID: "authorizedID",
+		AuthorizedBy: "GOOGLE",
+		Email:        "testEmail@testmail.net",
+		Username:     "testUsername",
 	}
+
+	actionOtherUserSignUP := func(t *testing.T, ctx context.Context, userService service.UserService, agreementReqs ...*dto.UserAgreementReq) *ooauth.UserInfo {
+		otherUserInfo := &ooauth.UserInfo{
+			AuthorizedBy: "GOOGLE",
+			AuthorizedID: "otherAuthorizedID",
+			Email:        "other@gmail.com",
+			Username:     "other",
+		}
+		otherUser, err := userService.SignUp(ctx, otherUserInfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		_, err = userService.AddUserRoles(ctx, otherUser.UserID, []*domain.UserRole{
+			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
+			{RoleName: "ROLE_USER", ExpiryDuration: nil},
+		})
+		require.NoError(t, err)
+
+		return otherUserInfo
+	}
+
+	t.Run("sign up user", func(t *testing.T) {
+		ctx := context.Background()
+		userService := service.NewUserService(tinit.DB(t))
+
+		signedUpUser, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		require.Equal(t, string(userinfo.AuthorizedBy), signedUpUser.AuthorizedBy)
+		require.Equal(t, userinfo.AuthorizedID, signedUpUser.AuthorizedID)
+		require.Equal(t, userinfo.Email, signedUpUser.Email)
+		require.Equal(t, userinfo.Username, signedUpUser.Name)
+	})
+
+	t.Run("return isExistedUser false when user did not sign up", func(t *testing.T) {
+		ctx := context.Background()
+		userService := service.NewUserService(tinit.DB(t))
+		actionOtherUserSignUP(t, ctx, userService)
+
+		_, isExisted, err := userService.FindSignedUpUser(ctx, "authorizedBy", "authorizedID")
+		require.NoError(t, err)
+		require.False(t, isExisted)
+	})
+
+	t.Run("return isExistedUser true when user signed up", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, requiredAgreements, optionalAgreements := initAgreementFunc(t, db)
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService, &dto.UserAgreementReq{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true}, &dto.UserAgreementReq{AgreementId: optionalAgreements[0].AgreementID, IsAgree: true})
+
+		agreementReq := []*dto.UserAgreementReq{{
+			AgreementId: requiredAgreements[0].AgreementID,
+			IsAgree:     true,
+		}, {
+			AgreementId: requiredAgreements[1].AgreementID,
+			IsAgree:     false,
+		}, {
+			AgreementId: optionalAgreements[0].AgreementID,
+			IsAgree:     true,
+		}, {
+			AgreementId: optionalAgreements[1].AgreementID,
+			IsAgree:     false,
+		}}
+		_, err := userService.SignUp(ctx, &userinfo, agreementReq)
+
+		require.NoError(t, err)
+
+		user, isExisted, err := userService.FindSignedUpUser(ctx, userinfo.AuthorizedBy, userinfo.AuthorizedID)
+		require.NoError(t, err)
+		require.True(t, isExisted)
+		require.Equal(t, string(userinfo.AuthorizedBy), user.AuthorizedBy)
+		require.Equal(t, userinfo.AuthorizedID, user.AuthorizedID)
+		require.Equal(t, userinfo.Email, user.Email)
+		require.Equal(t, userinfo.Username, user.Name)
+	})
+
+	t.Run("return empty agreements when agreements is not saved", func(t *testing.T) {
+		ctx := context.Background()
+		userService := service.NewUserService(tinit.DB(t))
+		actionOtherUserSignUP(t, ctx, userService)
+
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		agreements, err := userService.FindNecessaryAgreements(ctx, user.UserID)
+		require.NoError(t, err)
+		require.Empty(t, agreements)
+	})
+
+	t.Run("return needed necessary agreements when sign up with not answered", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, requiredAgreements, optionalAgreements := initAgreementFunc(t, db)
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService, &dto.UserAgreementReq{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true}, &dto.UserAgreementReq{AgreementId: optionalAgreements[0].AgreementID, IsAgree: true})
+
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		agreements, err := userService.FindNecessaryAgreements(ctx, user.UserID)
+		require.NoError(t, err)
+		require.Equal(t, requiredAgreements, agreements)
+	})
+
+	t.Run("return needed necessary agreements when sign up with not agreed", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, requiredAgreements, optionalAgreements := initAgreementFunc(t, db)
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService, &dto.UserAgreementReq{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true}, &dto.UserAgreementReq{AgreementId: optionalAgreements[0].AgreementID, IsAgree: true})
+
+		agreementReq := make([]*dto.UserAgreementReq, 0, len(requiredAgreements))
+		for _, agreement := range requiredAgreements {
+			agreementReq = append(agreementReq, &dto.UserAgreementReq{
+				AgreementId: agreement.AgreementID,
+				IsAgree:     false,
+			})
+		}
+
+		user, err := userService.SignUp(ctx, &userinfo, agreementReq)
+		require.NoError(t, err)
+
+		agreements, err := userService.FindNecessaryAgreements(ctx, user.UserID)
+		require.NoError(t, err)
+		require.Equal(t, requiredAgreements, agreements)
+	})
+
+	t.Run("return empty necessary agreements when sign up with all agreed", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, requiredAgreements, optionalAgreements := initAgreementFunc(t, db)
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService, &dto.UserAgreementReq{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true}, &dto.UserAgreementReq{AgreementId: optionalAgreements[0].AgreementID, IsAgree: true})
+
+		agreementReq := make([]*dto.UserAgreementReq, 0, len(requiredAgreements))
+		for _, agreement := range requiredAgreements {
+			agreementReq = append(agreementReq, &dto.UserAgreementReq{
+				AgreementId: agreement.AgreementID,
+				IsAgree:     true,
+			})
+		}
+
+		user, err := userService.SignUp(ctx, &userinfo, agreementReq)
+		require.NoError(t, err)
+
+		agreements, err := userService.FindNecessaryAgreements(ctx, user.UserID)
+		require.NoError(t, err)
+		require.Empty(t, agreements)
+	})
+
+	t.Run("return empty necessary agreements when all agreed after sign up", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, requiredAgreements, optionalAgreements := initAgreementFunc(t, db)
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService, &dto.UserAgreementReq{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true}, &dto.UserAgreementReq{AgreementId: optionalAgreements[0].AgreementID, IsAgree: true})
+
+		agreementReq := make([]*dto.UserAgreementReq, 0, len(requiredAgreements))
+		for _, agreement := range requiredAgreements {
+			agreementReq = append(agreementReq, &dto.UserAgreementReq{
+				AgreementId: agreement.AgreementID,
+				IsAgree:     false,
+			})
+		}
+
+		user, err := userService.SignUp(ctx, &userinfo, agreementReq)
+		require.NoError(t, err)
+
+		agreementReq = make([]*dto.UserAgreementReq, 0, len(requiredAgreements))
+		for _, agreement := range requiredAgreements {
+			agreementReq = append(agreementReq, &dto.UserAgreementReq{
+				AgreementId: agreement.AgreementID,
+				IsAgree:     true,
+			})
+		}
+
+		err = userService.ApplyUserAgreements(ctx, user.UserID, agreementReq)
+		require.NoError(t, err)
+
+		agreements, err := userService.FindNecessaryAgreements(ctx, user.UserID)
+		require.NoError(t, err)
+		require.Empty(t, agreements)
+	})
+
+	t.Run("return empty roles when roles is not saved", func(t *testing.T) {
+		ctx := context.Background()
+		userService := service.NewUserService(tinit.DB(t))
+		actionOtherUserSignUP(t, ctx, userService)
+
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		require.NoError(t, err)
+		require.Empty(t, roles)
+	})
+
+	t.Run("return user's roles when roles is saved", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx := context.Background()
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService)
+
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		userId := user.UserID
+		insertedRoles := []*domain.UserRole{
+			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
+			{RoleName: "ROLE_USER", ExpiryDuration: nil},
+		}
+		_, err = userService.AddUserRoles(ctx, userId, insertedRoles)
+		require.NoError(t, err)
+
+		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		require.NoError(t, err)
+		require.Len(t, roles, len(insertedRoles))
+
+		slices.SortStableFunc(roles, func(a, b *models.UserRole) int {
+			return cmp.Compare(a.RoleName, b.RoleName)
+		})
+		for i, role := range roles {
+			requireEqualUserRole(t, userId, insertedRoles[i], role)
+		}
+	})
+
+	// t.Run("return empty roles when roles is expired", func(t *testing.T) {
+	// 	db := tinit.DB(t)
+	// 	ctx := context.Background()
+	// 	userService := service.NewUserService(db)
+	// 	actionOtherUserSignUP(t, ctx, userService)
+
+	// 	user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+	// 	require.NoError(t, err)
+
+	// 	_, err = userService.AddUserRoles(ctx, user.UserID, domain.ADMIN, 1, []*domain.UserRole{
+	// 		{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Now().Add(-time.Hour * 24))}, //24시간 전
+	// 		{RoleName: "ROLE_USER", ExpiryDuration: ptr.P(time.Now().Add(time.Second * 1))},  //1초 후
+	// 	})
+	// 	require.NoError(t, err)
+	// 	time.Sleep(time.Second * 2) //2초 대기, 1초 후에 만료되는 ROLE_USER는 만료되었을 것이다.
+
+	// 	roles, err := userService.FindUserRoles(ctx, user.UserID)
+	// 	require.NoError(t, err)
+	// 	require.Empty(t, roles)
+	// })
 }
 
-func newOptionalAgreements() []*models.Agreement {
-	return []*models.Agreement{
-		{AgreementCode: "code3", Summary: "summary3", IsRequired: 0},
-		{AgreementCode: "code4", Summary: "summary4", IsRequired: 0},
-	}
+func requireEqualUserRole(t *testing.T, userId int, expected *domain.UserRole, actual *models.UserRole) {
+	require.Equal(t, expected.RoleName, actual.RoleName)
+	require.Equal(t, userId, actual.UserID)
+	// if expected.ExpiryDuration != nil {
+	// 	require.True(t, actual.ExpiryDate.Valid)
+	// 	require.WithinDuration(t, *expected.ExpiryDuration, actual.ExpiryDate.Time, time.Second)
+	// } else {
+	// 	require.False(t, actual.ExpiryDate.Valid)
+	// }
 }

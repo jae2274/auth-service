@@ -26,9 +26,9 @@ import (
 type UserRole struct {
 	UserID      int       `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
 	RoleName    string    `boil:"role_name" json:"role_name" toml:"role_name" yaml:"role_name"`
-	GrantedType string    `boil:"granted_type" json:"granted_type" toml:"granted_type" yaml:"granted_type"`
-	GrantedBy   int       `boil:"granted_by" json:"granted_by" toml:"granted_by" yaml:"granted_by"`
 	ExpiryDate  null.Time `boil:"expiry_date" json:"expiry_date,omitempty" toml:"expiry_date" yaml:"expiry_date,omitempty"`
+	CreatedDate time.Time `boil:"created_date" json:"created_date" toml:"created_date" yaml:"created_date"`
+	UpdatedDate time.Time `boil:"updated_date" json:"updated_date" toml:"updated_date" yaml:"updated_date"`
 
 	R *userRoleR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userRoleL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -37,29 +37,29 @@ type UserRole struct {
 var UserRoleColumns = struct {
 	UserID      string
 	RoleName    string
-	GrantedType string
-	GrantedBy   string
 	ExpiryDate  string
+	CreatedDate string
+	UpdatedDate string
 }{
 	UserID:      "user_id",
 	RoleName:    "role_name",
-	GrantedType: "granted_type",
-	GrantedBy:   "granted_by",
 	ExpiryDate:  "expiry_date",
+	CreatedDate: "created_date",
+	UpdatedDate: "updated_date",
 }
 
 var UserRoleTableColumns = struct {
 	UserID      string
 	RoleName    string
-	GrantedType string
-	GrantedBy   string
 	ExpiryDate  string
+	CreatedDate string
+	UpdatedDate string
 }{
 	UserID:      "user_role.user_id",
 	RoleName:    "user_role.role_name",
-	GrantedType: "user_role.granted_type",
-	GrantedBy:   "user_role.granted_by",
 	ExpiryDate:  "user_role.expiry_date",
+	CreatedDate: "user_role.created_date",
+	UpdatedDate: "user_role.updated_date",
 }
 
 // Generated where
@@ -67,15 +67,15 @@ var UserRoleTableColumns = struct {
 var UserRoleWhere = struct {
 	UserID      whereHelperint
 	RoleName    whereHelperstring
-	GrantedType whereHelperstring
-	GrantedBy   whereHelperint
 	ExpiryDate  whereHelpernull_Time
+	CreatedDate whereHelpertime_Time
+	UpdatedDate whereHelpertime_Time
 }{
 	UserID:      whereHelperint{field: "`user_role`.`user_id`"},
 	RoleName:    whereHelperstring{field: "`user_role`.`role_name`"},
-	GrantedType: whereHelperstring{field: "`user_role`.`granted_type`"},
-	GrantedBy:   whereHelperint{field: "`user_role`.`granted_by`"},
 	ExpiryDate:  whereHelpernull_Time{field: "`user_role`.`expiry_date`"},
+	CreatedDate: whereHelpertime_Time{field: "`user_role`.`created_date`"},
+	UpdatedDate: whereHelpertime_Time{field: "`user_role`.`updated_date`"},
 }
 
 // UserRoleRels is where relationship names are stored.
@@ -106,9 +106,9 @@ func (r *userRoleR) GetUser() *User {
 type userRoleL struct{}
 
 var (
-	userRoleAllColumns            = []string{"user_id", "role_name", "granted_type", "granted_by", "expiry_date"}
-	userRoleColumnsWithoutDefault = []string{"user_id", "role_name", "granted_type", "granted_by", "expiry_date"}
-	userRoleColumnsWithDefault    = []string{}
+	userRoleAllColumns            = []string{"user_id", "role_name", "expiry_date", "created_date", "updated_date"}
+	userRoleColumnsWithoutDefault = []string{"user_id", "role_name", "expiry_date"}
+	userRoleColumnsWithDefault    = []string{"created_date", "updated_date"}
 	userRolePrimaryKeyColumns     = []string{"user_id", "role_name"}
 	userRoleGeneratedColumns      = []string{}
 )

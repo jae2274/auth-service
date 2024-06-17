@@ -1,19 +1,25 @@
 package jwtutils
 
 import (
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jae2274/goutils/terr"
+	"gopkg.in/validator.v2"
 )
 
 type CustomClaims struct {
-	UserId string
+	UserId string `validate:"nonzero"`
 	Roles  []string
 	jwt.RegisteredClaims
 }
 
 type JwtResolver struct {
-	secretKey []byte
+	secretKey            []byte
+	accessTokenDuration  time.Duration
+	refreshTokenDuration time.Duration
 }
 
 type TokenInfo struct {
@@ -24,23 +30,47 @@ type TokenInfo struct {
 
 func NewJwtUtils(secretKey []byte) *JwtResolver {
 	return &JwtResolver{
-		secretKey: secretKey,
+		secretKey:            secretKey,
+		accessTokenDuration:  30 * time.Minute,
+		refreshTokenDuration: 24 * time.Hour,
 	}
 }
 
-func (j *JwtResolver) CreateToken(userId string, roles []string) (*TokenInfo, error) {
-	now := time.Now()
+func (j *JwtResolver) SetAccessTokenDuration(duration time.Duration) error {
+	if duration < 0 {
+		return terr.New("duration must be positive")
+	}
+	j.accessTokenDuration = duration
+	return nil
+}
 
+func (j *JwtResolver) SetRefreshTokenDuration(duration time.Duration) error {
+	if duration < 0 {
+		return terr.New("duration must be positive")
+	}
+	j.refreshTokenDuration = duration
+	return nil
+}
+
+func (j *JwtResolver) GetAccessTokenDuration() time.Duration {
+	return j.accessTokenDuration
+}
+
+func (j *JwtResolver) GetRefreshTokenDuration() time.Duration {
+	return j.refreshTokenDuration
+}
+
+func (j *JwtResolver) CreateToken(userId string, roles []string, createdAt time.Time) (*TokenInfo, error) {
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		&CustomClaims{
 			UserId: userId,
 			Roles:  roles,
 			RegisteredClaims: jwt.RegisteredClaims{
-				Issuer:    "careerhub.jyo-liar.com",                    //TODO: 임의 설정
-				Audience:  []string{"careerhub.jyo-liar.com"},          //TODO: 임의 설정
-				ExpiresAt: jwt.NewNumericDate(now.Add(30 * time.Hour)), //TODO: 임의 설정
-				IssuedAt:  jwt.NewNumericDate(now),
-				NotBefore: jwt.NewNumericDate(now),
+				// Issuer:    "careerhub.jyo-liar.com",                                 //TODO: 임의 설정
+				// Audience:  []string{"careerhub.jyo-liar.com"},                       //TODO: 임의 설정
+				ExpiresAt: jwt.NewNumericDate(createdAt.Add(j.accessTokenDuration)), //TODO: 임의 설정
+				// IssuedAt:  jwt.NewNumericDate(createdAt),
+				// NotBefore: jwt.NewNumericDate(createdAt),
 			},
 		},
 	).SignedString(j.secretKey)
@@ -51,8 +81,9 @@ func (j *JwtResolver) CreateToken(userId string, roles []string) (*TokenInfo, er
 
 	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		&CustomClaims{
+			UserId: userId,
 			RegisteredClaims: jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(now.Add(24 * time.Hour)), //TODO: 임의 설정
+				ExpiresAt: jwt.NewNumericDate(createdAt.Add(j.refreshTokenDuration)), //TODO: 임의 설정
 			},
 		},
 	).SignedString(j.secretKey)
@@ -66,4 +97,30 @@ func (j *JwtResolver) CreateToken(userId string, roles []string) (*TokenInfo, er
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
+}
+
+func (j *JwtResolver) ParseToken(tokenString string) (*CustomClaims, bool, error) {
+
+	tokenString = strings.Replace(tokenString, "Bearer ", "", 1)
+	jwtToken, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return j.secretKey, nil
+	})
+
+	if jwtToken.Valid {
+		if claims, ok := jwtToken.Claims.(*CustomClaims); ok {
+			if err := validator.Validate(claims); err != nil {
+				return claims, false, err
+			} else {
+				return claims, true, nil
+			}
+		} else {
+			return &CustomClaims{}, false, terr.New("invalid token. claims is not CustomClaims type")
+		}
+	} else if errors.Is(err, jwt.ErrTokenExpired) || errors.Is(err, jwt.ErrTokenNotValidYet) {
+		return &CustomClaims{}, false, nil
+	} else if errors.Is(err, jwt.ErrTokenMalformed) {
+		return &CustomClaims{}, false, terr.New("invalid token. token is malformed")
+	} else {
+		return &CustomClaims{}, false, terr.Wrap(err)
+	}
 }

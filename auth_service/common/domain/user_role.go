@@ -1,6 +1,10 @@
 package domain
 
-import "github.com/jae2274/goutils/enum"
+import (
+	"time"
+
+	"github.com/jae2274/goutils/enum"
+)
 
 type GrantedTypeValues struct{}
 
@@ -13,4 +17,9 @@ const (
 
 func (GrantedTypeValues) Values() []string {
 	return []string{string(ADMIN), string(TICKET)}
+}
+
+type UserRole struct {
+	RoleName       string         `json:"roleName"`
+	ExpiryDuration *time.Duration `json:"expiryDate"`
 }

@@ -61,16 +61,3 @@ func AllUserAuthorizedBy() []string {
 		UserAuthorizedByGOOGLE,
 	}
 }
-
-// Enum values for UserRoleGrantedType
-const (
-	UserRoleGrantedTypeADMIN  string = "ADMIN"
-	UserRoleGrantedTypeTICKET string = "TICKET"
-)
-
-func AllUserRoleGrantedType() []string {
-	return []string{
-		UserRoleGrantedTypeADMIN,
-		UserRoleGrantedTypeTICKET,
-	}
-}

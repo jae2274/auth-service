@@ -86,3 +86,7 @@ type UserAgreementReq struct {
 	AgreementId int  `json:"agreementId"`
 	IsAgree     bool `json:"isAgree"`
 }
+
+type RefreshJwtResponse struct {
+	AccessToken string `json:"accessToken"`
+}
