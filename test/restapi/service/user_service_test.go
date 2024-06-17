@@ -273,39 +273,154 @@ func TestUserService(t *testing.T) {
 			return cmp.Compare(a.RoleName, b.RoleName)
 		})
 		for i, role := range roles {
-			requireEqualUserRole(t, userId, insertedRoles[i], role)
+			requireEqualUserRole(t, userId, time.Now(), insertedRoles[i], role)
 		}
 	})
 
-	// t.Run("return empty roles when roles is expired", func(t *testing.T) {
-	// 	db := tinit.DB(t)
-	// 	ctx := context.Background()
-	// 	userService := service.NewUserService(db)
-	// 	actionOtherUserSignUP(t, ctx, userService)
+	t.Run("return empty roles when roles is expired", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx := context.Background()
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService)
 
-	// 	user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
-	// 	require.NoError(t, err)
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
 
-	// 	_, err = userService.AddUserRoles(ctx, user.UserID, domain.ADMIN, 1, []*domain.UserRole{
-	// 		{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Now().Add(-time.Hour * 24))}, //24시간 전
-	// 		{RoleName: "ROLE_USER", ExpiryDuration: ptr.P(time.Now().Add(time.Second * 1))},  //1초 후
-	// 	})
-	// 	require.NoError(t, err)
-	// 	time.Sleep(time.Second * 2) //2초 대기, 1초 후에 만료되는 ROLE_USER는 만료되었을 것이다.
+		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
+			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(1 * time.Second))}, //2초 후
+			{RoleName: "ROLE_USER", ExpiryDuration: ptr.P(time.Duration(1 * time.Second))},  //1초 후
+		})
+		require.NoError(t, err)
+		time.Sleep(time.Second * 2) //2초 대기, 1초 후에 만료되는 ROLE_USER는 만료되었을 것이다.
 
-	// 	roles, err := userService.FindUserRoles(ctx, user.UserID)
-	// 	require.NoError(t, err)
-	// 	require.Empty(t, roles)
-	// })
+		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		require.NoError(t, err)
+		require.Empty(t, roles)
+	})
+
+	t.Run("return role with extended expiry date when role was already existed", func(t *testing.T) {
+
+		db := tinit.DB(t)
+		ctx := context.Background()
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService)
+
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
+			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
+		})
+		require.NoError(t, err)
+
+		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
+			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 4))},
+		})
+		require.NoError(t, err)
+
+		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		require.NoError(t, err)
+		require.Len(t, roles, 1)
+
+		require.Equal(t, user.UserID, roles[0].UserID)
+		require.Equal(t, "ROLE_ADMIN", roles[0].RoleName)
+		require.WithinDuration(t, time.Now().Add(time.Hour*24).Add(time.Hour*4), roles[0].ExpiryDate.Time, time.Second)
+	})
+
+	t.Run("return unexpired role when existed role had not expiry date", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx := context.Background()
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService)
+
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
+			{RoleName: "ROLE_ADMIN", ExpiryDuration: nil},
+		})
+		require.NoError(t, err)
+
+		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
+			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 4))},
+		})
+		require.NoError(t, err)
+
+		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		require.NoError(t, err)
+		require.Len(t, roles, 1)
+
+		require.Equal(t, user.UserID, roles[0].UserID)
+		require.Equal(t, "ROLE_ADMIN", roles[0].RoleName)
+		require.Equal(t, false, roles[0].ExpiryDate.Valid)
+	})
+
+	//이미 지난 기한에 추가된 역할은 만료된 것으로 간주하고 새로운 만료일을 설정한다.
+	t.Run("return role with expiry date from now when existed role was expired", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx := context.Background()
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService)
+
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
+			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Second * 1))},
+		})
+		require.NoError(t, err)
+		time.Sleep(time.Second * 2) //2초 대기, ROLE_ADMIN은 만료되었을 것이다.
+
+		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
+			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 4))},
+		})
+		require.NoError(t, err)
+
+		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		require.NoError(t, err)
+		require.Len(t, roles, 1)
+
+		require.Equal(t, user.UserID, roles[0].UserID)
+		require.Equal(t, "ROLE_ADMIN", roles[0].RoleName)
+		require.WithinDuration(t, time.Now().Add(time.Hour*4), roles[0].ExpiryDate.Time, time.Millisecond*500)
+	})
+
+	t.Run("return unexpired role when existed role was given with no expiry date", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx := context.Background()
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService)
+
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
+			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Second * 1))},
+		})
+		require.NoError(t, err)
+
+		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
+			{RoleName: "ROLE_ADMIN", ExpiryDuration: nil},
+		})
+		require.NoError(t, err)
+
+		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		require.NoError(t, err)
+		require.Len(t, roles, 1)
+
+		require.Equal(t, user.UserID, roles[0].UserID)
+		require.Equal(t, "ROLE_ADMIN", roles[0].RoleName)
+		require.Equal(t, false, roles[0].ExpiryDate.Valid)
+	})
 }
 
-func requireEqualUserRole(t *testing.T, userId int, expected *domain.UserRole, actual *models.UserRole) {
+func requireEqualUserRole(t *testing.T, userId int, now time.Time, expected *domain.UserRole, actual *models.UserRole) {
 	require.Equal(t, expected.RoleName, actual.RoleName)
 	require.Equal(t, userId, actual.UserID)
-	// if expected.ExpiryDuration != nil {
-	// 	require.True(t, actual.ExpiryDate.Valid)
-	// 	require.WithinDuration(t, *expected.ExpiryDuration, actual.ExpiryDate.Time, time.Second)
-	// } else {
-	// 	require.False(t, actual.ExpiryDate.Valid)
-	// }
+	if expected.ExpiryDuration != nil {
+		require.True(t, actual.ExpiryDate.Valid)
+		require.WithinDuration(t, now.Add(*expected.ExpiryDuration), actual.ExpiryDate.Time, time.Second)
+	} else {
+		require.False(t, actual.ExpiryDate.Valid)
+	}
 }

@@ -172,29 +172,63 @@ func (u *UserServiceImpl) AddUserRoles(ctx context.Context, userId int, roles []
 		return nil, err
 	}
 
-	now := time.Now()
-	mRoles := make([]*models.UserRole, len(roles))
-	for i, role := range roles {
-		expiryDate := null.NewTime(time.Time{}, false)
-
-		if role.ExpiryDuration != nil {
-			expiryDate = null.NewTime(now.Add(*role.ExpiryDuration), true)
-		}
-
-		mRoles[i] = &models.UserRole{
-			UserID:     userId,
-			RoleName:   role.RoleName,
-			ExpiryDate: expiryDate,
-		}
-
-		if err := mRoles[i].Insert(ctx, tx, boil.Infer()); err != nil {
-			tx.Rollback()
+	userRoles, err := addUserRoles(ctx, tx, userId, roles)
+	if err != nil {
+		if err := tx.Rollback(); err != nil {
 			return nil, err
 		}
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
+	}
+
+	return userRoles, nil
+}
+
+func addUserRoles(ctx context.Context, tx *sql.Tx, userId int, roles []*domain.UserRole) ([]*models.UserRole, error) {
+	now := time.Now()
+	mRoles := make([]*models.UserRole, len(roles))
+	for i, role := range roles {
+		userRole := &models.UserRole{
+			UserID:   userId,
+			RoleName: role.RoleName,
+		}
+		err := userRole.Reload(ctx, tx)
+		if err != nil && err != sql.ErrNoRows {
+			return nil, err
+		}
+
+		addExpiryDate := func(date time.Time, duration *time.Duration) null.Time {
+			if duration != nil {
+				return null.NewTime(date.Add(*duration), true)
+			} else {
+				return null.NewTime(time.Time{}, false)
+			}
+		}
+
+		if err == sql.ErrNoRows {
+			userRole.ExpiryDate = addExpiryDate(now, role.ExpiryDuration)
+
+			if err := userRole.Insert(ctx, tx, boil.Infer()); err != nil {
+				return nil, err
+			}
+		} else {
+			if userRole.ExpiryDate.Valid { //false의 경우, 만료되지 않는 권한으로 간주하여 만료일을 갱신하지 않음
+				if userRole.ExpiryDate.Time.Before(now) {
+					userRole.ExpiryDate = null.NewTime(now, true)
+				}
+
+				userRole.ExpiryDate = addExpiryDate(userRole.ExpiryDate.Time, role.ExpiryDuration)
+
+				if _, err := userRole.Update(ctx, tx, boil.Infer()); err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		mRoles[i] = userRole
 	}
 
 	return mRoles, nil
