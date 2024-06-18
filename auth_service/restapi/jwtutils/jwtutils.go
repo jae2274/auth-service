@@ -31,7 +31,7 @@ type TokenInfo struct {
 func NewJwtUtils(secretKey []byte) *JwtResolver {
 	return &JwtResolver{
 		secretKey:            secretKey,
-		accessTokenDuration:  30 * time.Minute,
+		accessTokenDuration:  10 * time.Minute,
 		refreshTokenDuration: 24 * time.Hour,
 	}
 }
