@@ -63,6 +63,7 @@ func (c *Controller) RegisterRoutes() {
 	c.router.HandleFunc("/auth/callback/google", c.Authenticate)
 	c.router.HandleFunc("/auth/sign-in", c.SignIn)
 	c.router.HandleFunc("/auth/sign-up", c.SignUp)
+	c.router.HandleFunc("/auth/refresh", c.RefreshJwt)
 }
 
 func (c *Controller) AuthCodeUrls(w http.ResponseWriter, r *http.Request) {
@@ -338,4 +339,52 @@ func decrypt(aesCryptor *aescryptor.JsonAesCryptor, authToken string) (*ooauth.O
 		return nil, err
 	}
 	return ooauthToken, nil
+}
+
+func (c *Controller) RefreshJwt(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req dto.RefreshJwtRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	claims, isValid, err := c.jwtResolver.ParseToken(req.RefreshToken)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	if !isValid {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	userId, err := strconv.Atoi(claims.UserId)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	userRoles, err := c.userService.FindUserRoles(ctx, userId)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	roles := make([]string, 0, len(userRoles))
+	for _, role := range userRoles {
+		roles = append(roles, role.RoleName)
+	}
+
+	tokens, err := c.jwtResolver.CreateToken(claims.UserId, roles, time.Now())
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(&dto.RefreshJwtResponse{
+		AccessToken: tokens.AccessToken,
+		Roles:       roles,
+	})
+
+	if errorHandler(ctx, w, err) {
+		return
+	}
 }

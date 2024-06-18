@@ -66,11 +66,7 @@ func (j *JwtResolver) CreateToken(userId string, roles []string, createdAt time.
 			UserId: userId,
 			Roles:  roles,
 			RegisteredClaims: jwt.RegisteredClaims{
-				// Issuer:    "careerhub.jyo-liar.com",                                 //TODO: 임의 설정
-				// Audience:  []string{"careerhub.jyo-liar.com"},                       //TODO: 임의 설정
-				ExpiresAt: jwt.NewNumericDate(createdAt.Add(j.accessTokenDuration)), //TODO: 임의 설정
-				// IssuedAt:  jwt.NewNumericDate(createdAt),
-				// NotBefore: jwt.NewNumericDate(createdAt),
+				ExpiresAt: jwt.NewNumericDate(createdAt.Add(j.accessTokenDuration)),
 			},
 		},
 	).SignedString(j.secretKey)
@@ -83,7 +79,7 @@ func (j *JwtResolver) CreateToken(userId string, roles []string, createdAt time.
 		&CustomClaims{
 			UserId: userId,
 			RegisteredClaims: jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(createdAt.Add(j.refreshTokenDuration)), //TODO: 임의 설정
+				ExpiresAt: jwt.NewNumericDate(createdAt.Add(j.refreshTokenDuration)),
 			},
 		},
 	).SignedString(j.secretKey)
@@ -106,7 +102,13 @@ func (j *JwtResolver) ParseToken(tokenString string) (*CustomClaims, bool, error
 		return j.secretKey, nil
 	})
 
-	if jwtToken.Valid {
+	if errors.Is(err, jwt.ErrTokenExpired) || errors.Is(err, jwt.ErrTokenNotValidYet) {
+		return &CustomClaims{}, false, nil
+	} else if errors.Is(err, jwt.ErrTokenMalformed) {
+		return &CustomClaims{}, false, terr.New("invalid token. token is malformed")
+	} else if err != nil {
+		return &CustomClaims{}, false, terr.Wrap(err)
+	} else if jwtToken.Valid {
 		if claims, ok := jwtToken.Claims.(*CustomClaims); ok {
 			if err := validator.Validate(claims); err != nil {
 				return claims, false, err
@@ -116,11 +118,7 @@ func (j *JwtResolver) ParseToken(tokenString string) (*CustomClaims, bool, error
 		} else {
 			return &CustomClaims{}, false, terr.New("invalid token. claims is not CustomClaims type")
 		}
-	} else if errors.Is(err, jwt.ErrTokenExpired) || errors.Is(err, jwt.ErrTokenNotValidYet) {
-		return &CustomClaims{}, false, nil
-	} else if errors.Is(err, jwt.ErrTokenMalformed) {
-		return &CustomClaims{}, false, terr.New("invalid token. token is malformed")
 	} else {
-		return &CustomClaims{}, false, terr.Wrap(err)
+		return &CustomClaims{}, false, nil
 	}
 }
