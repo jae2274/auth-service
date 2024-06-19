@@ -57,8 +57,8 @@ func initAgreementFunc(t *testing.T, db *sql.DB) (context.Context, []*models.Agr
 
 func newAuthorities() []*models.Authority {
 	return []*models.Authority{
-		{AuthorityName: "ROLE_ADMIN", Summary: "관리자 권한"},
-		{AuthorityName: "ROLE_USER", Summary: "사용자 권한"},
+		{AuthorityName: "AUTHORITY_ADMIN", Summary: "관리자 권한"},
+		{AuthorityName: "AUTHORITY_USER", Summary: "사용자 권한"},
 	}
 }
 
@@ -81,8 +81,8 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, otherUser.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
-			{AuthorityName: "ROLE_USER", ExpiryDuration: nil},
+			{AuthorityName: "AUTHORITY_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
+			{AuthorityName: "AUTHORITY_USER", ExpiryDuration: nil},
 		})
 		require.NoError(t, err)
 
@@ -293,7 +293,7 @@ func TestUserService(t *testing.T) {
 			{AuthorityName: authorities[1].AuthorityName, ExpiryDuration: ptr.P(time.Duration(1 * time.Second))}, //1초 후
 		})
 		require.NoError(t, err)
-		time.Sleep(time.Second * 2) //2초 대기, 1초 후에 만료되는 ROLE_USER는 만료되었을 것이다.
+		time.Sleep(time.Second * 2) //2초 대기, 1초 후에 만료되는 AUTHORITY_USER는 만료되었을 것이다.
 
 		userAuthorities, err := userService.FindUserAuthorities(ctx, user.UserID)
 		require.NoError(t, err)
@@ -372,7 +372,7 @@ func TestUserService(t *testing.T) {
 			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Second * 1))},
 		})
 		require.NoError(t, err)
-		time.Sleep(time.Second * 2) //2초 대기, ROLE_ADMIN은 만료되었을 것이다.
+		time.Sleep(time.Second * 2) //2초 대기, AUTHORITY_ADMIN은 만료되었을 것이다.
 
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
 			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Hour * 4))},

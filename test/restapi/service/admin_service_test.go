@@ -33,7 +33,7 @@ package service
 // 		ctx := context.Background()
 // 		adminSvc := service.NewAdminService(tinit.DB(t))
 // 		ticketId, err := adminSvc.CreateRoleTicket(ctx, []*models.TicketRole{
-// 			{RoleName: "ROLE_ADMIN"},
+// 			{RoleName: "AUTHORITY_ADMIN"},
 // 		})
 
 // 		require.NoError(t, err)
@@ -45,8 +45,8 @@ package service
 // 		ctx := context.Background()
 // 		adminSvc := service.NewAdminService(tinit.DB(t))
 // 		_, err := adminSvc.CreateRoleTicket(ctx, []*models.TicketRole{
-// 			{RoleName: "ROLE_DUPLICATE"},
-// 			{RoleName: "ROLE_DUPLICATE"},
+// 			{RoleName: "AUTHORITY_DUPLICATE"},
+// 			{RoleName: "AUTHORITY_DUPLICATE"},
 // 		})
 
 // 		require.Error(t, err)
@@ -81,14 +81,14 @@ package service
 
 // 		userId := signUpAndIn(t, ctx, auth_service, byteSecretKey, userinfo)
 
-// 		ticketId, err := adminSvc.CreateRoleTicket(ctx, []*models.TicketRole{{RoleName: "ROLE_ADMIN"}})
+// 		ticketId, err := adminSvc.CreateRoleTicket(ctx, []*models.TicketRole{{RoleName: "AUTHORITY_ADMIN"}})
 // 		require.NoError(t, err)
 
 // 		err = adminSvc.UseTicket(ctx, userId, ticketId)
 // 		require.NoError(t, err)
 
 // 		claims := signIn(t, ctx, auth_service, byteSecretKey, userinfo)
-// 		require.Contains(t, claims.Roles, "ROLE_ADMIN")
+// 		require.Contains(t, claims.Roles, "AUTHORITY_ADMIN")
 // 	})
 
 // 	t.Run("cause error when already used ticket", func(t *testing.T) {
@@ -100,7 +100,7 @@ package service
 
 // 		userId := signUpAndIn(t, ctx, auth_service, byteSecretKey, userinfo)
 
-// 		ticketId, err := adminSvc.CreateRoleTicket(ctx, []*models.TicketRole{{RoleName: "ROLE_ADMIN"}})
+// 		ticketId, err := adminSvc.CreateRoleTicket(ctx, []*models.TicketRole{{RoleName: "AUTHORITY_ADMIN"}})
 // 		require.NoError(t, err)
 
 // 		adminSvc.UseTicket(ctx, userId, ticketId)
