@@ -1,10 +1,10 @@
-package jwtutils
+package jwtresolver
 
 import (
 	"testing"
 	"time"
 
-	"github.com/jae2274/auth-service/auth_service/restapi/jwtutils"
+	"github.com/jae2274/auth-service/auth_service/restapi/jwtresolver"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,7 +16,7 @@ func TestJwtresolver(t *testing.T) {
 	now := time.Now()
 	// accessTokenDuration := 30 * time.Minute
 
-	jwtResolver := jwtutils.NewJwtUtils([]byte(secretKey))
+	jwtResolver := jwtresolver.NewJwtResolver(secretKey)
 	// jwtResolver.SetAccessTokenDuration(accessTokenDuration)
 
 	t.Run("return default expiration duration", func(t *testing.T) {
@@ -91,7 +91,7 @@ func TestJwtresolver(t *testing.T) {
 
 	//아래 두 케이스는 각 서비스간 CustomClaims 및 토큰 규약이 제대로 지켜지지 않았을 때 발생하므로 에러 발생으로 처리
 	t.Run("return error when secret key is different", func(t *testing.T) {
-		diffJwtResolver := jwtutils.NewJwtUtils([]byte("differentSecretKey"))
+		diffJwtResolver := jwtresolver.NewJwtResolver("differentSecretKey")
 		//Given
 		tokenInfo, err := diffJwtResolver.CreateToken(userId, authorities, time.Now())
 		require.NoError(t, err)

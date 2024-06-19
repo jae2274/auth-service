@@ -9,7 +9,7 @@ import (
 	"github.com/jae2274/auth-service/auth_service/common/vars"
 	"github.com/jae2274/auth-service/auth_service/restapi/aescryptor"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr"
-	"github.com/jae2274/auth-service/auth_service/restapi/jwtutils"
+	"github.com/jae2274/auth-service/auth_service/restapi/jwtresolver"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
 	"github.com/jae2274/auth-service/auth_service/utils"
@@ -24,7 +24,7 @@ func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 	router := mux.NewRouter()
 	router.Use(httpmw.SetTraceIdMW()) //TODO: 불필요한 파라미터가 잘못 포함되어 있어 이후 라이브러리 수정 필요
 	userService := service.NewUserService(db)
-	jwtResolver := jwtutils.NewJwtUtils([]byte(envVars.SecretKey))
+	jwtResolver := jwtresolver.NewJwtResolver(envVars.SecretKey)
 	aesCryptor, err := aescryptor.NewJsonAesCryptor(utils.CreateHash(envVars.SecretKey))
 	if err != nil {
 		return err

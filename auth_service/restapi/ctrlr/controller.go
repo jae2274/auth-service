@@ -15,7 +15,7 @@ import (
 	"github.com/jae2274/auth-service/auth_service/models"
 	"github.com/jae2274/auth-service/auth_service/restapi/aescryptor"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
-	"github.com/jae2274/auth-service/auth_service/restapi/jwtutils"
+	"github.com/jae2274/auth-service/auth_service/restapi/jwtresolver"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
 	"github.com/jae2274/auth-service/auth_service/utils"
@@ -28,7 +28,7 @@ import (
 
 type Controller struct {
 	userService       service.UserService
-	jwtResolver       *jwtutils.JwtResolver
+	jwtResolver       *jwtresolver.JwtResolver
 	router            *mux.Router
 	store             *sessions.CookieStore
 	afterAuthHtmlTmpl *template.Template
@@ -39,7 +39,7 @@ type Controller struct {
 //go:embed after_auth.html
 var afterLoginHtml string
 
-func NewController(router *mux.Router, userService service.UserService, jwtResolver *jwtutils.JwtResolver, aesCryptor *aescryptor.JsonAesCryptor, googleOauth ooauth.Ooauth) *Controller {
+func NewController(router *mux.Router, userService service.UserService, jwtResolver *jwtresolver.JwtResolver, aesCryptor *aescryptor.JsonAesCryptor, googleOauth ooauth.Ooauth) *Controller {
 
 	afterLoginHtmlTmpl, err := template.New("afterLogin").Parse(afterLoginHtml)
 
@@ -248,7 +248,7 @@ func signInNecessaryAgreements(necessaryAgreements []*models.Agreement) *dto.Sig
 	return &dto.SignInNecessaryAgreementsRes{Agreements: agreementRes}
 }
 
-func signInSuccessRes(ctx context.Context, userService service.UserService, jwtResolver *jwtutils.JwtResolver, user *models.User) (*dto.SignInSuccessRes, error) {
+func signInSuccessRes(ctx context.Context, userService service.UserService, jwtResolver *jwtresolver.JwtResolver, user *models.User) (*dto.SignInSuccessRes, error) {
 	userAuthorities, err := userService.FindUserAuthorities(ctx, user.UserID)
 	if err != nil {
 		return nil, err

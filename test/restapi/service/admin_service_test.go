@@ -9,7 +9,7 @@ package service
 // 	"github.com/jae2274/auth-service/auth_service/common/domain"
 // 	"github.com/jae2274/auth-service/auth_service/models"
 // 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
-// 	"github.com/jae2274/auth-service/auth_service/restapi/jwtutils"
+// 	"github.com/jae2274/auth-service/auth_service/restapi/jwtresolver"
 // 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 // 	"github.com/jae2274/auth-service/auth_service/restapi/service"
 // 	"github.com/jae2274/auth-service/test/tinit"
@@ -126,7 +126,7 @@ package service
 // 	return userIdInt
 // }
 
-// func signIn(t *testing.T, ctx context.Context, auth_service service.UserService, secretKey []byte, userinfo *ooauth.UserInfo) *jwtutils.CustomClaims {
+// func signIn(t *testing.T, ctx context.Context, auth_service service.UserService, secretKey []byte, userinfo *ooauth.UserInfo) *jwtresolver.CustomClaims {
 // 	res, err := auth_service.SignIn(ctx, userinfo, []*dto.UserAgreementReq{})
 // 	require.NoError(t, err)
 // 	require.Equal(t, res.SignInStatus, dto.SignInSuccess)
@@ -137,22 +137,22 @@ package service
 // 	return claims
 // }
 
-// func parseToken(secretKey []byte, tokenString string) (*jwtutils.CustomClaims, error) {
-// 	jwtToken, err := jwt.ParseWithClaims(tokenString, &jwtutils.CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+// func parseToken(secretKey []byte, tokenString string) (*jwtresolver.CustomClaims, error) {
+// 	jwtToken, err := jwt.ParseWithClaims(tokenString, &jwtresolver.CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 // 		return secretKey, nil
 // 	})
 
 // 	if jwtToken.Valid {
-// 		if claims, ok := jwtToken.Claims.(*jwtutils.CustomClaims); ok {
+// 		if claims, ok := jwtToken.Claims.(*jwtresolver.CustomClaims); ok {
 // 			return claims, nil
 // 		} else {
-// 			return &jwtutils.CustomClaims{}, terr.New("invalid token. claims is not CustomClaims type")
+// 			return &jwtresolver.CustomClaims{}, terr.New("invalid token. claims is not CustomClaims type")
 // 		}
 // 	} else if errors.Is(err, jwt.ErrTokenExpired) || errors.Is(err, jwt.ErrTokenNotValidYet) {
-// 		return &jwtutils.CustomClaims{}, nil
+// 		return &jwtresolver.CustomClaims{}, nil
 // 	} else if errors.Is(err, jwt.ErrTokenMalformed) {
-// 		return &jwtutils.CustomClaims{}, terr.New("invalid token. token is malformed")
+// 		return &jwtresolver.CustomClaims{}, terr.New("invalid token. token is malformed")
 // 	} else {
-// 		return &jwtutils.CustomClaims{}, terr.Wrap(err)
+// 		return &jwtresolver.CustomClaims{}, terr.Wrap(err)
 // 	}
 // }

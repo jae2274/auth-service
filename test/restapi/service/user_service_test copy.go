@@ -7,7 +7,7 @@ package service
 // 	"github.com/jae2274/auth-service/auth_service/common/domain"
 // 	"github.com/jae2274/auth-service/auth_service/models"
 // 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
-// 	"github.com/jae2274/auth-service/auth_service/restapi/jwtutils"
+// 	"github.com/jae2274/auth-service/auth_service/restapi/jwtresolver"
 // 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 // 	"github.com/jae2274/auth-service/auth_service/restapi/service"
 // 	"github.com/jae2274/auth-service/test/tinit"
@@ -20,7 +20,7 @@ package service
 // 	//Given
 // 	ctx := context.Background()
 // 	db := tinit.DB(t)
-// 	auth_service := service.NewUserService(db, jwtutils.NewJwtUtils([]byte("secretKey")))
+// 	auth_service := service.NewUserService(db, jwtresolver.NewJwtResolver([]byte("secretKey")))
 // 	var requiredAgreements models.AgreementSlice = newNecessaryAgreements()
 // 	for _, agreement := range requiredAgreements {
 // 		err := agreement.Insert(ctx, db, boil.Infer())
@@ -40,7 +40,7 @@ package service
 // 	t.Run("return new_user", func(t *testing.T) {
 // 		t.Run("when agreements empty", func(t *testing.T) {
 // 			ctx := context.Background()
-// 			auth_service := service.NewUserService(tinit.DB(t), jwtutils.NewJwtUtils([]byte("secretKey")))
+// 			auth_service := service.NewUserService(tinit.DB(t), jwtresolver.NewJwtResolver([]byte("secretKey")))
 
 // 			userinfo := &ooauth.UserInfo{
 // 				AuthorizedBy: domain.GOOGLE,
@@ -85,7 +85,7 @@ package service
 // 	t.Run("return success", func(t *testing.T) {
 // 		t.Run("if required agreements empty", func(t *testing.T) {
 // 			ctx := context.Background()
-// 			auth_service := service.NewUserService(tinit.DB(t), jwtutils.NewJwtUtils([]byte("secretKey")))
+// 			auth_service := service.NewUserService(tinit.DB(t), jwtresolver.NewJwtResolver([]byte("secretKey")))
 
 // 			userinfo := &ooauth.UserInfo{
 // 				AuthorizedBy: domain.GOOGLE,
