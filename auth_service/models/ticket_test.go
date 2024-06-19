@@ -494,14 +494,14 @@ func testTicketsInsertWhitelist(t *testing.T) {
 	}
 }
 
-func testTicketToManyTicketRoles(t *testing.T) {
+func testTicketToManyTicketAuthorities(t *testing.T) {
 	var err error
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
 
 	var a Ticket
-	var b, c TicketRole
+	var b, c TicketAuthority
 
 	seed := randomize.NewSeed()
 	if err = randomize.Struct(seed, &a, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
@@ -512,10 +512,10 @@ func testTicketToManyTicketRoles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = randomize.Struct(seed, &b, ticketRoleDBTypes, false, ticketRoleColumnsWithDefault...); err != nil {
+	if err = randomize.Struct(seed, &b, ticketAuthorityDBTypes, false, ticketAuthorityColumnsWithDefault...); err != nil {
 		t.Fatal(err)
 	}
-	if err = randomize.Struct(seed, &c, ticketRoleDBTypes, false, ticketRoleColumnsWithDefault...); err != nil {
+	if err = randomize.Struct(seed, &c, ticketAuthorityDBTypes, false, ticketAuthorityColumnsWithDefault...); err != nil {
 		t.Fatal(err)
 	}
 
@@ -529,7 +529,7 @@ func testTicketToManyTicketRoles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	check, err := a.TicketRoles().All(ctx, tx)
+	check, err := a.TicketAuthorities().All(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -552,18 +552,18 @@ func testTicketToManyTicketRoles(t *testing.T) {
 	}
 
 	slice := TicketSlice{&a}
-	if err = a.L.LoadTicketRoles(ctx, tx, false, (*[]*Ticket)(&slice), nil); err != nil {
+	if err = a.L.LoadTicketAuthorities(ctx, tx, false, (*[]*Ticket)(&slice), nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(a.R.TicketRoles); got != 2 {
+	if got := len(a.R.TicketAuthorities); got != 2 {
 		t.Error("number of eager loaded records wrong, got:", got)
 	}
 
-	a.R.TicketRoles = nil
-	if err = a.L.LoadTicketRoles(ctx, tx, true, &a, nil); err != nil {
+	a.R.TicketAuthorities = nil
+	if err = a.L.LoadTicketAuthorities(ctx, tx, true, &a, nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(a.R.TicketRoles); got != 2 {
+	if got := len(a.R.TicketAuthorities); got != 2 {
 		t.Error("number of eager loaded records wrong, got:", got)
 	}
 
@@ -572,7 +572,7 @@ func testTicketToManyTicketRoles(t *testing.T) {
 	}
 }
 
-func testTicketToManyAddOpTicketRoles(t *testing.T) {
+func testTicketToManyAddOpTicketAuthorities(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
@@ -580,15 +580,15 @@ func testTicketToManyAddOpTicketRoles(t *testing.T) {
 	defer func() { _ = tx.Rollback() }()
 
 	var a Ticket
-	var b, c, d, e TicketRole
+	var b, c, d, e TicketAuthority
 
 	seed := randomize.NewSeed()
 	if err = randomize.Struct(seed, &a, ticketDBTypes, false, strmangle.SetComplement(ticketPrimaryKeyColumns, ticketColumnsWithoutDefault)...); err != nil {
 		t.Fatal(err)
 	}
-	foreigners := []*TicketRole{&b, &c, &d, &e}
+	foreigners := []*TicketAuthority{&b, &c, &d, &e}
 	for _, x := range foreigners {
-		if err = randomize.Struct(seed, x, ticketRoleDBTypes, false, strmangle.SetComplement(ticketRolePrimaryKeyColumns, ticketRoleColumnsWithoutDefault)...); err != nil {
+		if err = randomize.Struct(seed, x, ticketAuthorityDBTypes, false, strmangle.SetComplement(ticketAuthorityPrimaryKeyColumns, ticketAuthorityColumnsWithoutDefault)...); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -603,13 +603,13 @@ func testTicketToManyAddOpTicketRoles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	foreignersSplitByInsertion := [][]*TicketRole{
+	foreignersSplitByInsertion := [][]*TicketAuthority{
 		{&b, &c},
 		{&d, &e},
 	}
 
 	for i, x := range foreignersSplitByInsertion {
-		err = a.AddTicketRoles(ctx, tx, i != 0, x...)
+		err = a.AddTicketAuthorities(ctx, tx, i != 0, x...)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -631,14 +631,14 @@ func testTicketToManyAddOpTicketRoles(t *testing.T) {
 			t.Error("relationship was not added properly to the foreign slice")
 		}
 
-		if a.R.TicketRoles[i*2] != first {
+		if a.R.TicketAuthorities[i*2] != first {
 			t.Error("relationship struct slice not set to correct value")
 		}
-		if a.R.TicketRoles[i*2+1] != second {
+		if a.R.TicketAuthorities[i*2+1] != second {
 			t.Error("relationship struct slice not set to correct value")
 		}
 
-		count, err := a.TicketRoles().Count(ctx, tx)
+		count, err := a.TicketAuthorities().Count(ctx, tx)
 		if err != nil {
 			t.Fatal(err)
 		}

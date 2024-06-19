@@ -249,22 +249,22 @@ func signInNecessaryAgreements(necessaryAgreements []*models.Agreement) *dto.Sig
 }
 
 func signInSuccessRes(ctx context.Context, userService service.UserService, jwtResolver *jwtutils.JwtResolver, user *models.User) (*dto.SignInSuccessRes, error) {
-	userRoles, err := userService.FindUserRoles(ctx, user.UserID)
+	userAuthorities, err := userService.FindUserAuthorities(ctx, user.UserID)
 	if err != nil {
 		return nil, err
 	}
-	roleNames := make([]string, 0, len(userRoles))
-	for _, role := range userRoles {
-		roleNames = append(roleNames, role.RoleName)
+	authorityNames := make([]string, 0, len(userAuthorities))
+	for _, authority := range userAuthorities {
+		authorityNames = append(authorityNames, authority.AuthorityName)
 	}
-	token, err := jwtResolver.CreateToken(strconv.Itoa(user.UserID), roleNames, time.Now())
+	token, err := jwtResolver.CreateToken(strconv.Itoa(user.UserID), authorityNames, time.Now())
 	if err != nil {
 		return nil, err
 	}
 
 	return &dto.SignInSuccessRes{
 		Username:     user.Name,
-		Roles:        roleNames,
+		Authorities:  authorityNames,
 		GrantType:    "Bearer",
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
@@ -364,24 +364,24 @@ func (c *Controller) RefreshJwt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userRoles, err := c.userService.FindUserRoles(ctx, userId)
+	dUserAuthorities, err := c.userService.FindUserAuthorities(ctx, userId)
 	if errorHandler(ctx, w, err) {
 		return
 	}
 
-	roles := make([]string, 0, len(userRoles))
-	for _, role := range userRoles {
-		roles = append(roles, role.RoleName)
+	authorityNames := make([]string, 0, len(dUserAuthorities))
+	for _, authority := range dUserAuthorities {
+		authorityNames = append(authorityNames, authority.AuthorityName)
 	}
 
-	tokens, err := c.jwtResolver.CreateToken(claims.UserId, roles, time.Now())
+	tokens, err := c.jwtResolver.CreateToken(claims.UserId, authorityNames, time.Now())
 	if errorHandler(ctx, w, err) {
 		return
 	}
 
 	err = json.NewEncoder(w).Encode(&dto.RefreshJwtResponse{
 		AccessToken: tokens.AccessToken,
-		Roles:       roles,
+		Authorities: authorityNames,
 	})
 
 	if errorHandler(ctx, w, err) {

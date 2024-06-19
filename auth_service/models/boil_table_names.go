@@ -4,19 +4,21 @@
 package models
 
 var TableNames = struct {
-	Agreement     string
-	AuthServer    string
-	Ticket        string
-	TicketRole    string
-	User          string
-	UserAgreement string
-	UserRole      string
+	Agreement       string
+	AuthServer      string
+	Authority       string
+	Ticket          string
+	TicketAuthority string
+	User            string
+	UserAgreement   string
+	UserAuthority   string
 }{
-	Agreement:     "agreement",
-	AuthServer:    "auth_server",
-	Ticket:        "ticket",
-	TicketRole:    "ticket_role",
-	User:          "user",
-	UserAgreement: "user_agreement",
-	UserRole:      "user_role",
+	Agreement:       "agreement",
+	AuthServer:      "auth_server",
+	Authority:       "authority",
+	Ticket:          "ticket",
+	TicketAuthority: "ticket_authority",
+	User:            "user",
+	UserAgreement:   "user_agreement",
+	UserAuthority:   "user_authority",
 }

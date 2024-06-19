@@ -19,7 +19,9 @@ func (GrantedTypeValues) Values() []string {
 	return []string{string(ADMIN), string(TICKET)}
 }
 
-type UserRole struct {
-	RoleName       string         `json:"roleName"`
-	ExpiryDuration *time.Duration `json:"expiryDate"`
+type UserAuthority struct {
+	UserID        int        `json:"-"`
+	AuthorityID   int        `json:"-"`
+	AuthorityName string     `json:"authorityName"`
+	ExpiryDate    *time.Time `json:"expiryDate"`
 }

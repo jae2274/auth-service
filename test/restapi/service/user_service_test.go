@@ -31,7 +31,7 @@ func newOptionalAgreements() []*models.Agreement {
 		{AgreementCode: "code4", Summary: "summary4", IsRequired: 0},
 	}
 }
-func initAgreementFunc(t *testing.T, db *sql.DB) (context.Context, []*models.Agreement, []*models.Agreement) { //TODO: 추후 실제 비즈니스 로직을 통해 DB에 저장하는 것으로 변경
+func initAgreementFunc(t *testing.T, db *sql.DB) (context.Context, []*models.Agreement, []*models.Agreement, []*models.Authority) { //TODO: 추후 실제 비즈니스 로직을 통해 DB에 저장하는 것으로 변경
 	//Given
 	ctx := context.Background()
 	var requiredAgreements models.AgreementSlice = newNecessaryAgreements()
@@ -46,7 +46,20 @@ func initAgreementFunc(t *testing.T, db *sql.DB) (context.Context, []*models.Agr
 		require.NoError(t, err)
 	}
 
-	return ctx, requiredAgreements, optionalAgreements
+	authorities := newAuthorities()
+	for _, authority := range authorities {
+		err := authority.Insert(ctx, db, boil.Infer())
+		require.NoError(t, err)
+	}
+
+	return ctx, requiredAgreements, optionalAgreements, authorities
+}
+
+func newAuthorities() []*models.Authority {
+	return []*models.Authority{
+		{AuthorityName: "ROLE_ADMIN", Summary: "관리자 권한"},
+		{AuthorityName: "ROLE_USER", Summary: "사용자 권한"},
+	}
 }
 
 func TestUserService(t *testing.T) {
@@ -64,12 +77,12 @@ func TestUserService(t *testing.T) {
 			Email:        "other@gmail.com",
 			Username:     "other",
 		}
-		otherUser, err := userService.SignUp(ctx, otherUserInfo, []*dto.UserAgreementReq{})
+		otherUser, err := userService.SignUp(ctx, otherUserInfo, agreementReqs)
 		require.NoError(t, err)
 
-		_, err = userService.AddUserRoles(ctx, otherUser.UserID, []*domain.UserRole{
-			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
-			{RoleName: "ROLE_USER", ExpiryDuration: nil},
+		err = userService.AddUserAuthorities(ctx, otherUser.UserID, []*dto.UserAuthorityReq{
+			{AuthorityName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
+			{AuthorityName: "ROLE_USER", ExpiryDuration: nil},
 		})
 		require.NoError(t, err)
 
@@ -90,8 +103,9 @@ func TestUserService(t *testing.T) {
 	})
 
 	t.Run("return isExistedUser false when user did not sign up", func(t *testing.T) {
-		ctx := context.Background()
-		userService := service.NewUserService(tinit.DB(t))
+		db := tinit.DB(t)
+		ctx, _, _, _ := initAgreementFunc(t, db)
+		userService := service.NewUserService(db)
 		actionOtherUserSignUP(t, ctx, userService)
 
 		_, isExisted, err := userService.FindSignedUpUser(ctx, "authorizedBy", "authorizedID")
@@ -101,7 +115,7 @@ func TestUserService(t *testing.T) {
 
 	t.Run("return isExistedUser true when user signed up", func(t *testing.T) {
 		db := tinit.DB(t)
-		ctx, requiredAgreements, optionalAgreements := initAgreementFunc(t, db)
+		ctx, requiredAgreements, optionalAgreements, _ := initAgreementFunc(t, db)
 		userService := service.NewUserService(db)
 		actionOtherUserSignUP(t, ctx, userService, &dto.UserAgreementReq{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true}, &dto.UserAgreementReq{AgreementId: optionalAgreements[0].AgreementID, IsAgree: true})
 
@@ -131,22 +145,9 @@ func TestUserService(t *testing.T) {
 		require.Equal(t, userinfo.Username, user.Name)
 	})
 
-	t.Run("return empty agreements when agreements is not saved", func(t *testing.T) {
-		ctx := context.Background()
-		userService := service.NewUserService(tinit.DB(t))
-		actionOtherUserSignUP(t, ctx, userService)
-
-		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
-		require.NoError(t, err)
-
-		agreements, err := userService.FindNecessaryAgreements(ctx, user.UserID)
-		require.NoError(t, err)
-		require.Empty(t, agreements)
-	})
-
 	t.Run("return needed necessary agreements when sign up with not answered", func(t *testing.T) {
 		db := tinit.DB(t)
-		ctx, requiredAgreements, optionalAgreements := initAgreementFunc(t, db)
+		ctx, requiredAgreements, optionalAgreements, _ := initAgreementFunc(t, db)
 		userService := service.NewUserService(db)
 		actionOtherUserSignUP(t, ctx, userService, &dto.UserAgreementReq{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true}, &dto.UserAgreementReq{AgreementId: optionalAgreements[0].AgreementID, IsAgree: true})
 
@@ -160,7 +161,7 @@ func TestUserService(t *testing.T) {
 
 	t.Run("return needed necessary agreements when sign up with not agreed", func(t *testing.T) {
 		db := tinit.DB(t)
-		ctx, requiredAgreements, optionalAgreements := initAgreementFunc(t, db)
+		ctx, requiredAgreements, optionalAgreements, _ := initAgreementFunc(t, db)
 		userService := service.NewUserService(db)
 		actionOtherUserSignUP(t, ctx, userService, &dto.UserAgreementReq{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true}, &dto.UserAgreementReq{AgreementId: optionalAgreements[0].AgreementID, IsAgree: true})
 
@@ -182,7 +183,7 @@ func TestUserService(t *testing.T) {
 
 	t.Run("return empty necessary agreements when sign up with all agreed", func(t *testing.T) {
 		db := tinit.DB(t)
-		ctx, requiredAgreements, optionalAgreements := initAgreementFunc(t, db)
+		ctx, requiredAgreements, optionalAgreements, _ := initAgreementFunc(t, db)
 		userService := service.NewUserService(db)
 		actionOtherUserSignUP(t, ctx, userService, &dto.UserAgreementReq{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true}, &dto.UserAgreementReq{AgreementId: optionalAgreements[0].AgreementID, IsAgree: true})
 
@@ -204,7 +205,7 @@ func TestUserService(t *testing.T) {
 
 	t.Run("return empty necessary agreements when all agreed after sign up", func(t *testing.T) {
 		db := tinit.DB(t)
-		ctx, requiredAgreements, optionalAgreements := initAgreementFunc(t, db)
+		ctx, requiredAgreements, optionalAgreements, _ := initAgreementFunc(t, db)
 		userService := service.NewUserService(db)
 		actionOtherUserSignUP(t, ctx, userService, &dto.UserAgreementReq{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true}, &dto.UserAgreementReq{AgreementId: optionalAgreements[0].AgreementID, IsAgree: true})
 
@@ -235,22 +236,23 @@ func TestUserService(t *testing.T) {
 		require.Empty(t, agreements)
 	})
 
-	t.Run("return empty roles when roles is not saved", func(t *testing.T) {
-		ctx := context.Background()
-		userService := service.NewUserService(tinit.DB(t))
+	t.Run("return empty authorities when authorities is not saved", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, _ := initAgreementFunc(t, db)
+		userService := service.NewUserService(db)
 		actionOtherUserSignUP(t, ctx, userService)
 
 		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		authorities, err := userService.FindUserAuthorities(ctx, user.UserID)
 		require.NoError(t, err)
-		require.Empty(t, roles)
+		require.Empty(t, authorities)
 	})
 
-	t.Run("return user's roles when roles is saved", func(t *testing.T) {
+	t.Run("return user's authorities when authorities is saved", func(t *testing.T) {
 		db := tinit.DB(t)
-		ctx := context.Background()
+		ctx, _, _, authorities := initAgreementFunc(t, db)
 		userService := service.NewUserService(db)
 		actionOtherUserSignUP(t, ctx, userService)
 
@@ -258,169 +260,168 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		userId := user.UserID
-		insertedRoles := []*domain.UserRole{
-			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
-			{RoleName: "ROLE_USER", ExpiryDuration: nil},
+		insertedAuthorities := []*dto.UserAuthorityReq{
+			{AuthorityName: authorities[0].AuthorityName, ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
+			{AuthorityName: authorities[1].AuthorityName, ExpiryDuration: nil},
 		}
-		_, err = userService.AddUserRoles(ctx, userId, insertedRoles)
+		err = userService.AddUserAuthorities(ctx, userId, insertedAuthorities)
 		require.NoError(t, err)
 
-		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		userAuthorities, err := userService.FindUserAuthorities(ctx, user.UserID)
 		require.NoError(t, err)
-		require.Len(t, roles, len(insertedRoles))
+		require.Len(t, userAuthorities, len(insertedAuthorities))
 
-		slices.SortStableFunc(roles, func(a, b *models.UserRole) int {
-			return cmp.Compare(a.RoleName, b.RoleName)
+		slices.SortStableFunc(userAuthorities, func(a, b *domain.UserAuthority) int {
+			return cmp.Compare(a.AuthorityName, b.AuthorityName)
 		})
-		for i, role := range roles {
-			requireEqualUserRole(t, userId, time.Now(), insertedRoles[i], role)
+		for i, authority := range userAuthorities {
+			requireEqualUserRole(t, userId, time.Now(), insertedAuthorities[i], authority)
 		}
 	})
 
-	t.Run("return empty roles when roles is expired", func(t *testing.T) {
+	t.Run("return empty authorities when authorities is expired", func(t *testing.T) {
 		db := tinit.DB(t)
-		ctx := context.Background()
+		ctx, _, _, authorities := initAgreementFunc(t, db)
 		userService := service.NewUserService(db)
 		actionOtherUserSignUP(t, ctx, userService)
 
 		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
-			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(1 * time.Second))}, //2초 후
-			{RoleName: "ROLE_USER", ExpiryDuration: ptr.P(time.Duration(1 * time.Second))},  //1초 후
+		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
+			{AuthorityName: authorities[0].AuthorityName, ExpiryDuration: ptr.P(time.Duration(1 * time.Second))}, //2초 후
+			{AuthorityName: authorities[1].AuthorityName, ExpiryDuration: ptr.P(time.Duration(1 * time.Second))}, //1초 후
 		})
 		require.NoError(t, err)
 		time.Sleep(time.Second * 2) //2초 대기, 1초 후에 만료되는 ROLE_USER는 만료되었을 것이다.
 
-		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		userAuthorities, err := userService.FindUserAuthorities(ctx, user.UserID)
 		require.NoError(t, err)
-		require.Empty(t, roles)
+		require.Empty(t, userAuthorities)
 	})
 
-	t.Run("return role with extended expiry date when role was already existed", func(t *testing.T) {
-
+	t.Run("return authority with extended expiry date when authority was already existed", func(t *testing.T) {
 		db := tinit.DB(t)
-		ctx := context.Background()
+		ctx, _, _, authorities := initAgreementFunc(t, db)
 		userService := service.NewUserService(db)
 		actionOtherUserSignUP(t, ctx, userService)
 
 		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
-			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
+		sameAuthority := authorities[0].AuthorityName
+		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
+			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
 		})
 		require.NoError(t, err)
 
-		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
-			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 4))},
+		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
+			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Hour * 4))},
 		})
 		require.NoError(t, err)
 
-		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		userAuthorities, err := userService.FindUserAuthorities(ctx, user.UserID)
 		require.NoError(t, err)
-		require.Len(t, roles, 1)
+		require.Len(t, userAuthorities, 1)
 
-		require.Equal(t, user.UserID, roles[0].UserID)
-		require.Equal(t, "ROLE_ADMIN", roles[0].RoleName)
-		require.WithinDuration(t, time.Now().Add(time.Hour*24).Add(time.Hour*4), roles[0].ExpiryDate.Time, time.Second)
+		require.Equal(t, sameAuthority, userAuthorities[0].AuthorityName)
+		require.WithinDuration(t, time.Now().Add(time.Hour*24).Add(time.Hour*4), *userAuthorities[0].ExpiryDate, time.Second)
 	})
 
-	t.Run("return unexpired role when existed role had not expiry date", func(t *testing.T) {
+	t.Run("return unexpired authority when existed authority had not expiry date", func(t *testing.T) {
 		db := tinit.DB(t)
-		ctx := context.Background()
+		ctx, _, _, authorities := initAgreementFunc(t, db)
 		userService := service.NewUserService(db)
 		actionOtherUserSignUP(t, ctx, userService)
 
 		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
-			{RoleName: "ROLE_ADMIN", ExpiryDuration: nil},
+		sameAuthority := authorities[0].AuthorityName
+		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
+			{AuthorityName: sameAuthority, ExpiryDuration: nil},
 		})
 		require.NoError(t, err)
 
-		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
-			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 4))},
+		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
+			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Hour * 4))},
 		})
 		require.NoError(t, err)
 
-		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		userAuthorities, err := userService.FindUserAuthorities(ctx, user.UserID)
 		require.NoError(t, err)
-		require.Len(t, roles, 1)
+		require.Len(t, userAuthorities, 1)
 
-		require.Equal(t, user.UserID, roles[0].UserID)
-		require.Equal(t, "ROLE_ADMIN", roles[0].RoleName)
-		require.Equal(t, false, roles[0].ExpiryDate.Valid)
+		require.Equal(t, user.UserID, userAuthorities[0].UserID)
+		require.Equal(t, sameAuthority, userAuthorities[0].AuthorityName)
+		require.Nil(t, userAuthorities[0].ExpiryDate)
 	})
 
 	//이미 지난 기한에 추가된 역할은 만료된 것으로 간주하고 새로운 만료일을 설정한다.
-	t.Run("return role with expiry date from now when existed role was expired", func(t *testing.T) {
+	t.Run("return authority with expiry date from now when existed authority was expired", func(t *testing.T) {
 		db := tinit.DB(t)
-		ctx := context.Background()
+		ctx, _, _, authorities := initAgreementFunc(t, db)
 		userService := service.NewUserService(db)
 		actionOtherUserSignUP(t, ctx, userService)
 
 		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
-			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Second * 1))},
+		sameAuthority := authorities[0].AuthorityName
+		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
+			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Second * 1))},
 		})
 		require.NoError(t, err)
 		time.Sleep(time.Second * 2) //2초 대기, ROLE_ADMIN은 만료되었을 것이다.
 
-		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
-			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 4))},
+		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
+			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Hour * 4))},
 		})
 		require.NoError(t, err)
 
-		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		userAuthorities, err := userService.FindUserAuthorities(ctx, user.UserID)
 		require.NoError(t, err)
-		require.Len(t, roles, 1)
+		require.Len(t, userAuthorities, 1)
 
-		require.Equal(t, user.UserID, roles[0].UserID)
-		require.Equal(t, "ROLE_ADMIN", roles[0].RoleName)
-		require.WithinDuration(t, time.Now().Add(time.Hour*4), roles[0].ExpiryDate.Time, time.Millisecond*500)
+		require.Equal(t, sameAuthority, userAuthorities[0].AuthorityName)
+		require.WithinDuration(t, time.Now().Add(time.Hour*4), *userAuthorities[0].ExpiryDate, time.Millisecond*600)
 	})
 
-	t.Run("return unexpired role when existed role was given with no expiry date", func(t *testing.T) {
+	t.Run("return unexpired authority when existed authority was given with no expiry date", func(t *testing.T) {
 		db := tinit.DB(t)
-		ctx := context.Background()
+		ctx, _, _, authorities := initAgreementFunc(t, db)
 		userService := service.NewUserService(db)
 		actionOtherUserSignUP(t, ctx, userService)
 
 		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
-			{RoleName: "ROLE_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Second * 1))},
+		sameAuthority := authorities[0].AuthorityName
+		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
+			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Second * 1))},
 		})
 		require.NoError(t, err)
 
-		_, err = userService.AddUserRoles(ctx, user.UserID, []*domain.UserRole{
-			{RoleName: "ROLE_ADMIN", ExpiryDuration: nil},
+		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
+			{AuthorityName: sameAuthority, ExpiryDuration: nil},
 		})
 		require.NoError(t, err)
 
-		roles, err := userService.FindUserRoles(ctx, user.UserID)
+		dUserAuthorities, err := userService.FindUserAuthorities(ctx, user.UserID)
 		require.NoError(t, err)
-		require.Len(t, roles, 1)
+		require.Len(t, dUserAuthorities, 1)
 
-		require.Equal(t, user.UserID, roles[0].UserID)
-		require.Equal(t, "ROLE_ADMIN", roles[0].RoleName)
-		require.Equal(t, false, roles[0].ExpiryDate.Valid)
+		require.Equal(t, sameAuthority, dUserAuthorities[0].AuthorityName)
+		require.Nil(t, dUserAuthorities[0].ExpiryDate)
 	})
 }
 
-func requireEqualUserRole(t *testing.T, userId int, now time.Time, expected *domain.UserRole, actual *models.UserRole) {
-	require.Equal(t, expected.RoleName, actual.RoleName)
+func requireEqualUserRole(t *testing.T, userId int, now time.Time, expected *dto.UserAuthorityReq, actual *domain.UserAuthority) {
+	require.Equal(t, expected.AuthorityName, actual.AuthorityName)
 	require.Equal(t, userId, actual.UserID)
 	if expected.ExpiryDuration != nil {
-		require.True(t, actual.ExpiryDate.Valid)
-		require.WithinDuration(t, now.Add(*expected.ExpiryDuration), actual.ExpiryDate.Time, time.Second)
+		require.WithinDuration(t, now.Add(*expected.ExpiryDuration), *actual.ExpiryDate, time.Second)
 	} else {
-		require.False(t, actual.ExpiryDate.Valid)
+		require.Nil(t, actual.ExpiryDate)
 	}
 }

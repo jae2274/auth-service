@@ -11,8 +11,8 @@ import (
 )
 
 type CustomClaims struct {
-	UserId string `validate:"nonzero"`
-	Roles  []string
+	UserId      string `validate:"nonzero"`
+	Authorities []string
 	jwt.RegisteredClaims
 }
 
@@ -60,11 +60,11 @@ func (j *JwtResolver) GetRefreshTokenDuration() time.Duration {
 	return j.refreshTokenDuration
 }
 
-func (j *JwtResolver) CreateToken(userId string, roles []string, createdAt time.Time) (*TokenInfo, error) {
+func (j *JwtResolver) CreateToken(userId string, authorities []string, createdAt time.Time) (*TokenInfo, error) {
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		&CustomClaims{
-			UserId: userId,
-			Roles:  roles,
+			UserId:      userId,
+			Authorities: authorities,
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(createdAt.Add(j.accessTokenDuration)),
 			},

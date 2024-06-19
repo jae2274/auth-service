@@ -1,6 +1,8 @@
 package dto
 
 import (
+	"time"
+
 	"github.com/jae2274/goutils/enum"
 )
 
@@ -53,7 +55,7 @@ type SignInResponse struct {
 
 type SignInSuccessRes struct {
 	Username     string   `json:"username"`
-	Roles        []string `json:"roles"`
+	Authorities  []string `json:"authorities"`
 	GrantType    string   `json:"grantType"`
 	AccessToken  string   `json:"accessToken"`
 	RefreshToken string   `json:"refreshToken"`
@@ -93,5 +95,11 @@ type RefreshJwtRequest struct {
 
 type RefreshJwtResponse struct {
 	AccessToken string   `json:"accessToken"`
-	Roles       []string `json:"roles"`
+	Authorities []string `json:"authorities"`
+}
+
+type UserAuthorityReq struct {
+	AuthorityID    int            `json:"-"`
+	AuthorityName  string         `json:"authorityName"`
+	ExpiryDuration *time.Duration `json:"expiryDate"`
 }

@@ -10,13 +10,15 @@ func TestUpsert(t *testing.T) {
 
 	t.Run("AuthServers", testAuthServersUpsert)
 
+	t.Run("Authorities", testAuthoritiesUpsert)
+
 	t.Run("Tickets", testTicketsUpsert)
 
-	t.Run("TicketRoles", testTicketRolesUpsert)
+	t.Run("TicketAuthorities", testTicketAuthoritiesUpsert)
 
 	t.Run("Users", testUsersUpsert)
 
 	t.Run("UserAgreements", testUserAgreementsUpsert)
 
-	t.Run("UserRoles", testUserRolesUpsert)
+	t.Run("UserAuthorities", testUserAuthoritiesUpsert)
 }

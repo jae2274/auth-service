@@ -11,6 +11,7 @@ import (
 	"github.com/jae2274/auth-service/auth_service/restapi/mapper"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 	"github.com/jae2274/auth-service/auth_service/utils"
+	"github.com/jae2274/goutils/terr"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -22,8 +23,8 @@ type UserService interface {
 	FindSignedUpUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*models.User, bool, error)
 	ApplyUserAgreements(ctx context.Context, userId int, agreements []*dto.UserAgreementReq) error
 	FindNecessaryAgreements(ctx context.Context, userId int) ([]*models.Agreement, error)
-	FindUserRoles(ctx context.Context, userId int) ([]*models.UserRole, error)
-	AddUserRoles(ctx context.Context, userId int, roles []*domain.UserRole) ([]*models.UserRole, error)
+	FindUserAuthorities(ctx context.Context, userId int) ([]*domain.UserAuthority, error)
+	AddUserAuthorities(ctx context.Context, userId int, authorities []*dto.UserAuthorityReq) error
 	FindAllAgreements(ctx context.Context) ([]*models.Agreement, error) //TODO: 테스트코드 작성
 	// RefreshJwt(ctx context.Context, refreshToken string) (dto.RefreshJwtResponse, bool, error)
 }
@@ -160,45 +161,101 @@ func (u *UserServiceImpl) necessaryAgreements(ctx context.Context, userId int) (
 	return necessaryAgreements, nil
 }
 
-func (u *UserServiceImpl) FindUserRoles(ctx context.Context, userId int) ([]*models.UserRole, error) {
-	return models.UserRoles(models.UserRoleWhere.UserID.EQ(userId),
-		qm.Expr(models.UserRoleWhere.ExpiryDate.GTE(null.NewTime(time.Now(), true)), qm.Or2(models.UserRoleWhere.ExpiryDate.IsNull())),
-		qm.OrderBy(models.UserRoleColumns.CreatedDate)).All(ctx, u.mysqlDB)
-	// return nil, nil
-}
+func (u *UserServiceImpl) FindUserAuthorities(ctx context.Context, userId int) ([]*domain.UserAuthority, error) {
+	userAuthorities, err := models.UserAuthorities(models.UserAuthorityWhere.UserID.EQ(userId),
+		qm.Expr(models.UserAuthorityWhere.ExpiryDate.GTE(null.NewTime(time.Now(), true)), qm.Or2(models.UserAuthorityWhere.ExpiryDate.IsNull())),
+		qm.OrderBy(models.UserAuthorityColumns.CreatedDate),
+		qm.Load(models.UserAuthorityRels.Authority),
+	).All(ctx, u.mysqlDB)
 
-func (u *UserServiceImpl) AddUserRoles(ctx context.Context, userId int, roles []*domain.UserRole) ([]*models.UserRole, error) {
-	tx, err := u.mysqlDB.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	userRoles, err := addUserRoles(ctx, tx, userId, roles)
+	authorities := make([]*domain.UserAuthority, len(userAuthorities))
+	for i, userAuthority := range userAuthorities {
+		var expiryDate *time.Time = nil
+		if userAuthority.ExpiryDate.Valid {
+			expiryDate = &userAuthority.ExpiryDate.Time
+		}
+
+		authorities[i] = &domain.UserAuthority{
+			UserID:        userAuthority.UserID,
+			AuthorityID:   userAuthority.R.Authority.AuthorityID,
+			AuthorityName: userAuthority.R.Authority.AuthorityName,
+			ExpiryDate:    expiryDate,
+		}
+	}
+
+	return authorities, nil
+}
+
+func (u *UserServiceImpl) AddUserAuthorities(ctx context.Context, userId int, dUserAuthorities []*dto.UserAuthorityReq) error {
+	err := u.attachAuthorityIds(ctx, userId, dUserAuthorities)
+	if err != nil {
+		return err
+	}
+
+	tx, err := u.mysqlDB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	err = addUserAuthorities(ctx, tx, userId, dUserAuthorities)
 	if err != nil {
 		if err := tx.Rollback(); err != nil {
-			return nil, err
+			return err
 		}
-		return nil, err
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return err
 	}
 
-	return userRoles, nil
+	return nil
 }
 
-func addUserRoles(ctx context.Context, tx *sql.Tx, userId int, roles []*domain.UserRole) ([]*models.UserRole, error) {
-	now := time.Now()
-	mRoles := make([]*models.UserRole, len(roles))
-	for i, role := range roles {
-		userRole := &models.UserRole{
-			UserID:   userId,
-			RoleName: role.RoleName,
+func (u *UserServiceImpl) attachAuthorityIds(ctx context.Context, userId int, dUserAuthorities []*dto.UserAuthorityReq) error {
+	authorityNames := make([]string, len(dUserAuthorities))
+	for i, authority := range dUserAuthorities {
+		authorityNames[i] = authority.AuthorityName
+	}
+
+	authorities, err := models.Authorities(models.AuthorityWhere.AuthorityName.IN(authorityNames)).All(ctx, u.mysqlDB)
+	if err != nil {
+		return err
+	}
+	authorityMap := make(map[string]*models.Authority)
+	for _, authority := range authorities {
+		authorityMap[authority.AuthorityName] = authority
+	}
+
+	for _, userAuthority := range dUserAuthorities {
+		authority, ok := authorityMap[userAuthority.AuthorityName]
+		if !ok {
+			return terr.New("authority not found. authorityName: " + userAuthority.AuthorityName)
 		}
-		err := userRole.Reload(ctx, tx)
+
+		userAuthority.AuthorityID = authority.AuthorityID
+	}
+
+	return nil
+}
+
+func addUserAuthorities(ctx context.Context, tx *sql.Tx, userId int, dUserAuthorities []*dto.UserAuthorityReq) error {
+
+	now := time.Now()
+
+	// mUserAuthorities := make([]*models.UserAuthority, len(domainUserAuthorities))
+	for _, dUserAuthority := range dUserAuthorities {
+		mUserAuthority := &models.UserAuthority{
+			UserID:      userId,
+			AuthorityID: dUserAuthority.AuthorityID,
+		}
+		err := mUserAuthority.Reload(ctx, tx)
 		if err != nil && err != sql.ErrNoRows {
-			return nil, err
+			return err
 		}
 
 		addExpiryDate := func(date time.Time, duration *time.Duration) null.Time {
@@ -210,29 +267,29 @@ func addUserRoles(ctx context.Context, tx *sql.Tx, userId int, roles []*domain.U
 		}
 
 		if err == sql.ErrNoRows {
-			userRole.ExpiryDate = addExpiryDate(now, role.ExpiryDuration)
+			mUserAuthority.ExpiryDate = addExpiryDate(now, dUserAuthority.ExpiryDuration)
 
-			if err := userRole.Insert(ctx, tx, boil.Infer()); err != nil {
-				return nil, err
+			if err := mUserAuthority.Insert(ctx, tx, boil.Infer()); err != nil {
+				return err
 			}
 		} else {
-			if userRole.ExpiryDate.Valid { //false의 경우, 만료되지 않는 권한으로 간주하여 만료일을 갱신하지 않음
-				if userRole.ExpiryDate.Time.Before(now) {
-					userRole.ExpiryDate = null.NewTime(now, true)
+			if mUserAuthority.ExpiryDate.Valid { //false의 경우, 만료되지 않는 권한으로 간주하여 만료일을 갱신하지 않음
+				if mUserAuthority.ExpiryDate.Time.Before(now) {
+					mUserAuthority.ExpiryDate = null.NewTime(now, true)
 				}
 
-				userRole.ExpiryDate = addExpiryDate(userRole.ExpiryDate.Time, role.ExpiryDuration)
+				mUserAuthority.ExpiryDate = addExpiryDate(mUserAuthority.ExpiryDate.Time, dUserAuthority.ExpiryDuration)
 
-				if _, err := userRole.Update(ctx, tx, boil.Infer()); err != nil {
-					return nil, err
+				if _, err := mUserAuthority.Update(ctx, tx, boil.Infer()); err != nil {
+					return err
 				}
 			}
 		}
 
-		mRoles[i] = userRole
+		// mUserAuthorities[i] = modelUserAuthority
 	}
 
-	return mRoles, nil
+	return nil
 }
 
 func (u *UserServiceImpl) FindAllAgreements(ctx context.Context) ([]*models.Agreement, error) {

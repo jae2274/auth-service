@@ -132,14 +132,14 @@ var TicketWhere = struct {
 
 // TicketRels is where relationship names are stored.
 var TicketRels = struct {
-	TicketRoles string
+	TicketAuthorities string
 }{
-	TicketRoles: "TicketRoles",
+	TicketAuthorities: "TicketAuthorities",
 }
 
 // ticketR is where relationships are stored.
 type ticketR struct {
-	TicketRoles TicketRoleSlice `boil:"TicketRoles" json:"TicketRoles" toml:"TicketRoles" yaml:"TicketRoles"`
+	TicketAuthorities TicketAuthoritySlice `boil:"TicketAuthorities" json:"TicketAuthorities" toml:"TicketAuthorities" yaml:"TicketAuthorities"`
 }
 
 // NewStruct creates a new relationship struct
@@ -147,11 +147,11 @@ func (*ticketR) NewStruct() *ticketR {
 	return &ticketR{}
 }
 
-func (r *ticketR) GetTicketRoles() TicketRoleSlice {
+func (r *ticketR) GetTicketAuthorities() TicketAuthoritySlice {
 	if r == nil {
 		return nil
 	}
-	return r.TicketRoles
+	return r.TicketAuthorities
 }
 
 // ticketL is where Load methods for each relationship are stored.
@@ -470,23 +470,23 @@ func (q ticketQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (boo
 	return count > 0, nil
 }
 
-// TicketRoles retrieves all the ticket_role's TicketRoles with an executor.
-func (o *Ticket) TicketRoles(mods ...qm.QueryMod) ticketRoleQuery {
+// TicketAuthorities retrieves all the ticket_authority's TicketAuthorities with an executor.
+func (o *Ticket) TicketAuthorities(mods ...qm.QueryMod) ticketAuthorityQuery {
 	var queryMods []qm.QueryMod
 	if len(mods) != 0 {
 		queryMods = append(queryMods, mods...)
 	}
 
 	queryMods = append(queryMods,
-		qm.Where("`ticket_role`.`ticket_id`=?", o.TicketID),
+		qm.Where("`ticket_authority`.`ticket_id`=?", o.TicketID),
 	)
 
-	return TicketRoles(queryMods...)
+	return TicketAuthorities(queryMods...)
 }
 
-// LoadTicketRoles allows an eager lookup of values, cached into the
+// LoadTicketAuthorities allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
-func (ticketL) LoadTicketRoles(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTicket interface{}, mods queries.Applicator) error {
+func (ticketL) LoadTicketAuthorities(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTicket interface{}, mods queries.Applicator) error {
 	var slice []*Ticket
 	var object *Ticket
 
@@ -539,8 +539,8 @@ func (ticketL) LoadTicketRoles(ctx context.Context, e boil.ContextExecutor, sing
 	}
 
 	query := NewQuery(
-		qm.From(`ticket_role`),
-		qm.WhereIn(`ticket_role.ticket_id in ?`, argsSlice...),
+		qm.From(`ticket_authority`),
+		qm.WhereIn(`ticket_authority.ticket_id in ?`, argsSlice...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -548,22 +548,22 @@ func (ticketL) LoadTicketRoles(ctx context.Context, e boil.ContextExecutor, sing
 
 	results, err := query.QueryContext(ctx, e)
 	if err != nil {
-		return errors.Wrap(err, "failed to eager load ticket_role")
+		return errors.Wrap(err, "failed to eager load ticket_authority")
 	}
 
-	var resultSlice []*TicketRole
+	var resultSlice []*TicketAuthority
 	if err = queries.Bind(results, &resultSlice); err != nil {
-		return errors.Wrap(err, "failed to bind eager loaded slice ticket_role")
+		return errors.Wrap(err, "failed to bind eager loaded slice ticket_authority")
 	}
 
 	if err = results.Close(); err != nil {
-		return errors.Wrap(err, "failed to close results in eager load on ticket_role")
+		return errors.Wrap(err, "failed to close results in eager load on ticket_authority")
 	}
 	if err = results.Err(); err != nil {
-		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for ticket_role")
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for ticket_authority")
 	}
 
-	if len(ticketRoleAfterSelectHooks) != 0 {
+	if len(ticketAuthorityAfterSelectHooks) != 0 {
 		for _, obj := range resultSlice {
 			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
 				return err
@@ -571,10 +571,10 @@ func (ticketL) LoadTicketRoles(ctx context.Context, e boil.ContextExecutor, sing
 		}
 	}
 	if singular {
-		object.R.TicketRoles = resultSlice
+		object.R.TicketAuthorities = resultSlice
 		for _, foreign := range resultSlice {
 			if foreign.R == nil {
-				foreign.R = &ticketRoleR{}
+				foreign.R = &ticketAuthorityR{}
 			}
 			foreign.R.Ticket = object
 		}
@@ -584,9 +584,9 @@ func (ticketL) LoadTicketRoles(ctx context.Context, e boil.ContextExecutor, sing
 	for _, foreign := range resultSlice {
 		for _, local := range slice {
 			if local.TicketID == foreign.TicketID {
-				local.R.TicketRoles = append(local.R.TicketRoles, foreign)
+				local.R.TicketAuthorities = append(local.R.TicketAuthorities, foreign)
 				if foreign.R == nil {
-					foreign.R = &ticketRoleR{}
+					foreign.R = &ticketAuthorityR{}
 				}
 				foreign.R.Ticket = local
 				break
@@ -597,11 +597,11 @@ func (ticketL) LoadTicketRoles(ctx context.Context, e boil.ContextExecutor, sing
 	return nil
 }
 
-// AddTicketRoles adds the given related objects to the existing relationships
+// AddTicketAuthorities adds the given related objects to the existing relationships
 // of the ticket, optionally inserting them as new records.
-// Appends related to o.R.TicketRoles.
+// Appends related to o.R.TicketAuthorities.
 // Sets related.R.Ticket appropriately.
-func (o *Ticket) AddTicketRoles(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*TicketRole) error {
+func (o *Ticket) AddTicketAuthorities(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*TicketAuthority) error {
 	var err error
 	for _, rel := range related {
 		if insert {
@@ -611,11 +611,11 @@ func (o *Ticket) AddTicketRoles(ctx context.Context, exec boil.ContextExecutor, 
 			}
 		} else {
 			updateQuery := fmt.Sprintf(
-				"UPDATE `ticket_role` SET %s WHERE %s",
+				"UPDATE `ticket_authority` SET %s WHERE %s",
 				strmangle.SetParamNames("`", "`", 0, []string{"ticket_id"}),
-				strmangle.WhereClause("`", "`", 0, ticketRolePrimaryKeyColumns),
+				strmangle.WhereClause("`", "`", 0, ticketAuthorityPrimaryKeyColumns),
 			)
-			values := []interface{}{o.TicketID, rel.TicketID, rel.RoleName}
+			values := []interface{}{o.TicketID, rel.TicketID, rel.AuthorityID}
 
 			if boil.IsDebug(ctx) {
 				writer := boil.DebugWriterFrom(ctx)
@@ -632,15 +632,15 @@ func (o *Ticket) AddTicketRoles(ctx context.Context, exec boil.ContextExecutor, 
 
 	if o.R == nil {
 		o.R = &ticketR{
-			TicketRoles: related,
+			TicketAuthorities: related,
 		}
 	} else {
-		o.R.TicketRoles = append(o.R.TicketRoles, related...)
+		o.R.TicketAuthorities = append(o.R.TicketAuthorities, related...)
 	}
 
 	for _, rel := range related {
 		if rel.R == nil {
-			rel.R = &ticketRoleR{
+			rel.R = &ticketAuthorityR{
 				Ticket: o,
 			}
 		} else {

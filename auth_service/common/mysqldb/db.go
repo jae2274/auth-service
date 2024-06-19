@@ -16,5 +16,6 @@ func DB(dbVars *vars.DBVars) (*sql.DB, error) {
 	if err != nil {
 		return nil, terr.Wrap(err)
 	}
+	// boil.DebugMode = true
 	return db, nil
 }

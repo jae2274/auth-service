@@ -14,111 +14,122 @@ import "testing"
 func TestParent(t *testing.T) {
 	t.Run("Agreements", testAgreements)
 	t.Run("AuthServers", testAuthServers)
+	t.Run("Authorities", testAuthorities)
 	t.Run("Tickets", testTickets)
-	t.Run("TicketRoles", testTicketRoles)
+	t.Run("TicketAuthorities", testTicketAuthorities)
 	t.Run("Users", testUsers)
 	t.Run("UserAgreements", testUserAgreements)
-	t.Run("UserRoles", testUserRoles)
+	t.Run("UserAuthorities", testUserAuthorities)
 }
 
 func TestDelete(t *testing.T) {
 	t.Run("Agreements", testAgreementsDelete)
 	t.Run("AuthServers", testAuthServersDelete)
+	t.Run("Authorities", testAuthoritiesDelete)
 	t.Run("Tickets", testTicketsDelete)
-	t.Run("TicketRoles", testTicketRolesDelete)
+	t.Run("TicketAuthorities", testTicketAuthoritiesDelete)
 	t.Run("Users", testUsersDelete)
 	t.Run("UserAgreements", testUserAgreementsDelete)
-	t.Run("UserRoles", testUserRolesDelete)
+	t.Run("UserAuthorities", testUserAuthoritiesDelete)
 }
 
 func TestQueryDeleteAll(t *testing.T) {
 	t.Run("Agreements", testAgreementsQueryDeleteAll)
 	t.Run("AuthServers", testAuthServersQueryDeleteAll)
+	t.Run("Authorities", testAuthoritiesQueryDeleteAll)
 	t.Run("Tickets", testTicketsQueryDeleteAll)
-	t.Run("TicketRoles", testTicketRolesQueryDeleteAll)
+	t.Run("TicketAuthorities", testTicketAuthoritiesQueryDeleteAll)
 	t.Run("Users", testUsersQueryDeleteAll)
 	t.Run("UserAgreements", testUserAgreementsQueryDeleteAll)
-	t.Run("UserRoles", testUserRolesQueryDeleteAll)
+	t.Run("UserAuthorities", testUserAuthoritiesQueryDeleteAll)
 }
 
 func TestSliceDeleteAll(t *testing.T) {
 	t.Run("Agreements", testAgreementsSliceDeleteAll)
 	t.Run("AuthServers", testAuthServersSliceDeleteAll)
+	t.Run("Authorities", testAuthoritiesSliceDeleteAll)
 	t.Run("Tickets", testTicketsSliceDeleteAll)
-	t.Run("TicketRoles", testTicketRolesSliceDeleteAll)
+	t.Run("TicketAuthorities", testTicketAuthoritiesSliceDeleteAll)
 	t.Run("Users", testUsersSliceDeleteAll)
 	t.Run("UserAgreements", testUserAgreementsSliceDeleteAll)
-	t.Run("UserRoles", testUserRolesSliceDeleteAll)
+	t.Run("UserAuthorities", testUserAuthoritiesSliceDeleteAll)
 }
 
 func TestExists(t *testing.T) {
 	t.Run("Agreements", testAgreementsExists)
 	t.Run("AuthServers", testAuthServersExists)
+	t.Run("Authorities", testAuthoritiesExists)
 	t.Run("Tickets", testTicketsExists)
-	t.Run("TicketRoles", testTicketRolesExists)
+	t.Run("TicketAuthorities", testTicketAuthoritiesExists)
 	t.Run("Users", testUsersExists)
 	t.Run("UserAgreements", testUserAgreementsExists)
-	t.Run("UserRoles", testUserRolesExists)
+	t.Run("UserAuthorities", testUserAuthoritiesExists)
 }
 
 func TestFind(t *testing.T) {
 	t.Run("Agreements", testAgreementsFind)
 	t.Run("AuthServers", testAuthServersFind)
+	t.Run("Authorities", testAuthoritiesFind)
 	t.Run("Tickets", testTicketsFind)
-	t.Run("TicketRoles", testTicketRolesFind)
+	t.Run("TicketAuthorities", testTicketAuthoritiesFind)
 	t.Run("Users", testUsersFind)
 	t.Run("UserAgreements", testUserAgreementsFind)
-	t.Run("UserRoles", testUserRolesFind)
+	t.Run("UserAuthorities", testUserAuthoritiesFind)
 }
 
 func TestBind(t *testing.T) {
 	t.Run("Agreements", testAgreementsBind)
 	t.Run("AuthServers", testAuthServersBind)
+	t.Run("Authorities", testAuthoritiesBind)
 	t.Run("Tickets", testTicketsBind)
-	t.Run("TicketRoles", testTicketRolesBind)
+	t.Run("TicketAuthorities", testTicketAuthoritiesBind)
 	t.Run("Users", testUsersBind)
 	t.Run("UserAgreements", testUserAgreementsBind)
-	t.Run("UserRoles", testUserRolesBind)
+	t.Run("UserAuthorities", testUserAuthoritiesBind)
 }
 
 func TestOne(t *testing.T) {
 	t.Run("Agreements", testAgreementsOne)
 	t.Run("AuthServers", testAuthServersOne)
+	t.Run("Authorities", testAuthoritiesOne)
 	t.Run("Tickets", testTicketsOne)
-	t.Run("TicketRoles", testTicketRolesOne)
+	t.Run("TicketAuthorities", testTicketAuthoritiesOne)
 	t.Run("Users", testUsersOne)
 	t.Run("UserAgreements", testUserAgreementsOne)
-	t.Run("UserRoles", testUserRolesOne)
+	t.Run("UserAuthorities", testUserAuthoritiesOne)
 }
 
 func TestAll(t *testing.T) {
 	t.Run("Agreements", testAgreementsAll)
 	t.Run("AuthServers", testAuthServersAll)
+	t.Run("Authorities", testAuthoritiesAll)
 	t.Run("Tickets", testTicketsAll)
-	t.Run("TicketRoles", testTicketRolesAll)
+	t.Run("TicketAuthorities", testTicketAuthoritiesAll)
 	t.Run("Users", testUsersAll)
 	t.Run("UserAgreements", testUserAgreementsAll)
-	t.Run("UserRoles", testUserRolesAll)
+	t.Run("UserAuthorities", testUserAuthoritiesAll)
 }
 
 func TestCount(t *testing.T) {
 	t.Run("Agreements", testAgreementsCount)
 	t.Run("AuthServers", testAuthServersCount)
+	t.Run("Authorities", testAuthoritiesCount)
 	t.Run("Tickets", testTicketsCount)
-	t.Run("TicketRoles", testTicketRolesCount)
+	t.Run("TicketAuthorities", testTicketAuthoritiesCount)
 	t.Run("Users", testUsersCount)
 	t.Run("UserAgreements", testUserAgreementsCount)
-	t.Run("UserRoles", testUserRolesCount)
+	t.Run("UserAuthorities", testUserAuthoritiesCount)
 }
 
 func TestHooks(t *testing.T) {
 	t.Run("Agreements", testAgreementsHooks)
 	t.Run("AuthServers", testAuthServersHooks)
+	t.Run("Authorities", testAuthoritiesHooks)
 	t.Run("Tickets", testTicketsHooks)
-	t.Run("TicketRoles", testTicketRolesHooks)
+	t.Run("TicketAuthorities", testTicketAuthoritiesHooks)
 	t.Run("Users", testUsersHooks)
 	t.Run("UserAgreements", testUserAgreementsHooks)
-	t.Run("UserRoles", testUserRolesHooks)
+	t.Run("UserAuthorities", testUserAuthoritiesHooks)
 }
 
 func TestInsert(t *testing.T) {
@@ -126,64 +137,71 @@ func TestInsert(t *testing.T) {
 	t.Run("Agreements", testAgreementsInsertWhitelist)
 	t.Run("AuthServers", testAuthServersInsert)
 	t.Run("AuthServers", testAuthServersInsertWhitelist)
+	t.Run("Authorities", testAuthoritiesInsert)
+	t.Run("Authorities", testAuthoritiesInsertWhitelist)
 	t.Run("Tickets", testTicketsInsert)
 	t.Run("Tickets", testTicketsInsertWhitelist)
-	t.Run("TicketRoles", testTicketRolesInsert)
-	t.Run("TicketRoles", testTicketRolesInsertWhitelist)
+	t.Run("TicketAuthorities", testTicketAuthoritiesInsert)
+	t.Run("TicketAuthorities", testTicketAuthoritiesInsertWhitelist)
 	t.Run("Users", testUsersInsert)
 	t.Run("Users", testUsersInsertWhitelist)
 	t.Run("UserAgreements", testUserAgreementsInsert)
 	t.Run("UserAgreements", testUserAgreementsInsertWhitelist)
-	t.Run("UserRoles", testUserRolesInsert)
-	t.Run("UserRoles", testUserRolesInsertWhitelist)
+	t.Run("UserAuthorities", testUserAuthoritiesInsert)
+	t.Run("UserAuthorities", testUserAuthoritiesInsertWhitelist)
 }
 
 func TestReload(t *testing.T) {
 	t.Run("Agreements", testAgreementsReload)
 	t.Run("AuthServers", testAuthServersReload)
+	t.Run("Authorities", testAuthoritiesReload)
 	t.Run("Tickets", testTicketsReload)
-	t.Run("TicketRoles", testTicketRolesReload)
+	t.Run("TicketAuthorities", testTicketAuthoritiesReload)
 	t.Run("Users", testUsersReload)
 	t.Run("UserAgreements", testUserAgreementsReload)
-	t.Run("UserRoles", testUserRolesReload)
+	t.Run("UserAuthorities", testUserAuthoritiesReload)
 }
 
 func TestReloadAll(t *testing.T) {
 	t.Run("Agreements", testAgreementsReloadAll)
 	t.Run("AuthServers", testAuthServersReloadAll)
+	t.Run("Authorities", testAuthoritiesReloadAll)
 	t.Run("Tickets", testTicketsReloadAll)
-	t.Run("TicketRoles", testTicketRolesReloadAll)
+	t.Run("TicketAuthorities", testTicketAuthoritiesReloadAll)
 	t.Run("Users", testUsersReloadAll)
 	t.Run("UserAgreements", testUserAgreementsReloadAll)
-	t.Run("UserRoles", testUserRolesReloadAll)
+	t.Run("UserAuthorities", testUserAuthoritiesReloadAll)
 }
 
 func TestSelect(t *testing.T) {
 	t.Run("Agreements", testAgreementsSelect)
 	t.Run("AuthServers", testAuthServersSelect)
+	t.Run("Authorities", testAuthoritiesSelect)
 	t.Run("Tickets", testTicketsSelect)
-	t.Run("TicketRoles", testTicketRolesSelect)
+	t.Run("TicketAuthorities", testTicketAuthoritiesSelect)
 	t.Run("Users", testUsersSelect)
 	t.Run("UserAgreements", testUserAgreementsSelect)
-	t.Run("UserRoles", testUserRolesSelect)
+	t.Run("UserAuthorities", testUserAuthoritiesSelect)
 }
 
 func TestUpdate(t *testing.T) {
 	t.Run("Agreements", testAgreementsUpdate)
 	t.Run("AuthServers", testAuthServersUpdate)
+	t.Run("Authorities", testAuthoritiesUpdate)
 	t.Run("Tickets", testTicketsUpdate)
-	t.Run("TicketRoles", testTicketRolesUpdate)
+	t.Run("TicketAuthorities", testTicketAuthoritiesUpdate)
 	t.Run("Users", testUsersUpdate)
 	t.Run("UserAgreements", testUserAgreementsUpdate)
-	t.Run("UserRoles", testUserRolesUpdate)
+	t.Run("UserAuthorities", testUserAuthoritiesUpdate)
 }
 
 func TestSliceUpdateAll(t *testing.T) {
 	t.Run("Agreements", testAgreementsSliceUpdateAll)
 	t.Run("AuthServers", testAuthServersSliceUpdateAll)
+	t.Run("Authorities", testAuthoritiesSliceUpdateAll)
 	t.Run("Tickets", testTicketsSliceUpdateAll)
-	t.Run("TicketRoles", testTicketRolesSliceUpdateAll)
+	t.Run("TicketAuthorities", testTicketAuthoritiesSliceUpdateAll)
 	t.Run("Users", testUsersSliceUpdateAll)
 	t.Run("UserAgreements", testUserAgreementsSliceUpdateAll)
-	t.Run("UserRoles", testUserRolesSliceUpdateAll)
+	t.Run("UserAuthorities", testUserAuthoritiesSliceUpdateAll)
 }

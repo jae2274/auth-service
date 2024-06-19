@@ -11,7 +11,7 @@ import (
 func TestJwtresolver(t *testing.T) {
 	secretKey := "testKey"
 	userId := "Jyo Liar"
-	roles := []string{"admin", "user"}
+	authorities := []string{"admin", "user"}
 
 	now := time.Now()
 	// accessTokenDuration := 30 * time.Minute
@@ -26,7 +26,7 @@ func TestJwtresolver(t *testing.T) {
 		refreshTokenDuration := jwtResolver.GetRefreshTokenDuration()
 
 		//Then
-		require.Equal(t, 30*time.Minute, accessTokenDuration)
+		require.Equal(t, 10*time.Minute, accessTokenDuration)
 		require.Equal(t, 24*time.Hour, refreshTokenDuration)
 	})
 
@@ -46,7 +46,7 @@ func TestJwtresolver(t *testing.T) {
 
 	t.Run("return valid claims", func(t *testing.T) {
 		//Given
-		tokenInfo, err := jwtResolver.CreateToken(userId, roles, time.Now())
+		tokenInfo, err := jwtResolver.CreateToken(userId, authorities, time.Now())
 		require.NoError(t, err)
 
 		//When
@@ -56,11 +56,11 @@ func TestJwtresolver(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, ok)
 		require.Equal(t, userId, claims.UserId)
-		require.Equal(t, roles, claims.Roles)
+		require.Equal(t, authorities, claims.Authorities)
 		require.Equal(t, now.Add(jwtResolver.GetAccessTokenDuration()).Unix(), claims.ExpiresAt.Time.Unix())
 	})
 
-	t.Run("return valid claims even empty roles", func(t *testing.T) {
+	t.Run("return valid claims even empty authorities", func(t *testing.T) {
 		//Given
 		tokenInfo, err := jwtResolver.CreateToken(userId, []string{}, time.Now())
 		require.NoError(t, err)
@@ -72,13 +72,13 @@ func TestJwtresolver(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, ok)
 		require.Equal(t, userId, claims.UserId)
-		require.Empty(t, claims.Roles)
+		require.Empty(t, claims.Authorities)
 		require.Equal(t, now.Add(jwtResolver.GetAccessTokenDuration()).Unix(), claims.ExpiresAt.Time.Unix())
 	})
 
 	t.Run("return invalid claims if after expiresAt", func(t *testing.T) {
 		//Given
-		tokenInfo, err := jwtResolver.CreateToken(userId, roles, now.Add(-jwtResolver.GetAccessTokenDuration()-time.Minute))
+		tokenInfo, err := jwtResolver.CreateToken(userId, authorities, now.Add(-jwtResolver.GetAccessTokenDuration()-time.Minute))
 		require.NoError(t, err)
 
 		//When
@@ -93,7 +93,7 @@ func TestJwtresolver(t *testing.T) {
 	t.Run("return error when secret key is different", func(t *testing.T) {
 		diffJwtResolver := jwtutils.NewJwtUtils([]byte("differentSecretKey"))
 		//Given
-		tokenInfo, err := diffJwtResolver.CreateToken(userId, roles, time.Now())
+		tokenInfo, err := diffJwtResolver.CreateToken(userId, authorities, time.Now())
 		require.NoError(t, err)
 
 		//When
@@ -106,7 +106,7 @@ func TestJwtresolver(t *testing.T) {
 
 	t.Run("return error if empty userId", func(t *testing.T) {
 		//Given
-		tokenInfo, err := jwtResolver.CreateToken("", roles, time.Now())
+		tokenInfo, err := jwtResolver.CreateToken("", authorities, time.Now())
 		require.NoError(t, err)
 
 		//When
@@ -119,7 +119,7 @@ func TestJwtresolver(t *testing.T) {
 
 	t.Run("return valid if refresh token is valid", func(t *testing.T) {
 		//Given
-		tokenInfo, err := jwtResolver.CreateToken(userId, roles, time.Now())
+		tokenInfo, err := jwtResolver.CreateToken(userId, authorities, time.Now())
 		require.NoError(t, err)
 
 		//When
@@ -134,7 +134,7 @@ func TestJwtresolver(t *testing.T) {
 
 	t.Run("return invalid if refresh token is expired", func(t *testing.T) {
 		//Given
-		tokenInfo, err := jwtResolver.CreateToken(userId, roles, now.Add(-jwtResolver.GetRefreshTokenDuration()-time.Minute))
+		tokenInfo, err := jwtResolver.CreateToken(userId, authorities, now.Add(-jwtResolver.GetRefreshTokenDuration()-time.Minute))
 		require.NoError(t, err)
 
 		//When

@@ -8,10 +8,12 @@ import "testing"
 // TestToOne tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToOne(t *testing.T) {
-	t.Run("TicketRoleToTicketUsingTicket", testTicketRoleToOneTicketUsingTicket)
+	t.Run("TicketAuthorityToAuthorityUsingAuthority", testTicketAuthorityToOneAuthorityUsingAuthority)
+	t.Run("TicketAuthorityToTicketUsingTicket", testTicketAuthorityToOneTicketUsingTicket)
 	t.Run("UserAgreementToAgreementUsingAgreement", testUserAgreementToOneAgreementUsingAgreement)
 	t.Run("UserAgreementToUserUsingUser", testUserAgreementToOneUserUsingUser)
-	t.Run("UserRoleToUserUsingUser", testUserRoleToOneUserUsingUser)
+	t.Run("UserAuthorityToAuthorityUsingAuthority", testUserAuthorityToOneAuthorityUsingAuthority)
+	t.Run("UserAuthorityToUserUsingUser", testUserAuthorityToOneUserUsingUser)
 }
 
 // TestOneToOne tests cannot be run in parallel
@@ -22,18 +24,22 @@ func TestOneToOne(t *testing.T) {}
 // or deadlocks can occur.
 func TestToMany(t *testing.T) {
 	t.Run("AgreementToUserAgreements", testAgreementToManyUserAgreements)
-	t.Run("TicketToTicketRoles", testTicketToManyTicketRoles)
+	t.Run("AuthorityToTicketAuthorities", testAuthorityToManyTicketAuthorities)
+	t.Run("AuthorityToUserAuthorities", testAuthorityToManyUserAuthorities)
+	t.Run("TicketToTicketAuthorities", testTicketToManyTicketAuthorities)
 	t.Run("UserToUserAgreements", testUserToManyUserAgreements)
-	t.Run("UserToUserRoles", testUserToManyUserRoles)
+	t.Run("UserToUserAuthorities", testUserToManyUserAuthorities)
 }
 
 // TestToOneSet tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToOneSet(t *testing.T) {
-	t.Run("TicketRoleToTicketUsingTicketRoles", testTicketRoleToOneSetOpTicketUsingTicket)
+	t.Run("TicketAuthorityToAuthorityUsingTicketAuthorities", testTicketAuthorityToOneSetOpAuthorityUsingAuthority)
+	t.Run("TicketAuthorityToTicketUsingTicketAuthorities", testTicketAuthorityToOneSetOpTicketUsingTicket)
 	t.Run("UserAgreementToAgreementUsingUserAgreements", testUserAgreementToOneSetOpAgreementUsingAgreement)
 	t.Run("UserAgreementToUserUsingUserAgreements", testUserAgreementToOneSetOpUserUsingUser)
-	t.Run("UserRoleToUserUsingUserRoles", testUserRoleToOneSetOpUserUsingUser)
+	t.Run("UserAuthorityToAuthorityUsingUserAuthorities", testUserAuthorityToOneSetOpAuthorityUsingAuthority)
+	t.Run("UserAuthorityToUserUsingUserAuthorities", testUserAuthorityToOneSetOpUserUsingUser)
 }
 
 // TestToOneRemove tests cannot be run in parallel
@@ -52,9 +58,11 @@ func TestOneToOneRemove(t *testing.T) {}
 // or deadlocks can occur.
 func TestToManyAdd(t *testing.T) {
 	t.Run("AgreementToUserAgreements", testAgreementToManyAddOpUserAgreements)
-	t.Run("TicketToTicketRoles", testTicketToManyAddOpTicketRoles)
+	t.Run("AuthorityToTicketAuthorities", testAuthorityToManyAddOpTicketAuthorities)
+	t.Run("AuthorityToUserAuthorities", testAuthorityToManyAddOpUserAuthorities)
+	t.Run("TicketToTicketAuthorities", testTicketToManyAddOpTicketAuthorities)
 	t.Run("UserToUserAgreements", testUserToManyAddOpUserAgreements)
-	t.Run("UserToUserRoles", testUserToManyAddOpUserRoles)
+	t.Run("UserToUserAuthorities", testUserToManyAddOpUserAuthorities)
 }
 
 // TestToManySet tests cannot be run in parallel
