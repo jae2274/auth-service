@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/jae2274/auth-service/auth_service/common/domain"
 	"github.com/jae2274/auth-service/auth_service/common/vars"
 	"github.com/jae2274/auth-service/auth_service/restapi/aescryptor"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr"
@@ -38,7 +39,7 @@ func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 	adminRouter := router.NewRoute().Subrouter()
 	adminController := ctrlr.NewAdminController(userService)
 	adminController.RegisterRoutes(adminRouter)
-	adminRouter.Use(middleware.CheckHasAuthority("AUTHORITY_ADMIN"))
+	adminRouter.Use(middleware.CheckHasAuthority(domain.AuthorityAdmin))
 
 	var allowOrigins []string
 	if envVars.AccessControlAllowOrigin != nil {

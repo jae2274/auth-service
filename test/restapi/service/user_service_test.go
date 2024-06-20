@@ -51,14 +51,17 @@ func initAgreementFunc(t *testing.T, db *sql.DB) (context.Context, []*models.Agr
 		err := authority.Insert(ctx, db, boil.Infer())
 		require.NoError(t, err)
 	}
+	adminAuthority := &models.Authority{AuthorityName: domain.AuthorityAdmin, Summary: "관리자 권한"}
+	err := adminAuthority.Insert(ctx, db, boil.Infer())
+	require.NoError(t, err)
 
 	return ctx, requiredAgreements, optionalAgreements, authorities
 }
 
 func newAuthorities() []*models.Authority {
 	return []*models.Authority{
-		{AuthorityName: "AUTHORITY_ADMIN", Summary: "관리자 권한"},
 		{AuthorityName: "AUTHORITY_USER", Summary: "사용자 권한"},
+		{AuthorityName: "AUTHORITY_GUEST", Summary: "게스트 권한"},
 	}
 }
 
@@ -81,8 +84,8 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, otherUser.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: "AUTHORITY_ADMIN", ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
-			{AuthorityName: "AUTHORITY_USER", ExpiryDuration: nil},
+			{AuthorityName: "AUTHORITY_USER", ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
+			{AuthorityName: "AUTHORITY_GUEST", ExpiryDuration: nil},
 		})
 		require.NoError(t, err)
 
@@ -272,7 +275,7 @@ func TestUserService(t *testing.T) {
 		require.Len(t, userAuthorities, len(insertedAuthorities))
 
 		slices.SortStableFunc(userAuthorities, func(a, b *domain.UserAuthority) int {
-			return cmp.Compare(a.AuthorityName, b.AuthorityName)
+			return -cmp.Compare(a.AuthorityName, b.AuthorityName)
 		})
 		for i, authority := range userAuthorities {
 			requireEqualUserRole(t, userId, time.Now(), insertedAuthorities[i], authority)
@@ -413,6 +416,21 @@ func TestUserService(t *testing.T) {
 
 		require.Equal(t, sameAuthority, dUserAuthorities[0].AuthorityName)
 		require.Nil(t, dUserAuthorities[0].ExpiryDate)
+	})
+
+	t.Run("can't add AUTHORITY_ADMIN to user", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, _ := initAgreementFunc(t, db)
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService)
+
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
+			{AuthorityName: domain.AuthorityAdmin, ExpiryDuration: nil},
+		})
+		require.Error(t, err)
 	})
 }
 

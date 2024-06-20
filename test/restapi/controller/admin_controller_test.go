@@ -22,7 +22,7 @@ import (
 
 func newAuthorities() []*models.Authority {
 	return []*models.Authority{
-		{AuthorityName: "AUTHORITY_ADMIN", Summary: "관리자 권한"},
+		{AuthorityName: domain.AuthorityAdmin, Summary: "관리자 권한"},
 		{AuthorityName: "AUTHORITY_USER", Summary: "사용자 권한"},
 		{AuthorityName: "AUTHORITY_GUEST", Summary: "게스트 권한"},
 	}
@@ -58,10 +58,6 @@ func TestAdminController(t *testing.T) {
 	{
 		"userId": %d,
 		"authorities": [
-		  {
-			"authorityName": "AUTHORITY_ADMIN",
-			"expiryDate": "48m"
-		  },
 		  {
 			"authorityName": "AUTHORITY_USER",
 			"expiryDate": "720h"
@@ -102,7 +98,7 @@ func TestAdminController(t *testing.T) {
 	t.Run("return 201 if successfully added", func(t *testing.T) {
 		initAuthority(ctx, t, tinit.DB(t))
 
-		tokens, err := jwtResolver.CreateToken("notImportant", []string{"AUTHORITY_ADMIN"}, time.Now())
+		tokens, err := jwtResolver.CreateToken("notImportant", []string{domain.AuthorityAdmin}, time.Now())
 		require.NoError(t, err)
 
 		targetUser := signUpTestUser(t)
@@ -117,13 +113,11 @@ func TestAdminController(t *testing.T) {
 
 		userAuthorities, err := userService.FindUserAuthorities(ctx, targetUser.UserID)
 		require.NoError(t, err)
-		require.Len(t, userAuthorities, 3)
-		require.Equal(t, "AUTHORITY_ADMIN", userAuthorities[0].AuthorityName)
-		require.WithinDuration(t, time.Now().Add(48*time.Minute), *userAuthorities[0].ExpiryDate, 1*time.Second)
-		require.Equal(t, "AUTHORITY_USER", userAuthorities[1].AuthorityName)
-		require.WithinDuration(t, time.Now().Add(720*time.Hour), *userAuthorities[1].ExpiryDate, 1*time.Second)
-		require.Equal(t, "AUTHORITY_GUEST", userAuthorities[2].AuthorityName)
-		require.Nil(t, userAuthorities[2].ExpiryDate)
+		require.Len(t, userAuthorities, 2)
+		require.Equal(t, "AUTHORITY_USER", userAuthorities[0].AuthorityName)
+		require.WithinDuration(t, time.Now().Add(720*time.Hour), *userAuthorities[0].ExpiryDate, 1*time.Second)
+		require.Equal(t, "AUTHORITY_GUEST", userAuthorities[1].AuthorityName)
+		require.Nil(t, userAuthorities[1].ExpiryDate)
 	})
 }
 

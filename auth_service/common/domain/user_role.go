@@ -2,22 +2,11 @@ package domain
 
 import (
 	"time"
-
-	"github.com/jae2274/goutils/enum"
 )
-
-type GrantedTypeValues struct{}
-
-type GrantedType = enum.Enum[GrantedTypeValues]
 
 const (
-	ADMIN  = GrantedType("ADMIN")
-	TICKET = GrantedType("TICKET")
+	AuthorityAdmin = "AUTHORITY_ADMIN"
 )
-
-func (GrantedTypeValues) Values() []string {
-	return []string{string(ADMIN), string(TICKET)}
-}
 
 type UserAuthority struct {
 	UserID        int        `json:"-"`

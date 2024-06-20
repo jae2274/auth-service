@@ -190,7 +190,21 @@ func (u *UserServiceImpl) FindUserAuthorities(ctx context.Context, userId int) (
 	return authorities, nil
 }
 
+func checkHasAuthorityAdmin(userAuthorities []*dto.UserAuthorityReq) bool {
+	for _, userAuthority := range userAuthorities {
+		if userAuthority.AuthorityName == domain.AuthorityAdmin {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (u *UserServiceImpl) AddUserAuthorities(ctx context.Context, userId int, dUserAuthorities []*dto.UserAuthorityReq) error {
+	if checkHasAuthorityAdmin(dUserAuthorities) {
+		return terr.New("cannot add authority admin")
+	}
+
 	err := u.attachAuthorityIds(ctx, userId, dUserAuthorities)
 	if err != nil {
 		return err
