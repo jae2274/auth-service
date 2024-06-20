@@ -255,12 +255,12 @@ func addUserAuthorities(ctx context.Context, tx *sql.Tx, userId int, dUserAuthor
 		}
 		err := mUserAuthority.Reload(ctx, tx)
 		if err != nil && err != sql.ErrNoRows {
-			return err
+			return terr.Wrap(err)
 		}
 
-		addExpiryDate := func(date time.Time, duration *time.Duration) null.Time {
+		addExpiryDate := func(date time.Time, duration *dto.Duration) null.Time {
 			if duration != nil {
-				return null.NewTime(date.Add(*duration), true)
+				return null.NewTime(date.Add(time.Duration(*duration)), true)
 			} else {
 				return null.NewTime(time.Time{}, false)
 			}
@@ -270,7 +270,7 @@ func addUserAuthorities(ctx context.Context, tx *sql.Tx, userId int, dUserAuthor
 			mUserAuthority.ExpiryDate = addExpiryDate(now, dUserAuthority.ExpiryDuration)
 
 			if err := mUserAuthority.Insert(ctx, tx, boil.Infer()); err != nil {
-				return err
+				return terr.Wrap(err)
 			}
 		} else {
 			if mUserAuthority.ExpiryDate.Valid { //false의 경우, 만료되지 않는 권한으로 간주하여 만료일을 갱신하지 않음
@@ -281,7 +281,7 @@ func addUserAuthorities(ctx context.Context, tx *sql.Tx, userId int, dUserAuthor
 				mUserAuthority.ExpiryDate = addExpiryDate(mUserAuthority.ExpiryDate.Time, dUserAuthority.ExpiryDuration)
 
 				if _, err := mUserAuthority.Update(ctx, tx, boil.Infer()); err != nil {
-					return err
+					return terr.Wrap(err)
 				}
 			}
 		}

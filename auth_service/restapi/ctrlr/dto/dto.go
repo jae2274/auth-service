@@ -98,8 +98,30 @@ type RefreshJwtResponse struct {
 	Authorities []string `json:"authorities"`
 }
 
+type AddAuthorityRequest struct {
+	UserId           int                 `json:"userId"`
+	AddedAuthorities []*UserAuthorityReq `json:"authorities"`
+}
+
 type UserAuthorityReq struct {
-	AuthorityID    int            `json:"-"`
-	AuthorityName  string         `json:"authorityName"`
-	ExpiryDuration *time.Duration `json:"expiryDate"`
+	AuthorityID    int       `json:"-"`
+	AuthorityName  string    `json:"authorityName"`
+	ExpiryDuration *Duration `json:"expiryDate"`
+}
+
+type Duration time.Duration
+
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + time.Duration(d).String() + `"`), nil
+}
+
+func (d *Duration) UnmarshalJSON(data []byte) error {
+	duration, err := time.ParseDuration(string(data[1 : len(data)-1]))
+	if err != nil {
+		return err
+	}
+
+	*d = Duration(duration)
+
+	return nil
 }

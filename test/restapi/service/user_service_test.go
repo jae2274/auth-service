@@ -81,7 +81,7 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, otherUser.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: "AUTHORITY_ADMIN", ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
+			{AuthorityName: "AUTHORITY_ADMIN", ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
 			{AuthorityName: "AUTHORITY_USER", ExpiryDuration: nil},
 		})
 		require.NoError(t, err)
@@ -261,7 +261,7 @@ func TestUserService(t *testing.T) {
 
 		userId := user.UserID
 		insertedAuthorities := []*dto.UserAuthorityReq{
-			{AuthorityName: authorities[0].AuthorityName, ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
+			{AuthorityName: authorities[0].AuthorityName, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
 			{AuthorityName: authorities[1].AuthorityName, ExpiryDuration: nil},
 		}
 		err = userService.AddUserAuthorities(ctx, userId, insertedAuthorities)
@@ -289,8 +289,8 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: authorities[0].AuthorityName, ExpiryDuration: ptr.P(time.Duration(1 * time.Second))}, //2초 후
-			{AuthorityName: authorities[1].AuthorityName, ExpiryDuration: ptr.P(time.Duration(1 * time.Second))}, //1초 후
+			{AuthorityName: authorities[0].AuthorityName, ExpiryDuration: ptr.P(dto.Duration(1 * time.Second))}, //2초 후
+			{AuthorityName: authorities[1].AuthorityName, ExpiryDuration: ptr.P(dto.Duration(1 * time.Second))}, //1초 후
 		})
 		require.NoError(t, err)
 		time.Sleep(time.Second * 2) //2초 대기, 1초 후에 만료되는 AUTHORITY_USER는 만료되었을 것이다.
@@ -311,12 +311,12 @@ func TestUserService(t *testing.T) {
 
 		sameAuthority := authorities[0].AuthorityName
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Hour * 24))},
+			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
 		})
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Hour * 4))},
+			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
 		})
 		require.NoError(t, err)
 
@@ -344,7 +344,7 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Hour * 4))},
+			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
 		})
 		require.NoError(t, err)
 
@@ -369,13 +369,13 @@ func TestUserService(t *testing.T) {
 
 		sameAuthority := authorities[0].AuthorityName
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Second * 1))},
+			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Second * 1))},
 		})
 		require.NoError(t, err)
 		time.Sleep(time.Second * 2) //2초 대기, AUTHORITY_ADMIN은 만료되었을 것이다.
 
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Hour * 4))},
+			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
 		})
 		require.NoError(t, err)
 
@@ -398,7 +398,7 @@ func TestUserService(t *testing.T) {
 
 		sameAuthority := authorities[0].AuthorityName
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(time.Duration(time.Second * 1))},
+			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Second * 1))},
 		})
 		require.NoError(t, err)
 
@@ -420,7 +420,7 @@ func requireEqualUserRole(t *testing.T, userId int, now time.Time, expected *dto
 	require.Equal(t, expected.AuthorityName, actual.AuthorityName)
 	require.Equal(t, userId, actual.UserID)
 	if expected.ExpiryDuration != nil {
-		require.WithinDuration(t, now.Add(*expected.ExpiryDuration), *actual.ExpiryDate, time.Second)
+		require.WithinDuration(t, now.Add(time.Duration(*expected.ExpiryDuration)), *actual.ExpiryDate, time.Second)
 	} else {
 		require.Nil(t, actual.ExpiryDate)
 	}

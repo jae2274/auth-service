@@ -29,7 +29,6 @@ import (
 type Controller struct {
 	userService       service.UserService
 	jwtResolver       *jwtresolver.JwtResolver
-	router            *mux.Router
 	store             *sessions.CookieStore
 	afterAuthHtmlTmpl *template.Template
 	aesCryptor        *aescryptor.JsonAesCryptor
@@ -39,7 +38,7 @@ type Controller struct {
 //go:embed after_auth.html
 var afterLoginHtml string
 
-func NewController(router *mux.Router, userService service.UserService, jwtResolver *jwtresolver.JwtResolver, aesCryptor *aescryptor.JsonAesCryptor, googleOauth ooauth.Ooauth) *Controller {
+func NewController(userService service.UserService, jwtResolver *jwtresolver.JwtResolver, aesCryptor *aescryptor.JsonAesCryptor, googleOauth ooauth.Ooauth) *Controller {
 
 	afterLoginHtmlTmpl, err := template.New("afterLogin").Parse(afterLoginHtml)
 
@@ -48,7 +47,6 @@ func NewController(router *mux.Router, userService service.UserService, jwtResol
 	}
 
 	return &Controller{
-		router:            router,
 		userService:       userService,
 		jwtResolver:       jwtResolver,
 		store:             sessions.NewCookieStore([]byte("secret")),
@@ -58,12 +56,12 @@ func NewController(router *mux.Router, userService service.UserService, jwtResol
 	}
 }
 
-func (c *Controller) RegisterRoutes() {
-	c.router.HandleFunc("/auth/auth-code-urls", c.AuthCodeUrls)
-	c.router.HandleFunc("/auth/callback/google", c.Authenticate)
-	c.router.HandleFunc("/auth/sign-in", c.SignIn)
-	c.router.HandleFunc("/auth/sign-up", c.SignUp)
-	c.router.HandleFunc("/auth/refresh", c.RefreshJwt)
+func (c *Controller) RegisterRoutes(router *mux.Router) {
+	router.HandleFunc("/auth/auth-code-urls", c.AuthCodeUrls)
+	router.HandleFunc("/auth/callback/google", c.Authenticate)
+	router.HandleFunc("/auth/sign-in", c.SignIn)
+	router.HandleFunc("/auth/sign-up", c.SignUp)
+	router.HandleFunc("/auth/refresh", c.RefreshJwt)
 }
 
 func (c *Controller) AuthCodeUrls(w http.ResponseWriter, r *http.Request) {
