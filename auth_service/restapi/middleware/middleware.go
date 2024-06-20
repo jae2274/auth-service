@@ -19,7 +19,7 @@ func SetClaimsMW(jr *jwtresolver.JwtResolver) mux.MiddlewareFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			tokenString := r.Header.Get("Authorization")
 			if tokenString != "" {
-				claims, isValid, err := jr.ParseToken(tokenString) //TODO: 테스트코드 추가 필요
+				claims, isValid, err := jr.ParseToken(tokenString)
 				if err != nil {
 					llog.LogErr(r.Context(), err)
 					w.WriteHeader(http.StatusInternalServerError)

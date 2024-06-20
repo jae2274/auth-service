@@ -18,7 +18,6 @@ import (
 )
 
 type UserService interface {
-	// SignIn(ctx context.Context, userinfo *ooauth.UserInfo, addAgreements []*dto.UserAgreementReq) (*dto.SignInResponse, error)
 	SignUp(ctx context.Context, userinfo *ooauth.UserInfo, additionalAgreements []*dto.UserAgreementReq) (*models.User, error)
 	FindSignedUpUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*models.User, bool, error)
 	ApplyUserAgreements(ctx context.Context, userId int, agreements []*dto.UserAgreementReq) error
@@ -26,7 +25,6 @@ type UserService interface {
 	FindUserAuthorities(ctx context.Context, userId int) ([]*domain.UserAuthority, error)
 	AddUserAuthorities(ctx context.Context, userId int, authorities []*dto.UserAuthorityReq) error
 	FindAllAgreements(ctx context.Context) ([]*models.Agreement, error) //TODO: 테스트코드 작성
-	// RefreshJwt(ctx context.Context, refreshToken string) (dto.RefreshJwtResponse, bool, error)
 }
 
 type UserServiceImpl struct {

@@ -176,11 +176,6 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// res, err := c.userService.SignIn(ctx, ooauthToken.UserInfo, req.AdditionalAgreements)
-	// if errorHandler(ctx, w, err) {
-	// 	return
-	// }
-
 	err = json.NewEncoder(w).Encode(res)
 	if errorHandler(ctx, w, err) {
 		return
