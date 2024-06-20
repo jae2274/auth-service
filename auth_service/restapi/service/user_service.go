@@ -310,10 +310,17 @@ func (u *UserServiceImpl) FindAllAgreements(ctx context.Context) ([]*models.Agre
 }
 
 func (u *UserServiceImpl) RemoveAuthority(ctx context.Context, userId int, authorityName string) error {
-	_, err := models.Authorities(models.AuthorityWhere.AuthorityName.EQ(authorityName)).DeleteAll(ctx, u.mysqlDB)
-	if err != nil {
-		return err
+	mAuthority, err := models.Authorities(models.AuthorityWhere.AuthorityName.EQ(authorityName)).One(ctx, u.mysqlDB)
+	if err != nil && err != sql.ErrNoRows {
+		return terr.Wrap(err)
 	}
 
-	return nil
+	if err == sql.ErrNoRows {
+		return terr.New("authority not found")
+	}
+
+	_, err = models.UserAuthorities(models.UserAuthorityWhere.UserID.EQ(userId), models.UserAuthorityWhere.AuthorityID.EQ(mAuthority.AuthorityID)).DeleteAll(ctx, u.mysqlDB)
+
+	return err
+
 }

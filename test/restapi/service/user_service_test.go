@@ -253,6 +253,21 @@ func TestUserService(t *testing.T) {
 		require.Empty(t, authorities)
 	})
 
+	t.Run("return error when try to add not existed authority", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, _ := initAgreementFunc(t, db)
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService)
+
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
+			{AuthorityName: "notExistedAuthority", ExpiryDuration: nil},
+		})
+		require.Error(t, err)
+	})
+
 	t.Run("return user's authorities when authorities is saved", func(t *testing.T) {
 		db := tinit.DB(t)
 		ctx, _, _, authorities := initAgreementFunc(t, db)
@@ -455,6 +470,32 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, 1)
 		require.Equal(t, authorities[0].AuthorityName, userAuthorities[0].AuthorityName)
+	})
+
+	t.Run("return error when try to remove not existed authority", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, _ := initAgreementFunc(t, db)
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService)
+
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		err = userService.RemoveAuthority(ctx, user.UserID, "notExistedAuthority")
+		require.Error(t, err)
+	})
+
+	t.Run("can remove even if no authority to remove", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService)
+
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		err = userService.RemoveAuthority(ctx, user.UserID, authorities[0].AuthorityName)
+		require.NoError(t, err)
 	})
 }
 

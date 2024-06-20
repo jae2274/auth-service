@@ -190,27 +190,6 @@ func TestAdminController(t *testing.T) {
 			require.NoError(t, err)
 			require.Len(t, userAuthorities, 1)
 		})
-
-		t.Run("return 204 if no authority to remove", func(t *testing.T) {
-			initAuthority(ctx, t, tinit.DB(t))
-			tokens, err := jwtResolver.CreateToken("notImportant", []string{domain.AuthorityAdmin}, time.Now())
-			require.NoError(t, err)
-
-			targetUser := signUpTestUser(t)
-
-			req, err := http.NewRequest("DELETE", rootUrl+"/auth/admin/authority", strings.NewReader(fmt.Sprintf(removeSampleJsonBody, targetUser.UserID)))
-			require.NoError(t, err)
-			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
-
-			res, err := http.DefaultClient.Do(req)
-			require.NoError(t, err)
-
-			require.Equal(t, http.StatusNoContent, res.StatusCode)
-
-			userAuthorities, err := userService.FindUserAuthorities(ctx, targetUser.UserID)
-			require.NoError(t, err)
-			require.Len(t, userAuthorities, 0)
-		})
 	})
 }
 
