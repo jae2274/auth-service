@@ -99,8 +99,8 @@ type RefreshJwtResponse struct {
 }
 
 type AddAuthorityRequest struct {
-	UserId           int                 `json:"userId"`
-	AddedAuthorities []*UserAuthorityReq `json:"authorities"`
+	UserId      int                 `json:"userId"`
+	Authorities []*UserAuthorityReq `json:"authorities"`
 }
 
 type UserAuthorityReq struct {
@@ -124,4 +124,9 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 	*d = Duration(duration)
 
 	return nil
+}
+
+type RemoveAuthorityRequest struct {
+	UserId        int    `json:"userId"`
+	AuthorityName string `json:"authorityName"`
 }

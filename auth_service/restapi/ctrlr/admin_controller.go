@@ -19,6 +19,7 @@ func NewAdminController(userService service.UserService) *AdminController {
 
 func (a *AdminController) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/admin/authority", a.AddAuthority).Methods("POST")
+	router.HandleFunc("/auth/admin/authority", a.RemoveAuthority).Methods("DELETE")
 }
 
 func (a *AdminController) AddAuthority(w http.ResponseWriter, r *http.Request) {
@@ -30,9 +31,25 @@ func (a *AdminController) AddAuthority(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.userService.AddUserAuthorities(ctx, req.UserId, req.AddedAuthorities); errorHandler(ctx, w, err) {
+	if err := a.userService.AddUserAuthorities(ctx, req.UserId, req.Authorities); errorHandler(ctx, w, err) {
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (a *AdminController) RemoveAuthority(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req dto.RemoveAuthorityRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	if err := a.userService.RemoveAuthority(ctx, req.UserId, req.AuthorityName); errorHandler(ctx, w, err) {
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

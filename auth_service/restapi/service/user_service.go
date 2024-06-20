@@ -25,6 +25,7 @@ type UserService interface {
 	FindUserAuthorities(ctx context.Context, userId int) ([]*domain.UserAuthority, error)
 	AddUserAuthorities(ctx context.Context, userId int, authorities []*dto.UserAuthorityReq) error
 	FindAllAgreements(ctx context.Context) ([]*models.Agreement, error) //TODO: 테스트코드 작성
+	RemoveAuthority(ctx context.Context, userId int, authorityName string) error
 }
 
 type UserServiceImpl struct {
@@ -306,4 +307,13 @@ func addUserAuthorities(ctx context.Context, tx *sql.Tx, userId int, dUserAuthor
 
 func (u *UserServiceImpl) FindAllAgreements(ctx context.Context) ([]*models.Agreement, error) {
 	return models.Agreements().All(ctx, u.mysqlDB)
+}
+
+func (u *UserServiceImpl) RemoveAuthority(ctx context.Context, userId int, authorityName string) error {
+	_, err := models.Authorities(models.AuthorityWhere.AuthorityName.EQ(authorityName)).DeleteAll(ctx, u.mysqlDB)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

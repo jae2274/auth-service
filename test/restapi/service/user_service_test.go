@@ -432,6 +432,30 @@ func TestUserService(t *testing.T) {
 		})
 		require.Error(t, err)
 	})
+
+	t.Run("return authorities without removed authority", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+		userService := service.NewUserService(db)
+		actionOtherUserSignUP(t, ctx, userService)
+
+		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
+			{AuthorityName: authorities[0].AuthorityName, ExpiryDuration: nil},
+			{AuthorityName: authorities[1].AuthorityName, ExpiryDuration: nil},
+		})
+		require.NoError(t, err)
+
+		err = userService.RemoveAuthority(ctx, user.UserID, authorities[1].AuthorityName)
+		require.NoError(t, err)
+
+		userAuthorities, err := userService.FindUserAuthorities(ctx, user.UserID)
+		require.NoError(t, err)
+		require.Len(t, userAuthorities, 1)
+		require.Equal(t, authorities[0].AuthorityName, userAuthorities[0].AuthorityName)
+	})
 }
 
 func requireEqualUserRole(t *testing.T, userId int, now time.Time, expected *dto.UserAuthorityReq, actual *domain.UserAuthority) {
