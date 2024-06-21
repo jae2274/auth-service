@@ -29,9 +29,9 @@ func NewTicketService(mysqlDB *sql.DB) TicketService {
 // func (t *TicketService) GetTicketInfo(ctx context.Context, ticketId string) (*models.Ticket, bool, error) {
 // 	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId)).One(ctx, t.mysqlDB)
 // 	if err != nil && err != sql.ErrNoRows {
-// 		return nil,false, terr.Wrap(err)
-// 	}else if err == sql.ErrNoRows {
-// 		return nil,false, nil
+// 		return nil, false, terr.Wrap(err)
+// 	} else if err == sql.ErrNoRows {
+// 		return nil, false, nil
 // 	}
 
 // }

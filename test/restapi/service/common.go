@@ -45,7 +45,7 @@ func initAgreementFunc(t *testing.T, db *sql.DB) (context.Context, []*models.Agr
 		err := authority.Insert(ctx, db, boil.Infer())
 		require.NoError(t, err)
 	}
-	adminAuthority := &models.Authority{AuthorityCode: domain.AuthorityAdmin, Summary: "관리자 권한"}
+	adminAuthority := &models.Authority{AuthorityCode: domain.AuthorityAdmin, AuthorityName: "관리자", Summary: "관리자 권한"}
 	err := adminAuthority.Insert(ctx, db, boil.Infer())
 	require.NoError(t, err)
 
@@ -54,8 +54,8 @@ func initAgreementFunc(t *testing.T, db *sql.DB) (context.Context, []*models.Agr
 
 func newAuthorities() []*models.Authority {
 	return []*models.Authority{
-		{AuthorityCode: "AUTHORITY_USER", Summary: "사용자 권한"},
-		{AuthorityCode: "AUTHORITY_GUEST", Summary: "게스트 권한"},
+		{AuthorityCode: "AUTHORITY_USER", AuthorityName: "사용자", Summary: "사용자 권한"},
+		{AuthorityCode: "AUTHORITY_GUEST", AuthorityName: "손님", Summary: "게스트 권한"},
 	}
 }
 

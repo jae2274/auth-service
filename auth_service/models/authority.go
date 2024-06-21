@@ -25,6 +25,7 @@ import (
 type Authority struct {
 	AuthorityID   int    `boil:"authority_id" json:"authority_id" toml:"authority_id" yaml:"authority_id"`
 	AuthorityCode string `boil:"authority_code" json:"authority_code" toml:"authority_code" yaml:"authority_code"`
+	AuthorityName string `boil:"authority_name" json:"authority_name" toml:"authority_name" yaml:"authority_name"`
 	Summary       string `boil:"summary" json:"summary" toml:"summary" yaml:"summary"`
 
 	R *authorityR `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -34,20 +35,24 @@ type Authority struct {
 var AuthorityColumns = struct {
 	AuthorityID   string
 	AuthorityCode string
+	AuthorityName string
 	Summary       string
 }{
 	AuthorityID:   "authority_id",
 	AuthorityCode: "authority_code",
+	AuthorityName: "authority_name",
 	Summary:       "summary",
 }
 
 var AuthorityTableColumns = struct {
 	AuthorityID   string
 	AuthorityCode string
+	AuthorityName string
 	Summary       string
 }{
 	AuthorityID:   "authority.authority_id",
 	AuthorityCode: "authority.authority_code",
+	AuthorityName: "authority.authority_name",
 	Summary:       "authority.summary",
 }
 
@@ -56,10 +61,12 @@ var AuthorityTableColumns = struct {
 var AuthorityWhere = struct {
 	AuthorityID   whereHelperint
 	AuthorityCode whereHelperstring
+	AuthorityName whereHelperstring
 	Summary       whereHelperstring
 }{
 	AuthorityID:   whereHelperint{field: "`authority`.`authority_id`"},
 	AuthorityCode: whereHelperstring{field: "`authority`.`authority_code`"},
+	AuthorityName: whereHelperstring{field: "`authority`.`authority_name`"},
 	Summary:       whereHelperstring{field: "`authority`.`summary`"},
 }
 
@@ -101,8 +108,8 @@ func (r *authorityR) GetUserAuthorities() UserAuthoritySlice {
 type authorityL struct{}
 
 var (
-	authorityAllColumns            = []string{"authority_id", "authority_code", "summary"}
-	authorityColumnsWithoutDefault = []string{"authority_code", "summary"}
+	authorityAllColumns            = []string{"authority_id", "authority_code", "authority_name", "summary"}
+	authorityColumnsWithoutDefault = []string{"authority_code", "authority_name", "summary"}
 	authorityColumnsWithDefault    = []string{"authority_id"}
 	authorityPrimaryKeyColumns     = []string{"authority_id"}
 	authorityGeneratedColumns      = []string{}
@@ -1051,6 +1058,7 @@ func (o AuthoritySlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor
 var mySQLAuthorityUniqueColumns = []string{
 	"authority_id",
 	"authority_code",
+	"authority_name",
 }
 
 // Upsert attempts an insert using an executor, and does an update or ignore on conflict.
