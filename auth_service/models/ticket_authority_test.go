@@ -797,7 +797,7 @@ func testTicketAuthoritiesSelect(t *testing.T) {
 }
 
 var (
-	ticketAuthorityDBTypes = map[string]string{`TicketID`: `int`, `AuthorityID`: `int`, `ExpiryDuration`: `timestamp`}
+	ticketAuthorityDBTypes = map[string]string{`TicketID`: `int`, `AuthorityID`: `int`, `ExpiryDurationMS`: `bigint`}
 	_                      = bytes.MinRead
 )
 

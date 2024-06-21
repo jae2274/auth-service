@@ -24,68 +24,82 @@ import (
 
 // TicketAuthority is an object representing the database table.
 type TicketAuthority struct {
-	TicketID       int       `boil:"ticket_id" json:"ticket_id" toml:"ticket_id" yaml:"ticket_id"`
-	AuthorityID    int       `boil:"authority_id" json:"authority_id" toml:"authority_id" yaml:"authority_id"`
-	ExpiryDuration null.Time `boil:"expiry_duration" json:"expiry_duration,omitempty" toml:"expiry_duration" yaml:"expiry_duration,omitempty"`
+	TicketID         int        `boil:"ticket_id" json:"ticket_id" toml:"ticket_id" yaml:"ticket_id"`
+	AuthorityID      int        `boil:"authority_id" json:"authority_id" toml:"authority_id" yaml:"authority_id"`
+	ExpiryDurationMS null.Int64 `boil:"expiry_duration_ms" json:"expiry_duration_ms,omitempty" toml:"expiry_duration_ms" yaml:"expiry_duration_ms,omitempty"`
 
 	R *ticketAuthorityR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L ticketAuthorityL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var TicketAuthorityColumns = struct {
-	TicketID       string
-	AuthorityID    string
-	ExpiryDuration string
+	TicketID         string
+	AuthorityID      string
+	ExpiryDurationMS string
 }{
-	TicketID:       "ticket_id",
-	AuthorityID:    "authority_id",
-	ExpiryDuration: "expiry_duration",
+	TicketID:         "ticket_id",
+	AuthorityID:      "authority_id",
+	ExpiryDurationMS: "expiry_duration_ms",
 }
 
 var TicketAuthorityTableColumns = struct {
-	TicketID       string
-	AuthorityID    string
-	ExpiryDuration string
+	TicketID         string
+	AuthorityID      string
+	ExpiryDurationMS string
 }{
-	TicketID:       "ticket_authority.ticket_id",
-	AuthorityID:    "ticket_authority.authority_id",
-	ExpiryDuration: "ticket_authority.expiry_duration",
+	TicketID:         "ticket_authority.ticket_id",
+	AuthorityID:      "ticket_authority.authority_id",
+	ExpiryDurationMS: "ticket_authority.expiry_duration_ms",
 }
 
 // Generated where
 
-type whereHelpernull_Time struct{ field string }
+type whereHelpernull_Int64 struct{ field string }
 
-func (w whereHelpernull_Time) EQ(x null.Time) qm.QueryMod {
+func (w whereHelpernull_Int64) EQ(x null.Int64) qm.QueryMod {
 	return qmhelper.WhereNullEQ(w.field, false, x)
 }
-func (w whereHelpernull_Time) NEQ(x null.Time) qm.QueryMod {
+func (w whereHelpernull_Int64) NEQ(x null.Int64) qm.QueryMod {
 	return qmhelper.WhereNullEQ(w.field, true, x)
 }
-func (w whereHelpernull_Time) LT(x null.Time) qm.QueryMod {
+func (w whereHelpernull_Int64) LT(x null.Int64) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.LT, x)
 }
-func (w whereHelpernull_Time) LTE(x null.Time) qm.QueryMod {
+func (w whereHelpernull_Int64) LTE(x null.Int64) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.LTE, x)
 }
-func (w whereHelpernull_Time) GT(x null.Time) qm.QueryMod {
+func (w whereHelpernull_Int64) GT(x null.Int64) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.GT, x)
 }
-func (w whereHelpernull_Time) GTE(x null.Time) qm.QueryMod {
+func (w whereHelpernull_Int64) GTE(x null.Int64) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.GTE, x)
 }
+func (w whereHelpernull_Int64) IN(slice []int64) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
+}
+func (w whereHelpernull_Int64) NIN(slice []int64) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
+}
 
-func (w whereHelpernull_Time) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
-func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
+func (w whereHelpernull_Int64) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
+func (w whereHelpernull_Int64) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
 
 var TicketAuthorityWhere = struct {
-	TicketID       whereHelperint
-	AuthorityID    whereHelperint
-	ExpiryDuration whereHelpernull_Time
+	TicketID         whereHelperint
+	AuthorityID      whereHelperint
+	ExpiryDurationMS whereHelpernull_Int64
 }{
-	TicketID:       whereHelperint{field: "`ticket_authority`.`ticket_id`"},
-	AuthorityID:    whereHelperint{field: "`ticket_authority`.`authority_id`"},
-	ExpiryDuration: whereHelpernull_Time{field: "`ticket_authority`.`expiry_duration`"},
+	TicketID:         whereHelperint{field: "`ticket_authority`.`ticket_id`"},
+	AuthorityID:      whereHelperint{field: "`ticket_authority`.`authority_id`"},
+	ExpiryDurationMS: whereHelpernull_Int64{field: "`ticket_authority`.`expiry_duration_ms`"},
 }
 
 // TicketAuthorityRels is where relationship names are stored.
@@ -126,8 +140,8 @@ func (r *ticketAuthorityR) GetTicket() *Ticket {
 type ticketAuthorityL struct{}
 
 var (
-	ticketAuthorityAllColumns            = []string{"ticket_id", "authority_id", "expiry_duration"}
-	ticketAuthorityColumnsWithoutDefault = []string{"ticket_id", "authority_id", "expiry_duration"}
+	ticketAuthorityAllColumns            = []string{"ticket_id", "authority_id", "expiry_duration_ms"}
+	ticketAuthorityColumnsWithoutDefault = []string{"ticket_id", "authority_id", "expiry_duration_ms"}
 	ticketAuthorityColumnsWithDefault    = []string{}
 	ticketAuthorityPrimaryKeyColumns     = []string{"ticket_id", "authority_id"}
 	ticketAuthorityGeneratedColumns      = []string{}

@@ -204,7 +204,7 @@ func (u *UserServiceImpl) AddUserAuthorities(ctx context.Context, userId int, dU
 		return terr.New("cannot add authority admin")
 	}
 
-	err := u.attachAuthorityIds(ctx, userId, dUserAuthorities)
+	err := attachAuthorityIds(ctx, u.mysqlDB, dUserAuthorities)
 	if err != nil {
 		return err
 	}
@@ -224,82 +224,6 @@ func (u *UserServiceImpl) AddUserAuthorities(ctx context.Context, userId int, dU
 
 	if err := tx.Commit(); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (u *UserServiceImpl) attachAuthorityIds(ctx context.Context, userId int, dUserAuthorities []*dto.UserAuthorityReq) error {
-	authorityNames := make([]string, len(dUserAuthorities))
-	for i, authority := range dUserAuthorities {
-		authorityNames[i] = authority.AuthorityName
-	}
-
-	authorities, err := models.Authorities(models.AuthorityWhere.AuthorityName.IN(authorityNames)).All(ctx, u.mysqlDB)
-	if err != nil {
-		return err
-	}
-	authorityMap := make(map[string]*models.Authority)
-	for _, authority := range authorities {
-		authorityMap[authority.AuthorityName] = authority
-	}
-
-	for _, userAuthority := range dUserAuthorities {
-		authority, ok := authorityMap[userAuthority.AuthorityName]
-		if !ok {
-			return terr.New("authority not found. authorityName: " + userAuthority.AuthorityName)
-		}
-
-		userAuthority.AuthorityID = authority.AuthorityID
-	}
-
-	return nil
-}
-
-func addUserAuthorities(ctx context.Context, tx *sql.Tx, userId int, dUserAuthorities []*dto.UserAuthorityReq) error {
-
-	now := time.Now()
-
-	// mUserAuthorities := make([]*models.UserAuthority, len(domainUserAuthorities))
-	for _, dUserAuthority := range dUserAuthorities {
-		mUserAuthority := &models.UserAuthority{
-			UserID:      userId,
-			AuthorityID: dUserAuthority.AuthorityID,
-		}
-		err := mUserAuthority.Reload(ctx, tx)
-		if err != nil && err != sql.ErrNoRows {
-			return terr.Wrap(err)
-		}
-
-		addExpiryDate := func(date time.Time, duration *dto.Duration) null.Time {
-			if duration != nil {
-				return null.NewTime(date.Add(time.Duration(*duration)), true)
-			} else {
-				return null.NewTime(time.Time{}, false)
-			}
-		}
-
-		if err == sql.ErrNoRows {
-			mUserAuthority.ExpiryDate = addExpiryDate(now, dUserAuthority.ExpiryDuration)
-
-			if err := mUserAuthority.Insert(ctx, tx, boil.Infer()); err != nil {
-				return terr.Wrap(err)
-			}
-		} else {
-			if mUserAuthority.ExpiryDate.Valid { //false의 경우, 만료되지 않는 권한으로 간주하여 만료일을 갱신하지 않음
-				if mUserAuthority.ExpiryDate.Time.Before(now) {
-					mUserAuthority.ExpiryDate = null.NewTime(now, true)
-				}
-
-				mUserAuthority.ExpiryDate = addExpiryDate(mUserAuthority.ExpiryDate.Time, dUserAuthority.ExpiryDuration)
-
-				if _, err := mUserAuthority.Update(ctx, tx, boil.Infer()); err != nil {
-					return terr.Wrap(err)
-				}
-			}
-		}
-
-		// mUserAuthorities[i] = modelUserAuthority
 	}
 
 	return nil
