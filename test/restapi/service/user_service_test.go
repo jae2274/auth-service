@@ -32,10 +32,10 @@ func TestUserService(t *testing.T) {
 			Email:        "other@gmail.com",
 			Username:     "other",
 		}
-		otherUser, err := service.SignUp(ctx, db, otherUserInfo, agreementReqs)
+		otherUser, err := signUp(ctx, db, otherUserInfo, agreementReqs)
 		require.NoError(t, err)
 
-		err = service.AddUserAuthorities(ctx, db, otherUser.UserID, []*dto.UserAuthorityReq{
+		err = addUserAuthorities(ctx, db, otherUser.UserID, []*dto.UserAuthorityReq{
 			{AuthorityCode: "AUTHORITY_USER", ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
 			{AuthorityCode: "AUTHORITY_GUEST", ExpiryDuration: nil},
 		})
@@ -48,7 +48,7 @@ func TestUserService(t *testing.T) {
 		db := tinit.DB(t)
 		ctx := context.Background()
 
-		signedUpUser, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		signedUpUser, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
 		require.Equal(t, string(userinfo.AuthorizedBy), signedUpUser.AuthorizedBy)
@@ -86,7 +86,7 @@ func TestUserService(t *testing.T) {
 			AgreementId: optionalAgreements[1].AgreementID,
 			IsAgree:     false,
 		}}
-		_, err := service.SignUp(ctx, db, &userinfo, agreementReq)
+		_, err := signUp(ctx, db, &userinfo, agreementReq)
 
 		require.NoError(t, err)
 
@@ -105,7 +105,7 @@ func TestUserService(t *testing.T) {
 
 		actionOtherUserSignUP(t, ctx, db, &dto.UserAgreementReq{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true}, &dto.UserAgreementReq{AgreementId: optionalAgreements[0].AgreementID, IsAgree: true})
 
-		user, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
 		agreements, err := service.FindNecessaryAgreements(ctx, db, user.UserID)
@@ -127,7 +127,7 @@ func TestUserService(t *testing.T) {
 			})
 		}
 
-		user, err := service.SignUp(ctx, db, &userinfo, agreementReq)
+		user, err := signUp(ctx, db, &userinfo, agreementReq)
 		require.NoError(t, err)
 
 		agreements, err := service.FindNecessaryAgreements(ctx, db, user.UserID)
@@ -149,7 +149,7 @@ func TestUserService(t *testing.T) {
 			})
 		}
 
-		user, err := service.SignUp(ctx, db, &userinfo, agreementReq)
+		user, err := signUp(ctx, db, &userinfo, agreementReq)
 		require.NoError(t, err)
 
 		agreements, err := service.FindNecessaryAgreements(ctx, db, user.UserID)
@@ -171,7 +171,7 @@ func TestUserService(t *testing.T) {
 			})
 		}
 
-		user, err := service.SignUp(ctx, db, &userinfo, agreementReq)
+		user, err := signUp(ctx, db, &userinfo, agreementReq)
 		require.NoError(t, err)
 
 		agreementReq = make([]*dto.UserAgreementReq, 0, len(requiredAgreements))
@@ -182,7 +182,7 @@ func TestUserService(t *testing.T) {
 			})
 		}
 
-		err = service.ApplyUserAgreements(ctx, db, user.UserID, agreementReq)
+		err = applyUserAgreements(ctx, db, user.UserID, agreementReq)
 		require.NoError(t, err)
 
 		agreements, err := service.FindNecessaryAgreements(ctx, db, user.UserID)
@@ -196,7 +196,7 @@ func TestUserService(t *testing.T) {
 
 		actionOtherUserSignUP(t, ctx, db)
 
-		user, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
 		authorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
@@ -210,10 +210,10 @@ func TestUserService(t *testing.T) {
 
 		actionOtherUserSignUP(t, ctx, db)
 
-		user, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = service.AddUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
+		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
 			{AuthorityCode: "notExistedAuthority", ExpiryDuration: nil},
 		})
 		require.Error(t, err)
@@ -225,7 +225,7 @@ func TestUserService(t *testing.T) {
 
 		actionOtherUserSignUP(t, ctx, db)
 
-		user, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
 		userId := user.UserID
@@ -233,7 +233,7 @@ func TestUserService(t *testing.T) {
 			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: nil},
 		}
-		err = service.AddUserAuthorities(ctx, db, userId, insertedAuthorities)
+		err = addUserAuthorities(ctx, db, userId, insertedAuthorities)
 		require.NoError(t, err)
 
 		userAuthorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
@@ -254,10 +254,10 @@ func TestUserService(t *testing.T) {
 
 		actionOtherUserSignUP(t, ctx, db)
 
-		user, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = service.AddUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
+		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
 			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(1 * time.Second))}, //2초 후
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(1 * time.Second))}, //1초 후
 		})
@@ -275,16 +275,16 @@ func TestUserService(t *testing.T) {
 
 		actionOtherUserSignUP(t, ctx, db)
 
-		user, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
 		sameAuthority := authorities[0].AuthorityCode
-		err = service.AddUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
+		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
 			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
 		})
 		require.NoError(t, err)
 
-		err = service.AddUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
+		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
 			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
 		})
 		require.NoError(t, err)
@@ -303,16 +303,16 @@ func TestUserService(t *testing.T) {
 
 		actionOtherUserSignUP(t, ctx, db)
 
-		user, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
 		sameAuthority := authorities[0].AuthorityCode
-		err = service.AddUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
+		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
 			{AuthorityCode: sameAuthority, ExpiryDuration: nil},
 		})
 		require.NoError(t, err)
 
-		err = service.AddUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
+		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
 			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
 		})
 		require.NoError(t, err)
@@ -333,17 +333,17 @@ func TestUserService(t *testing.T) {
 
 		actionOtherUserSignUP(t, ctx, db)
 
-		user, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
 		sameAuthority := authorities[0].AuthorityCode
-		err = service.AddUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
+		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
 			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Second * 1))},
 		})
 		require.NoError(t, err)
 		time.Sleep(time.Second * 2) //2초 대기, AUTHORITY_ADMIN은 만료되었을 것이다.
 
-		err = service.AddUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
+		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
 			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
 		})
 		require.NoError(t, err)
@@ -362,16 +362,16 @@ func TestUserService(t *testing.T) {
 
 		actionOtherUserSignUP(t, ctx, db)
 
-		user, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
 		sameAuthority := authorities[0].AuthorityCode
-		err = service.AddUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
+		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
 			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Second * 1))},
 		})
 		require.NoError(t, err)
 
-		err = service.AddUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
+		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
 			{AuthorityCode: sameAuthority, ExpiryDuration: nil},
 		})
 		require.NoError(t, err)
@@ -390,10 +390,10 @@ func TestUserService(t *testing.T) {
 
 		actionOtherUserSignUP(t, ctx, db)
 
-		user, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = service.AddUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
+		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
 			{AuthorityCode: domain.AuthorityAdmin, ExpiryDuration: nil},
 		})
 		require.Error(t, err)
@@ -405,16 +405,16 @@ func TestUserService(t *testing.T) {
 
 		actionOtherUserSignUP(t, ctx, db)
 
-		user, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = service.AddUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
+		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
 			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDuration: nil},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: nil},
 		})
 		require.NoError(t, err)
 
-		err = service.RemoveAuthority(ctx, db, user.UserID, authorities[1].AuthorityCode)
+		err = removeAuthority(ctx, db, user.UserID, authorities[1].AuthorityCode)
 		require.NoError(t, err)
 
 		userAuthorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
@@ -429,10 +429,10 @@ func TestUserService(t *testing.T) {
 
 		actionOtherUserSignUP(t, ctx, db)
 
-		user, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = service.RemoveAuthority(ctx, db, user.UserID, "notExistedAuthority")
+		err = removeAuthority(ctx, db, user.UserID, "notExistedAuthority")
 		require.Error(t, err)
 	})
 
@@ -442,10 +442,10 @@ func TestUserService(t *testing.T) {
 
 		actionOtherUserSignUP(t, ctx, db)
 
-		user, err := service.SignUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = service.RemoveAuthority(ctx, db, user.UserID, authorities[0].AuthorityCode)
+		err = removeAuthority(ctx, db, user.UserID, authorities[0].AuthorityCode)
 		require.NoError(t, err)
 	})
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
 )
@@ -33,7 +34,11 @@ func (a *AdminController) AddAuthority(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := service.AddUserAuthorities(ctx, a.db, req.UserId, req.Authorities); errorHandler(ctx, w, err) {
+	err = mysqldb.WithTransactionVoid(ctx, a.db, func(tx *sql.Tx) error {
+		return service.AddUserAuthorities(ctx, tx, req.UserId, req.Authorities)
+	})
+
+	if errorHandler(ctx, w, err) {
 		return
 	}
 
@@ -49,7 +54,11 @@ func (a *AdminController) RemoveAuthority(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := service.RemoveAuthority(ctx, a.db, req.UserId, req.AuthorityCode); errorHandler(ctx, w, err) {
+	err = mysqldb.WithTransactionVoid(ctx, a.db, func(tx *sql.Tx) error {
+		return service.RemoveAuthority(ctx, tx, req.UserId, req.AuthorityCode)
+	})
+
+	if errorHandler(ctx, w, err) {
 		return
 	}
 
@@ -65,7 +74,10 @@ func (a *AdminController) CreateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ticketId, err := service.CreateTicket(ctx, a.db, req.TicketAuthorities)
+	ticketId, err := mysqldb.WithTransaction(ctx, a.db, func(tx *sql.Tx) (string, error) {
+		return service.CreateTicket(ctx, tx, req.TicketAuthorities)
+	})
+
 	if errorHandler(ctx, w, err) {
 		return
 	}

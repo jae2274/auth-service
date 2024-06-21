@@ -13,6 +13,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/models"
 	"github.com/jae2274/auth-service/auth_service/restapi/aescryptor"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
@@ -22,6 +23,7 @@ import (
 	"github.com/jae2274/auth-service/auth_service/utils"
 	"github.com/jae2274/goutils/llog"
 	"github.com/jae2274/goutils/terr"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -58,11 +60,11 @@ func NewController(db *sql.DB, jwtResolver *jwtresolver.JwtResolver, aesCryptor 
 }
 
 func (c *Controller) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/auth/auth-code-urls", c.AuthCodeUrls)
+	router.HandleFunc("/auth/auth-code-urls", c.AuthCodeUrls).Methods("GET")
 	router.HandleFunc("/auth/callback/google", c.Authenticate)
-	router.HandleFunc("/auth/sign-in", c.SignIn)
-	router.HandleFunc("/auth/sign-up", c.SignUp)
-	router.HandleFunc("/auth/refresh", c.RefreshJwt)
+	router.HandleFunc("/auth/sign-in", c.SignIn).Methods("POST")
+	router.HandleFunc("/auth/sign-up", c.SignUp).Methods("POST")
+	router.HandleFunc("/auth/refresh", c.RefreshJwt).Methods("POST")
 }
 
 func (c *Controller) AuthCodeUrls(w http.ResponseWriter, r *http.Request) {
@@ -172,7 +174,10 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := c.signIn(ctx, ooauthToken.UserInfo, req.AdditionalAgreements)
+	res, err := mysqldb.WithTransaction(ctx, c.db, func(tx *sql.Tx) (*dto.SignInResponse, error) {
+		return c.signIn(ctx, tx, ooauthToken.UserInfo, req.AdditionalAgreements)
+	})
+
 	if errorHandler(ctx, w, err) {
 		return
 	}
@@ -183,19 +188,19 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (c *Controller) signIn(ctx context.Context, userinfo *ooauth.UserInfo, additionalAgreements []*dto.UserAgreementReq) (*dto.SignInResponse, error) {
-	user, isExisted, err := service.FindSignedUpUser(ctx, c.db, userinfo.AuthorizedBy, userinfo.AuthorizedID)
+func (c *Controller) signIn(ctx context.Context, tx *sql.Tx, userinfo *ooauth.UserInfo, additionalAgreements []*dto.UserAgreementReq) (*dto.SignInResponse, error) {
+	user, isExisted, err := service.FindSignedUpUser(ctx, tx, userinfo.AuthorizedBy, userinfo.AuthorizedID)
 	if err != nil {
 		return nil, err
 	}
 
 	if isExisted {
-		err = service.ApplyUserAgreements(ctx, c.db, user.UserID, additionalAgreements)
+		err = service.ApplyUserAgreements(ctx, tx, user.UserID, additionalAgreements)
 		if err != nil {
 			return nil, err
 		}
 
-		agreements, err := service.FindNecessaryAgreements(ctx, c.db, user.UserID)
+		agreements, err := service.FindNecessaryAgreements(ctx, tx, user.UserID)
 		if err != nil {
 			return nil, err
 		}
@@ -206,7 +211,7 @@ func (c *Controller) signIn(ctx context.Context, userinfo *ooauth.UserInfo, addi
 				NecessaryAgreementsRes: signInNecessaryAgreements(agreements),
 			}, nil
 		} else {
-			successRes, err := signInSuccessRes(ctx, c.db, c.jwtResolver, user)
+			successRes, err := signInSuccessRes(ctx, tx, c.jwtResolver, user)
 			if err != nil {
 				return nil, err
 			}
@@ -217,7 +222,7 @@ func (c *Controller) signIn(ctx context.Context, userinfo *ooauth.UserInfo, addi
 			}, nil
 		}
 	} else {
-		signInNewUserRes, err := signInNewUserRes(ctx, c.db, userinfo)
+		signInNewUserRes, err := signInNewUserRes(ctx, tx, userinfo)
 		if err != nil {
 			return nil, err
 		}
@@ -242,7 +247,7 @@ func signInNecessaryAgreements(necessaryAgreements []*models.Agreement) *dto.Sig
 	return &dto.SignInNecessaryAgreementsRes{Agreements: agreementRes}
 }
 
-func signInSuccessRes(ctx context.Context, db *sql.DB, jwtResolver *jwtresolver.JwtResolver, user *models.User) (*dto.SignInSuccessRes, error) {
+func signInSuccessRes(ctx context.Context, db boil.ContextExecutor, jwtResolver *jwtresolver.JwtResolver, user *models.User) (*dto.SignInSuccessRes, error) {
 	userAuthorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
 	if err != nil {
 		return nil, err
@@ -265,7 +270,7 @@ func signInSuccessRes(ctx context.Context, db *sql.DB, jwtResolver *jwtresolver.
 	}, nil
 }
 
-func signInNewUserRes(ctx context.Context, db *sql.DB, userinfo *ooauth.UserInfo) (*dto.SignInNewUserRes, error) {
+func signInNewUserRes(ctx context.Context, db boil.ContextExecutor, userinfo *ooauth.UserInfo) (*dto.SignInNewUserRes, error) {
 	agreements, err := service.FindAllAgreements(ctx, db)
 	if err != nil {
 		return nil, err
@@ -301,7 +306,11 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = service.SignUp(ctx, c.db, ooauthToken.UserInfo, req.Agreements)
+	err = mysqldb.WithTransactionVoid(ctx, c.db, func(tx *sql.Tx) error {
+		_, err = service.SignUp(ctx, tx, ooauthToken.UserInfo, req.Agreements)
+		return err
+	})
+
 	if errorHandler(ctx, w, err) {
 		return
 	}
@@ -358,25 +367,33 @@ func (c *Controller) RefreshJwt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dUserAuthorities, err := service.FindUserAuthorities(ctx, c.db, userId)
-	if errorHandler(ctx, w, err) {
-		return
-	}
+	res, err := mysqldb.WithTransaction(ctx, c.db, func(tx *sql.Tx) (*dto.RefreshJwtResponse, error) {
+		dUserAuthorities, err := service.FindUserAuthorities(ctx, tx, userId)
+		if err != nil {
+			return nil, err
+		}
 
-	authorityCodes := make([]string, 0, len(dUserAuthorities))
-	for _, authority := range dUserAuthorities {
-		authorityCodes = append(authorityCodes, authority.AuthorityCode)
-	}
+		authorityCodes := make([]string, 0, len(dUserAuthorities))
+		for _, authority := range dUserAuthorities {
+			authorityCodes = append(authorityCodes, authority.AuthorityCode)
+		}
 
-	tokens, err := c.jwtResolver.CreateToken(claims.UserId, authorityCodes, time.Now())
-	if errorHandler(ctx, w, err) {
-		return
-	}
+		tokens, err := c.jwtResolver.CreateToken(claims.UserId, authorityCodes, time.Now())
+		if err != nil {
+			return nil, err
+		}
 
-	err = json.NewEncoder(w).Encode(&dto.RefreshJwtResponse{
-		AccessToken: tokens.AccessToken,
-		Authorities: authorityCodes,
+		return &dto.RefreshJwtResponse{
+			AccessToken: tokens.AccessToken,
+			Authorities: authorityCodes,
+		}, nil
 	})
+
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(res)
 
 	if errorHandler(ctx, w, err) {
 		return

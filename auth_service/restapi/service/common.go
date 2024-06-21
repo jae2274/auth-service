@@ -12,13 +12,13 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
-func attachAuthorityIds(ctx context.Context, mysqlDB *sql.DB, dUserAuthorities []*dto.UserAuthorityReq) error {
+func attachAuthorityIds(ctx context.Context, exec boil.ContextExecutor, dUserAuthorities []*dto.UserAuthorityReq) error {
 	authorityCodes := make([]string, len(dUserAuthorities))
 	for i, authority := range dUserAuthorities {
 		authorityCodes[i] = authority.AuthorityCode
 	}
 
-	authorities, err := models.Authorities(models.AuthorityWhere.AuthorityCode.IN(authorityCodes)).All(ctx, mysqlDB)
+	authorities, err := models.Authorities(models.AuthorityWhere.AuthorityCode.IN(authorityCodes)).All(ctx, exec)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func addExpiryDate(date time.Time, duration *dto.Duration) null.Time {
 	}
 }
 
-func addUserAuthorities(ctx context.Context, tx *sql.Tx, userId int, dUserAuthorities []*dto.UserAuthorityReq) error {
+func addUserAuthorities(ctx context.Context, exec boil.ContextExecutor, userId int, dUserAuthorities []*dto.UserAuthorityReq) error {
 
 	now := time.Now()
 
@@ -57,7 +57,7 @@ func addUserAuthorities(ctx context.Context, tx *sql.Tx, userId int, dUserAuthor
 			UserID:      userId,
 			AuthorityID: dUserAuthority.AuthorityID,
 		}
-		err := mUserAuthority.Reload(ctx, tx)
+		err := mUserAuthority.Reload(ctx, exec)
 		if err != nil && err != sql.ErrNoRows {
 			return terr.Wrap(err)
 		}
@@ -65,7 +65,7 @@ func addUserAuthorities(ctx context.Context, tx *sql.Tx, userId int, dUserAuthor
 		if err == sql.ErrNoRows {
 			mUserAuthority.ExpiryDate = addExpiryDate(now, dUserAuthority.ExpiryDuration)
 
-			if err := mUserAuthority.Insert(ctx, tx, boil.Infer()); err != nil {
+			if err := mUserAuthority.Insert(ctx, exec, boil.Infer()); err != nil {
 				return terr.Wrap(err)
 			}
 		} else {
@@ -76,7 +76,7 @@ func addUserAuthorities(ctx context.Context, tx *sql.Tx, userId int, dUserAuthor
 
 				mUserAuthority.ExpiryDate = addExpiryDate(mUserAuthority.ExpiryDate.Time, dUserAuthority.ExpiryDuration)
 
-				if _, err := mUserAuthority.Update(ctx, tx, boil.Infer()); err != nil {
+				if _, err := mUserAuthority.Update(ctx, exec, boil.Infer()); err != nil {
 					return terr.Wrap(err)
 				}
 			}

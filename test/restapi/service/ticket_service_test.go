@@ -29,7 +29,7 @@ func TestTicketService(t *testing.T) {
 		db := tinit.DB(t)
 		ctx := context.Background()
 
-		_, err := service.CreateTicket(ctx, db, []*dto.UserAuthorityReq{{AuthorityCode: "notExistedAuthority"}})
+		_, err := createTicketWithTx(ctx, db, []*dto.UserAuthorityReq{{AuthorityCode: "notExistedAuthority"}})
 		require.Error(t, err)
 	})
 
@@ -41,7 +41,7 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
 		}
-		ticketId, err := service.CreateTicket(ctx, db, ticketAuthorities)
+		ticketId, err := createTicketWithTx(ctx, db, ticketAuthorities)
 		require.NoError(t, err)
 		require.NotEmpty(t, ticketId)
 
@@ -76,10 +76,10 @@ func TestTicketService(t *testing.T) {
 
 		ctx, _, _, _ := initAgreementFunc(t, db)
 
-		targetUser, err := service.SignUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
+		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		isExisted, err := service.UseTicket(ctx, db, targetUser.UserID, "notExistedTicketId")
+		isExisted, err := useTicket(ctx, db, targetUser.UserID, "notExistedTicketId")
 		require.NoError(t, err)
 		require.False(t, isExisted)
 	})
@@ -93,13 +93,13 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
 		}
-		ticketId, err := service.CreateTicket(ctx, db, userAuthorityReqs)
+		ticketId, err := createTicketWithTx(ctx, db, userAuthorityReqs)
 		require.NoError(t, err)
 
-		targetUser, err := service.SignUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
+		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		isExisted, err := service.UseTicket(ctx, db, targetUser.UserID, ticketId)
+		isExisted, err := useTicket(ctx, db, targetUser.UserID, ticketId)
 		require.NoError(t, err)
 		require.True(t, isExisted)
 
@@ -122,17 +122,17 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
 		}
 
-		ticketId, err := service.CreateTicket(ctx, db, userAuthorityReqs)
+		ticketId, err := createTicketWithTx(ctx, db, userAuthorityReqs)
 		require.NoError(t, err)
 
-		targetUser, err := service.SignUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
+		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		isExisted, err := service.UseTicket(ctx, db, targetUser.UserID, ticketId)
+		isExisted, err := useTicket(ctx, db, targetUser.UserID, ticketId)
 		require.NoError(t, err)
 		require.True(t, isExisted)
 
-		isExisted, err = service.UseTicket(ctx, db, targetUser.UserID, ticketId)
+		isExisted, err = useTicket(ctx, db, targetUser.UserID, ticketId)
 		require.NoError(t, err)
 		require.False(t, isExisted)
 

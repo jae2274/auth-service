@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/restapi/middleware"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
 )
@@ -61,7 +62,10 @@ func (c *TicketController) UseTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isExisted, err := service.UseTicket(ctx, c.db, userId, ticketUUID)
+	isExisted, err := mysqldb.WithTransaction(ctx, c.db, func(tx *sql.Tx) (bool, error) {
+		return service.UseTicket(ctx, tx, userId, ticketUUID)
+	})
+
 	if errorHandler(ctx, w, err) {
 		return
 	}

@@ -7,8 +7,11 @@ import (
 	"time"
 
 	"github.com/jae2274/auth-service/auth_service/common/domain"
+	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/models"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
+	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
+	"github.com/jae2274/auth-service/auth_service/restapi/service"
 	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
@@ -67,4 +70,40 @@ func requireEqualUserRole(t *testing.T, userId int, now time.Time, expected *dto
 	} else {
 		require.Nil(t, actual.ExpiryDate)
 	}
+}
+
+func createTicketWithTx(ctx context.Context, db *sql.DB, authorities []*dto.UserAuthorityReq) (string, error) {
+	return mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (string, error) {
+		return service.CreateTicket(ctx, tx, authorities)
+	})
+}
+
+func signUp(ctx context.Context, db *sql.DB, userinfo *ooauth.UserInfo, agreements []*dto.UserAgreementReq) (*models.User, error) {
+	return mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (*models.User, error) {
+		return service.SignUp(ctx, tx, userinfo, agreements)
+	})
+}
+
+func useTicket(ctx context.Context, db *sql.DB, userId int, ticketId string) (bool, error) {
+	return mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (bool, error) {
+		return service.UseTicket(ctx, tx, userId, ticketId)
+	})
+}
+
+func addUserAuthorities(ctx context.Context, db *sql.DB, userId int, dUserAuthorities []*dto.UserAuthorityReq) error {
+	return mysqldb.WithTransactionVoid(ctx, db, func(tx *sql.Tx) error {
+		return service.AddUserAuthorities(ctx, tx, userId, dUserAuthorities)
+	})
+}
+
+func applyUserAgreements(ctx context.Context, db *sql.DB, userId int, agreements []*dto.UserAgreementReq) error {
+	return mysqldb.WithTransactionVoid(ctx, db, func(tx *sql.Tx) error {
+		return service.ApplyUserAgreements(ctx, tx, userId, agreements)
+	})
+}
+
+func removeAuthority(ctx context.Context, db *sql.DB, userId int, authorityCode string) error {
+	return mysqldb.WithTransactionVoid(ctx, db, func(tx *sql.Tx) error {
+		return service.RemoveAuthority(ctx, tx, userId, authorityCode)
+	})
 }

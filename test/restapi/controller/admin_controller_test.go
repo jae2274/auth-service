@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jae2274/auth-service/auth_service/common/domain"
+	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/models"
 	"github.com/jae2274/auth-service/auth_service/restapi/jwtresolver"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
@@ -48,7 +49,9 @@ func TestAdminController(t *testing.T) {
 	jwtResolver := initJwtResolver(t)
 
 	signUpTestUser := func(t *testing.T, db *sql.DB) *models.User {
-		user, err := service.SignUp(ctx, db, &ooauth.UserInfo{AuthorizedBy: domain.GOOGLE, AuthorizedID: "authId", Email: "targetUser@test.com", Username: "target"}, nil)
+		user, err := mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (*models.User, error) {
+			return service.SignUp(ctx, tx, &ooauth.UserInfo{AuthorizedBy: domain.GOOGLE, AuthorizedID: "authId", Email: "targetUser@test.com", Username: "target"}, nil)
+		})
 		require.NoError(t, err)
 
 		return user
