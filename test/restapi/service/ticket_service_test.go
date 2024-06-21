@@ -43,6 +43,19 @@ func TestTicketService(t *testing.T) {
 		Username:     "testUsername",
 	}
 
+	t.Run("return isExisted false before ticket is created", func(t *testing.T) {
+		db := tinit.DB(t)
+
+		ctx, _, _, _ := initAgreementFunc(t, db)
+
+		targetUser, err := userService.SignUp(ctx, userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		isExisted, err := ticketService.UseTicket(ctx, targetUser.UserID, "notExistedTicketId")
+		require.NoError(t, err)
+		require.False(t, isExisted)
+	})
+
 	t.Run("return authorities after use ticket that has authorities", func(t *testing.T) {
 		db := tinit.DB(t)
 
@@ -64,11 +77,45 @@ func TestTicketService(t *testing.T) {
 
 		userAuthorities, err := userService.FindUserAuthorities(ctx, targetUser.UserID)
 		require.NoError(t, err)
-		require.Len(t, userAuthorities, 1)
+		require.Len(t, userAuthorities, len(userAuthorityReqs))
 
-		require.Equal(t, authorities[0].AuthorityName, userAuthorities[0].AuthorityName)
-		require.Nil(t, userAuthorities[0].ExpiryDate)
-		require.Equal(t, authorities[1].AuthorityName, userAuthorities[1].AuthorityName)
-		require.WithinDuration(t, time.Now().Add(2*time.Hour), *userAuthorities[1].ExpiryDate, 1*time.Second)
+		now := time.Now()
+		for i, userAuthority := range userAuthorities {
+			requireEqualUserRole(t, targetUser.UserID, now, userAuthorityReqs[i], userAuthority)
+		}
 	})
+
+	t.Run("return isExisted false after ticket is used", func(t *testing.T) {
+		db := tinit.DB(t)
+
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+		userAuthorityReqs := []*dto.UserAuthorityReq{
+			{AuthorityName: authorities[0].AuthorityName},
+			{AuthorityName: authorities[1].AuthorityName, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
+		}
+
+		ticketId, err := ticketService.CreateTicket(ctx, userAuthorityReqs)
+		require.NoError(t, err)
+
+		targetUser, err := userService.SignUp(ctx, userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		isExisted, err := ticketService.UseTicket(ctx, targetUser.UserID, ticketId)
+		require.NoError(t, err)
+		require.True(t, isExisted)
+
+		isExisted, err = ticketService.UseTicket(ctx, targetUser.UserID, ticketId)
+		require.NoError(t, err)
+		require.False(t, isExisted)
+
+		userAuthorities, err := userService.FindUserAuthorities(ctx, targetUser.UserID)
+		require.NoError(t, err)
+		require.Len(t, userAuthorities, len(userAuthorityReqs))
+
+		now := time.Now()
+		for i, userAuthority := range userAuthorities {
+			requireEqualUserRole(t, targetUser.UserID, now, userAuthorityReqs[i], userAuthority)
+		}
+	})
+
 }

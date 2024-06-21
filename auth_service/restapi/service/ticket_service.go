@@ -95,12 +95,15 @@ func (t *TicketService) UseTicket(ctx context.Context, userId int, ticketId stri
 }
 
 func useTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) (bool, error) {
-	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId), qm.Load(models.TicketRels.TicketAuthorities)).One(ctx, tx)
+	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId), models.TicketWhere.UsedBy.IsNull(), qm.Load(models.TicketRels.TicketAuthorities)).One(ctx, tx)
 	if err != nil && err != sql.ErrNoRows {
 		return false, terr.Wrap(err)
 	} else if err == sql.ErrNoRows {
 		return false, nil
 	}
+
+	ticket.UsedBy = null.IntFrom(userId)
+	ticket.Update(ctx, tx, boil.Infer())
 
 	dUserAuthorities := make([]*dto.UserAuthorityReq, 0, len(ticket.R.TicketAuthorities))
 	for _, ticketAuthority := range ticket.R.TicketAuthorities {
