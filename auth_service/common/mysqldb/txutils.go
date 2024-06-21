@@ -6,17 +6,21 @@ import (
 )
 
 func CommitOrRollback[T any](tx *sql.Tx, t T, err error) (T, error) {
+	return t, CommitOrRollbackVoid(tx, err)
+}
+
+func CommitOrRollbackVoid(tx *sql.Tx, err error) error {
 	if err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return t, errors.Join(err, rollbackErr)
+			return errors.Join(err, rollbackErr)
 		}
 
-		return t, err
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return t, err
+		return err
 	}
 
-	return t, nil
+	return nil
 }

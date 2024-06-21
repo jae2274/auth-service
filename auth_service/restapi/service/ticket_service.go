@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -79,19 +78,7 @@ func (t *TicketService) UseTicket(ctx context.Context, userId int, ticketId stri
 	}
 
 	isExisted, err := useTicket(ctx, tx, userId, ticketId)
-	if err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return isExisted, errors.Join(err, rollbackErr)
-		}
-
-		return isExisted, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return isExisted, err
-	}
-
-	return isExisted, nil
+	return mysqldb.CommitOrRollback(tx, isExisted, err)
 }
 
 func useTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) (bool, error) {

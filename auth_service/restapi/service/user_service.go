@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jae2274/auth-service/auth_service/common/domain"
+	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/models"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
 	"github.com/jae2274/auth-service/auth_service/restapi/mapper"
@@ -45,16 +46,7 @@ func (u *UserServiceImpl) SignUp(ctx context.Context, userinfo *ooauth.UserInfo,
 	}
 
 	user, err := signUp(ctx, tx, userinfo, agreements)
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return user, nil
+	return mysqldb.CommitOrRollback(tx, user, err)
 }
 
 func signUp(ctx context.Context, tx *sql.Tx, userinfo *ooauth.UserInfo, agreements []*dto.UserAgreementReq) (*models.User, error) {
@@ -90,16 +82,8 @@ func (u *UserServiceImpl) ApplyUserAgreements(ctx context.Context, userId int, a
 		return err
 	}
 
-	if err := applyUserAgreements(ctx, tx, userId, agreements); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	err = applyUserAgreements(ctx, tx, userId, agreements)
+	return mysqldb.CommitOrRollbackVoid(tx, err)
 }
 
 func applyUserAgreements(ctx context.Context, tx *sql.Tx, userId int, agreements []*dto.UserAgreementReq) error {
@@ -215,18 +199,7 @@ func (u *UserServiceImpl) AddUserAuthorities(ctx context.Context, userId int, dU
 	}
 
 	err = addUserAuthorities(ctx, tx, userId, dUserAuthorities)
-	if err != nil {
-		if err := tx.Rollback(); err != nil {
-			return err
-		}
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return mysqldb.CommitOrRollbackVoid(tx, err)
 }
 
 func (u *UserServiceImpl) FindAllAgreements(ctx context.Context) ([]*models.Agreement, error) {
