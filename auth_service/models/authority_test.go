@@ -875,7 +875,7 @@ func testAuthoritiesSelect(t *testing.T) {
 }
 
 var (
-	authorityDBTypes = map[string]string{`AuthorityID`: `int`, `AuthorityName`: `varchar`, `Summary`: `varchar`}
+	authorityDBTypes = map[string]string{`AuthorityID`: `int`, `AuthorityCode`: `varchar`, `Summary`: `varchar`}
 	_                = bytes.MinRead
 )
 

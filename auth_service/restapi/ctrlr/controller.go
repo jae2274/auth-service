@@ -246,18 +246,18 @@ func signInSuccessRes(ctx context.Context, userService service.UserService, jwtR
 	if err != nil {
 		return nil, err
 	}
-	authorityNames := make([]string, 0, len(userAuthorities))
+	authorityCodes := make([]string, 0, len(userAuthorities))
 	for _, authority := range userAuthorities {
-		authorityNames = append(authorityNames, authority.AuthorityName)
+		authorityCodes = append(authorityCodes, authority.AuthorityCode)
 	}
-	token, err := jwtResolver.CreateToken(strconv.Itoa(user.UserID), authorityNames, time.Now())
+	token, err := jwtResolver.CreateToken(strconv.Itoa(user.UserID), authorityCodes, time.Now())
 	if err != nil {
 		return nil, err
 	}
 
 	return &dto.SignInSuccessRes{
 		Username:     user.Name,
-		Authorities:  authorityNames,
+		Authorities:  authorityCodes,
 		GrantType:    "Bearer",
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
@@ -362,19 +362,19 @@ func (c *Controller) RefreshJwt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authorityNames := make([]string, 0, len(dUserAuthorities))
+	authorityCodes := make([]string, 0, len(dUserAuthorities))
 	for _, authority := range dUserAuthorities {
-		authorityNames = append(authorityNames, authority.AuthorityName)
+		authorityCodes = append(authorityCodes, authority.AuthorityCode)
 	}
 
-	tokens, err := c.jwtResolver.CreateToken(claims.UserId, authorityNames, time.Now())
+	tokens, err := c.jwtResolver.CreateToken(claims.UserId, authorityCodes, time.Now())
 	if errorHandler(ctx, w, err) {
 		return
 	}
 
 	err = json.NewEncoder(w).Encode(&dto.RefreshJwtResponse{
 		AccessToken: tokens.AccessToken,
-		Authorities: authorityNames,
+		Authorities: authorityCodes,
 	})
 
 	if errorHandler(ctx, w, err) {

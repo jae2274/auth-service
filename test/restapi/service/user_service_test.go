@@ -35,8 +35,8 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, otherUser.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: "AUTHORITY_USER", ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
-			{AuthorityName: "AUTHORITY_GUEST", ExpiryDuration: nil},
+			{AuthorityCode: "AUTHORITY_USER", ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
+			{AuthorityCode: "AUTHORITY_GUEST", ExpiryDuration: nil},
 		})
 		require.NoError(t, err)
 
@@ -214,7 +214,7 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: "notExistedAuthority", ExpiryDuration: nil},
+			{AuthorityCode: "notExistedAuthority", ExpiryDuration: nil},
 		})
 		require.Error(t, err)
 	})
@@ -230,8 +230,8 @@ func TestUserService(t *testing.T) {
 
 		userId := user.UserID
 		insertedAuthorities := []*dto.UserAuthorityReq{
-			{AuthorityName: authorities[0].AuthorityName, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
-			{AuthorityName: authorities[1].AuthorityName, ExpiryDuration: nil},
+			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: nil},
 		}
 		err = userService.AddUserAuthorities(ctx, userId, insertedAuthorities)
 		require.NoError(t, err)
@@ -241,7 +241,7 @@ func TestUserService(t *testing.T) {
 		require.Len(t, userAuthorities, len(insertedAuthorities))
 
 		slices.SortStableFunc(userAuthorities, func(a, b *domain.UserAuthority) int {
-			return -cmp.Compare(a.AuthorityName, b.AuthorityName)
+			return -cmp.Compare(a.AuthorityCode, b.AuthorityCode)
 		})
 		for i, authority := range userAuthorities {
 			requireEqualUserRole(t, userId, time.Now(), insertedAuthorities[i], authority)
@@ -258,8 +258,8 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: authorities[0].AuthorityName, ExpiryDuration: ptr.P(dto.Duration(1 * time.Second))}, //2초 후
-			{AuthorityName: authorities[1].AuthorityName, ExpiryDuration: ptr.P(dto.Duration(1 * time.Second))}, //1초 후
+			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(1 * time.Second))}, //2초 후
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(1 * time.Second))}, //1초 후
 		})
 		require.NoError(t, err)
 		time.Sleep(time.Second * 2) //2초 대기, 1초 후에 만료되는 AUTHORITY_USER는 만료되었을 것이다.
@@ -278,14 +278,14 @@ func TestUserService(t *testing.T) {
 		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		sameAuthority := authorities[0].AuthorityName
+		sameAuthority := authorities[0].AuthorityCode
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
+			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
 		})
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
+			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
 		})
 		require.NoError(t, err)
 
@@ -293,7 +293,7 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, 1)
 
-		require.Equal(t, sameAuthority, userAuthorities[0].AuthorityName)
+		require.Equal(t, sameAuthority, userAuthorities[0].AuthorityCode)
 		require.WithinDuration(t, time.Now().Add(time.Hour*24).Add(time.Hour*4), *userAuthorities[0].ExpiryDate, time.Second)
 	})
 
@@ -306,14 +306,14 @@ func TestUserService(t *testing.T) {
 		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		sameAuthority := authorities[0].AuthorityName
+		sameAuthority := authorities[0].AuthorityCode
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: nil},
+			{AuthorityCode: sameAuthority, ExpiryDuration: nil},
 		})
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
+			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
 		})
 		require.NoError(t, err)
 
@@ -322,7 +322,7 @@ func TestUserService(t *testing.T) {
 		require.Len(t, userAuthorities, 1)
 
 		require.Equal(t, user.UserID, userAuthorities[0].UserID)
-		require.Equal(t, sameAuthority, userAuthorities[0].AuthorityName)
+		require.Equal(t, sameAuthority, userAuthorities[0].AuthorityCode)
 		require.Nil(t, userAuthorities[0].ExpiryDate)
 	})
 
@@ -336,15 +336,15 @@ func TestUserService(t *testing.T) {
 		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		sameAuthority := authorities[0].AuthorityName
+		sameAuthority := authorities[0].AuthorityCode
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Second * 1))},
+			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Second * 1))},
 		})
 		require.NoError(t, err)
 		time.Sleep(time.Second * 2) //2초 대기, AUTHORITY_ADMIN은 만료되었을 것이다.
 
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
+			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
 		})
 		require.NoError(t, err)
 
@@ -352,7 +352,7 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, 1)
 
-		require.Equal(t, sameAuthority, userAuthorities[0].AuthorityName)
+		require.Equal(t, sameAuthority, userAuthorities[0].AuthorityCode)
 		require.WithinDuration(t, time.Now().Add(time.Hour*4), *userAuthorities[0].ExpiryDate, time.Millisecond*600)
 	})
 
@@ -365,14 +365,14 @@ func TestUserService(t *testing.T) {
 		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		sameAuthority := authorities[0].AuthorityName
+		sameAuthority := authorities[0].AuthorityCode
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Second * 1))},
+			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Second * 1))},
 		})
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: sameAuthority, ExpiryDuration: nil},
+			{AuthorityCode: sameAuthority, ExpiryDuration: nil},
 		})
 		require.NoError(t, err)
 
@@ -380,7 +380,7 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, dUserAuthorities, 1)
 
-		require.Equal(t, sameAuthority, dUserAuthorities[0].AuthorityName)
+		require.Equal(t, sameAuthority, dUserAuthorities[0].AuthorityCode)
 		require.Nil(t, dUserAuthorities[0].ExpiryDate)
 	})
 
@@ -394,7 +394,7 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: domain.AuthorityAdmin, ExpiryDuration: nil},
+			{AuthorityCode: domain.AuthorityAdmin, ExpiryDuration: nil},
 		})
 		require.Error(t, err)
 	})
@@ -409,18 +409,18 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = userService.AddUserAuthorities(ctx, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityName: authorities[0].AuthorityName, ExpiryDuration: nil},
-			{AuthorityName: authorities[1].AuthorityName, ExpiryDuration: nil},
+			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDuration: nil},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: nil},
 		})
 		require.NoError(t, err)
 
-		err = userService.RemoveAuthority(ctx, user.UserID, authorities[1].AuthorityName)
+		err = userService.RemoveAuthority(ctx, user.UserID, authorities[1].AuthorityCode)
 		require.NoError(t, err)
 
 		userAuthorities, err := userService.FindUserAuthorities(ctx, user.UserID)
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, 1)
-		require.Equal(t, authorities[0].AuthorityName, userAuthorities[0].AuthorityName)
+		require.Equal(t, authorities[0].AuthorityCode, userAuthorities[0].AuthorityCode)
 	})
 
 	t.Run("return error when try to remove not existed authority", func(t *testing.T) {
@@ -445,7 +445,7 @@ func TestUserService(t *testing.T) {
 		user, err := userService.SignUp(ctx, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = userService.RemoveAuthority(ctx, user.UserID, authorities[0].AuthorityName)
+		err = userService.RemoveAuthority(ctx, user.UserID, authorities[0].AuthorityCode)
 		require.NoError(t, err)
 	})
 }

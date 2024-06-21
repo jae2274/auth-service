@@ -45,7 +45,7 @@ func initAgreementFunc(t *testing.T, db *sql.DB) (context.Context, []*models.Agr
 		err := authority.Insert(ctx, db, boil.Infer())
 		require.NoError(t, err)
 	}
-	adminAuthority := &models.Authority{AuthorityName: domain.AuthorityAdmin, Summary: "관리자 권한"}
+	adminAuthority := &models.Authority{AuthorityCode: domain.AuthorityAdmin, Summary: "관리자 권한"}
 	err := adminAuthority.Insert(ctx, db, boil.Infer())
 	require.NoError(t, err)
 
@@ -54,13 +54,13 @@ func initAgreementFunc(t *testing.T, db *sql.DB) (context.Context, []*models.Agr
 
 func newAuthorities() []*models.Authority {
 	return []*models.Authority{
-		{AuthorityName: "AUTHORITY_USER", Summary: "사용자 권한"},
-		{AuthorityName: "AUTHORITY_GUEST", Summary: "게스트 권한"},
+		{AuthorityCode: "AUTHORITY_USER", Summary: "사용자 권한"},
+		{AuthorityCode: "AUTHORITY_GUEST", Summary: "게스트 권한"},
 	}
 }
 
 func requireEqualUserRole(t *testing.T, userId int, now time.Time, expected *dto.UserAuthorityReq, actual *domain.UserAuthority) {
-	require.Equal(t, expected.AuthorityName, actual.AuthorityName)
+	require.Equal(t, expected.AuthorityCode, actual.AuthorityCode)
 	require.Equal(t, userId, actual.UserID)
 	if expected.ExpiryDuration != nil {
 		require.WithinDuration(t, now.Add(time.Duration(*expected.ExpiryDuration)), *actual.ExpiryDate, time.Second)

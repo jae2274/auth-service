@@ -26,90 +26,81 @@ func NewTicketService(mysqlDB *sql.DB) TicketService {
 	}
 }
 
+// func (t *TicketService) GetTicketInfo(ctx context.Context, ticketId string) (*models.Ticket, bool, error) {
+// 	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId)).One(ctx, t.mysqlDB)
+// 	if err != nil && err != sql.ErrNoRows {
+// 		return nil,false, terr.Wrap(err)
+// 	}else if err == sql.ErrNoRows {
+// 		return nil,false, nil
+// 	}
+
+// }
+
 func (t *TicketService) CreateTicket(ctx context.Context, authorities []*dto.UserAuthorityReq) (string, error) {
 	err := attachAuthorityIds(ctx, t.mysqlDB, authorities)
 	if err != nil {
 		return "", err
 	}
 
-	tx, err := t.mysqlDB.BeginTx(ctx, nil)
-	if err != nil {
-		return "", err
-	}
+	return mysqldb.WithTransaction(ctx, t.mysqlDB, func(tx *sql.Tx) (string, error) {
+		ticket := &models.Ticket{UUID: uuid.New().String()}
 
-	ticketId, err := t.createTicket(ctx, tx, authorities)
-
-	return mysqldb.CommitOrRollback(tx, ticketId, err)
-}
-
-func (t *TicketService) createTicket(ctx context.Context, tx *sql.Tx, authorities []*dto.UserAuthorityReq) (string, error) {
-	ticket := &models.Ticket{
-		UUID: uuid.New().String(),
-	}
-
-	if err := ticket.Insert(ctx, tx, boil.Infer()); err != nil {
-		return "", terr.Wrap(err)
-	}
-
-	ticketAuthorities := make([]*models.TicketAuthority, len(authorities))
-	for i, authority := range authorities {
-		expiryDurationMS := null.NewInt64(0, false)
-		if authority.ExpiryDuration != nil {
-			expiryDurationMS = null.NewInt64(int64(time.Duration((*authority.ExpiryDuration))/time.Millisecond), true)
+		if err := ticket.Insert(ctx, tx, boil.Infer()); err != nil {
+			return "", terr.Wrap(err)
 		}
-		ticketAuthorities[i] = &models.TicketAuthority{
-			TicketID:         ticket.TicketID,
-			AuthorityID:      authority.AuthorityID,
-			ExpiryDurationMS: expiryDurationMS,
+
+		ticketAuthorities := make([]*models.TicketAuthority, len(authorities))
+		for i, authority := range authorities {
+			expiryDurationMS := null.NewInt64(0, false)
+			if authority.ExpiryDuration != nil {
+				expiryDurationMS = null.NewInt64(int64(time.Duration((*authority.ExpiryDuration))/time.Millisecond), true)
+			}
+			ticketAuthorities[i] = &models.TicketAuthority{
+				TicketID:         ticket.TicketID,
+				AuthorityID:      authority.AuthorityID,
+				ExpiryDurationMS: expiryDurationMS,
+			}
 		}
-	}
 
-	if err := ticket.AddTicketAuthorities(ctx, tx, true, ticketAuthorities...); err != nil {
-		return "", terr.Wrap(err)
-	}
+		if err := ticket.AddTicketAuthorities(ctx, tx, true, ticketAuthorities...); err != nil {
+			return "", terr.Wrap(err)
+		}
 
-	return ticket.UUID, nil
+		return ticket.UUID, nil
+	})
 }
 
 func (t *TicketService) UseTicket(ctx context.Context, userId int, ticketId string) (bool, error) {
-	tx, err := t.mysqlDB.BeginTx(ctx, nil)
-	if err != nil {
-		return false, err
-	}
-
-	isExisted, err := useTicket(ctx, tx, userId, ticketId)
-	return mysqldb.CommitOrRollback(tx, isExisted, err)
-}
-
-func useTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) (bool, error) {
-	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId), models.TicketWhere.UsedBy.IsNull(), qm.Load(models.TicketRels.TicketAuthorities)).One(ctx, tx)
-	if err != nil && err != sql.ErrNoRows {
-		return false, terr.Wrap(err)
-	} else if err == sql.ErrNoRows {
-		return false, nil
-	}
-
-	ticket.UsedBy = null.IntFrom(userId)
-	ticket.Update(ctx, tx, boil.Infer())
-
-	dUserAuthorities := make([]*dto.UserAuthorityReq, 0, len(ticket.R.TicketAuthorities))
-	for _, ticketAuthority := range ticket.R.TicketAuthorities {
-		var expiryDuration *dto.Duration
-		if ticketAuthority.ExpiryDurationMS.Valid {
-			expiryDuration = ptr.P(dto.Duration(time.Duration(ticketAuthority.ExpiryDurationMS.Int64) * time.Millisecond))
+	return mysqldb.WithTransaction(ctx, t.mysqlDB, func(tx *sql.Tx) (bool, error) {
+		ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId), models.TicketWhere.UsedBy.IsNull(), qm.Load(models.TicketRels.TicketAuthorities)).One(ctx, tx)
+		if err != nil && err != sql.ErrNoRows {
+			return false, terr.Wrap(err)
+		} else if err == sql.ErrNoRows {
+			return false, nil
 		}
 
-		dUserAuthorities = append(dUserAuthorities, &dto.UserAuthorityReq{
-			AuthorityID:    ticketAuthority.AuthorityID,
-			ExpiryDuration: expiryDuration,
-		})
-	}
+		ticket.UsedBy = null.IntFrom(userId)
+		ticket.Update(ctx, tx, boil.Infer())
 
-	err = addUserAuthorities(ctx, tx, userId, dUserAuthorities)
+		dUserAuthorities := make([]*dto.UserAuthorityReq, 0, len(ticket.R.TicketAuthorities))
+		for _, ticketAuthority := range ticket.R.TicketAuthorities {
+			var expiryDuration *dto.Duration
+			if ticketAuthority.ExpiryDurationMS.Valid {
+				expiryDuration = ptr.P(dto.Duration(time.Duration(ticketAuthority.ExpiryDurationMS.Int64) * time.Millisecond))
+			}
 
-	if err != nil {
-		return false, terr.Wrap(err)
-	}
+			dUserAuthorities = append(dUserAuthorities, &dto.UserAuthorityReq{
+				AuthorityID:    ticketAuthority.AuthorityID,
+				ExpiryDuration: expiryDuration,
+			})
+		}
 
-	return true, nil
+		err = addUserAuthorities(ctx, tx, userId, dUserAuthorities)
+
+		if err != nil {
+			return false, terr.Wrap(err)
+		}
+
+		return true, nil
+	})
 }

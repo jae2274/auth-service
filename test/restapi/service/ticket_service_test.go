@@ -23,7 +23,7 @@ func TestTicketService(t *testing.T) {
 		tinit.DB(t)
 		ctx := context.Background()
 
-		_, err := ticketService.CreateTicket(ctx, []*dto.UserAuthorityReq{{AuthorityName: "notExistedAuthority"}})
+		_, err := ticketService.CreateTicket(ctx, []*dto.UserAuthorityReq{{AuthorityCode: "notExistedAuthority"}})
 		require.Error(t, err)
 	})
 
@@ -31,7 +31,7 @@ func TestTicketService(t *testing.T) {
 		db := tinit.DB(t)
 		ctx, _, _, authorities := initAgreementFunc(t, db)
 
-		ticketId, err := ticketService.CreateTicket(ctx, []*dto.UserAuthorityReq{{AuthorityName: authorities[0].AuthorityName}})
+		ticketId, err := ticketService.CreateTicket(ctx, []*dto.UserAuthorityReq{{AuthorityCode: authorities[0].AuthorityCode}})
 		require.NoError(t, err)
 		require.NotEmpty(t, ticketId)
 	})
@@ -62,8 +62,8 @@ func TestTicketService(t *testing.T) {
 		ctx, _, _, authorities := initAgreementFunc(t, db)
 
 		userAuthorityReqs := []*dto.UserAuthorityReq{
-			{AuthorityName: authorities[0].AuthorityName},
-			{AuthorityName: authorities[1].AuthorityName, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
+			{AuthorityCode: authorities[0].AuthorityCode},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
 		}
 		ticketId, err := ticketService.CreateTicket(ctx, userAuthorityReqs)
 		require.NoError(t, err)
@@ -90,8 +90,8 @@ func TestTicketService(t *testing.T) {
 
 		ctx, _, _, authorities := initAgreementFunc(t, db)
 		userAuthorityReqs := []*dto.UserAuthorityReq{
-			{AuthorityName: authorities[0].AuthorityName},
-			{AuthorityName: authorities[1].AuthorityName, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
+			{AuthorityCode: authorities[0].AuthorityCode},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
 		}
 
 		ticketId, err := ticketService.CreateTicket(ctx, userAuthorityReqs)

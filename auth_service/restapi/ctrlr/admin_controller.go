@@ -47,7 +47,7 @@ func (a *AdminController) RemoveAuthority(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := a.userService.RemoveAuthority(ctx, req.UserId, req.AuthorityName); errorHandler(ctx, w, err) {
+	if err := a.userService.RemoveAuthority(ctx, req.UserId, req.AuthorityCode); errorHandler(ctx, w, err) {
 		return
 	}
 

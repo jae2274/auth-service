@@ -11,6 +11,6 @@ const (
 type UserAuthority struct {
 	UserID        int        `json:"-"`
 	AuthorityID   int        `json:"-"`
-	AuthorityName string     `json:"authorityName"`
+	AuthorityCode string     `json:"authorityCode"`
 	ExpiryDate    *time.Time `json:"expiryDate"`
 }

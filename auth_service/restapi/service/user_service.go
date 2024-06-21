@@ -26,7 +26,7 @@ type UserService interface {
 	FindUserAuthorities(ctx context.Context, userId int) ([]*domain.UserAuthority, error)
 	AddUserAuthorities(ctx context.Context, userId int, authorities []*dto.UserAuthorityReq) error
 	FindAllAgreements(ctx context.Context) ([]*models.Agreement, error) //TODO: 테스트코드 작성
-	RemoveAuthority(ctx context.Context, userId int, authorityName string) error
+	RemoveAuthority(ctx context.Context, userId int, authorityCode string) error
 }
 
 type UserServiceImpl struct {
@@ -40,35 +40,27 @@ func NewUserService(mysqlDB *sql.DB) UserService {
 }
 
 func (u *UserServiceImpl) SignUp(ctx context.Context, userinfo *ooauth.UserInfo, agreements []*dto.UserAgreementReq) (*models.User, error) {
-	tx, err := u.mysqlDB.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := signUp(ctx, tx, userinfo, agreements)
-	return mysqldb.CommitOrRollback(tx, user, err)
-}
-
-func signUp(ctx context.Context, tx *sql.Tx, userinfo *ooauth.UserInfo, agreements []*dto.UserAgreementReq) (*models.User, error) {
-	user, err := mapper.SaveUser(ctx, tx, userinfo.AuthorizedBy, userinfo.AuthorizedID, userinfo.Email, userinfo.Username)
-	if err != nil {
-		return nil, err
-	}
-
-	mAgs := make([]*models.UserAgreement, len(agreements))
-	for i, ag := range agreements {
-		mAgs[i] = &models.UserAgreement{
-			UserID:      user.UserID,
-			AgreementID: ag.AgreementId,
-			IsAgree:     utils.BoolToTinyInt(ag.IsAgree),
+	return mysqldb.WithTransaction(ctx, u.mysqlDB, func(tx *sql.Tx) (*models.User, error) {
+		user, err := mapper.SaveUser(ctx, tx, userinfo.AuthorizedBy, userinfo.AuthorizedID, userinfo.Email, userinfo.Username)
+		if err != nil {
+			return nil, err
 		}
-	}
 
-	if err := user.AddUserAgreements(ctx, tx, true, mAgs...); err != nil {
-		return nil, err
-	}
+		mAgs := make([]*models.UserAgreement, len(agreements))
+		for i, ag := range agreements {
+			mAgs[i] = &models.UserAgreement{
+				UserID:      user.UserID,
+				AgreementID: ag.AgreementId,
+				IsAgree:     utils.BoolToTinyInt(ag.IsAgree),
+			}
+		}
 
-	return user, nil
+		if err := user.AddUserAgreements(ctx, tx, true, mAgs...); err != nil {
+			return nil, err
+		}
+
+		return user, nil
+	})
 }
 
 func (u *UserServiceImpl) FindSignedUpUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*models.User, bool, error) {
@@ -76,49 +68,36 @@ func (u *UserServiceImpl) FindSignedUpUser(ctx context.Context, authorizedBy dom
 }
 
 func (u *UserServiceImpl) ApplyUserAgreements(ctx context.Context, userId int, agreements []*dto.UserAgreementReq) error {
-
-	tx, err := u.mysqlDB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	err = applyUserAgreements(ctx, tx, userId, agreements)
-	return mysqldb.CommitOrRollbackVoid(tx, err)
-}
-
-func applyUserAgreements(ctx context.Context, tx *sql.Tx, userId int, agreements []*dto.UserAgreementReq) error {
-	for _, addAgreement := range agreements {
-		userAgreement := models.UserAgreement{
-			UserID:      userId,
-			AgreementID: addAgreement.AgreementId,
-			IsAgree:     utils.BoolToTinyInt(addAgreement.IsAgree),
-		}
-		isExisted, err := userAgreement.Exists(ctx, tx)
-		if err != nil {
-			return err
-		}
-		if isExisted {
-			_, err := userAgreement.Update(ctx, tx, boil.Infer())
+	return mysqldb.WithTransactionVoid(ctx, u.mysqlDB, func(tx *sql.Tx) error {
+		for _, addAgreement := range agreements {
+			userAgreement := models.UserAgreement{
+				UserID:      userId,
+				AgreementID: addAgreement.AgreementId,
+				IsAgree:     utils.BoolToTinyInt(addAgreement.IsAgree),
+			}
+			isExisted, err := userAgreement.Exists(ctx, tx)
 			if err != nil {
 				return err
 			}
-		} else {
-			err := userAgreement.Insert(ctx, tx, boil.Infer())
-			if err != nil {
-				return err
+			if isExisted {
+				_, err := userAgreement.Update(ctx, tx, boil.Infer())
+				if err != nil {
+					return err
+				}
+			} else {
+				err := userAgreement.Insert(ctx, tx, boil.Infer())
+				if err != nil {
+					return err
+				}
+
 			}
-
 		}
-	}
 
-	return nil
+		return nil
+	})
 }
 
 func (u *UserServiceImpl) FindNecessaryAgreements(ctx context.Context, userId int) ([]*models.Agreement, error) {
-	return u.necessaryAgreements(ctx, userId)
-}
-func (u *UserServiceImpl) necessaryAgreements(ctx context.Context, userId int) ([]*models.Agreement, error) {
-
 	userAgreeds, err := mapper.FindUserAgreements(ctx, u.mysqlDB, userId, true)
 	if err != nil {
 		return nil, err
@@ -165,7 +144,7 @@ func (u *UserServiceImpl) FindUserAuthorities(ctx context.Context, userId int) (
 		authorities[i] = &domain.UserAuthority{
 			UserID:        userAuthority.UserID,
 			AuthorityID:   userAuthority.R.Authority.AuthorityID,
-			AuthorityName: userAuthority.R.Authority.AuthorityName,
+			AuthorityCode: userAuthority.R.Authority.AuthorityCode,
 			ExpiryDate:    expiryDate,
 		}
 	}
@@ -175,7 +154,7 @@ func (u *UserServiceImpl) FindUserAuthorities(ctx context.Context, userId int) (
 
 func checkHasAuthorityAdmin(userAuthorities []*dto.UserAuthorityReq) bool {
 	for _, userAuthority := range userAuthorities {
-		if userAuthority.AuthorityName == domain.AuthorityAdmin {
+		if userAuthority.AuthorityCode == domain.AuthorityAdmin {
 			return true
 		}
 	}
@@ -193,21 +172,17 @@ func (u *UserServiceImpl) AddUserAuthorities(ctx context.Context, userId int, dU
 		return err
 	}
 
-	tx, err := u.mysqlDB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	err = addUserAuthorities(ctx, tx, userId, dUserAuthorities)
-	return mysqldb.CommitOrRollbackVoid(tx, err)
+	return mysqldb.WithTransactionVoid(ctx, u.mysqlDB, func(tx *sql.Tx) error {
+		return addUserAuthorities(ctx, tx, userId, dUserAuthorities)
+	})
 }
 
 func (u *UserServiceImpl) FindAllAgreements(ctx context.Context) ([]*models.Agreement, error) {
 	return models.Agreements().All(ctx, u.mysqlDB)
 }
 
-func (u *UserServiceImpl) RemoveAuthority(ctx context.Context, userId int, authorityName string) error {
-	mAuthority, err := models.Authorities(models.AuthorityWhere.AuthorityName.EQ(authorityName)).One(ctx, u.mysqlDB)
+func (u *UserServiceImpl) RemoveAuthority(ctx context.Context, userId int, authorityCode string) error {
+	mAuthority, err := models.Authorities(models.AuthorityWhere.AuthorityCode.EQ(authorityCode)).One(ctx, u.mysqlDB)
 	if err != nil && err != sql.ErrNoRows {
 		return terr.Wrap(err)
 	}

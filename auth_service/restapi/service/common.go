@@ -13,24 +13,24 @@ import (
 )
 
 func attachAuthorityIds(ctx context.Context, mysqlDB *sql.DB, dUserAuthorities []*dto.UserAuthorityReq) error {
-	authorityNames := make([]string, len(dUserAuthorities))
+	authorityCodes := make([]string, len(dUserAuthorities))
 	for i, authority := range dUserAuthorities {
-		authorityNames[i] = authority.AuthorityName
+		authorityCodes[i] = authority.AuthorityCode
 	}
 
-	authorities, err := models.Authorities(models.AuthorityWhere.AuthorityName.IN(authorityNames)).All(ctx, mysqlDB)
+	authorities, err := models.Authorities(models.AuthorityWhere.AuthorityCode.IN(authorityCodes)).All(ctx, mysqlDB)
 	if err != nil {
 		return err
 	}
 	authorityMap := make(map[string]*models.Authority)
 	for _, authority := range authorities {
-		authorityMap[authority.AuthorityName] = authority
+		authorityMap[authority.AuthorityCode] = authority
 	}
 
 	for _, userAuthority := range dUserAuthorities {
-		authority, ok := authorityMap[userAuthority.AuthorityName]
+		authority, ok := authorityMap[userAuthority.AuthorityCode]
 		if !ok {
-			return terr.New("authority not found. authorityName: " + userAuthority.AuthorityName)
+			return terr.New("authority not found. authorityCode: " + userAuthority.AuthorityCode)
 		}
 
 		userAuthority.AuthorityID = authority.AuthorityID

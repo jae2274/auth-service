@@ -105,7 +105,7 @@ type AddAuthorityRequest struct {
 
 type UserAuthorityReq struct {
 	AuthorityID    int       `json:"-"`
-	AuthorityName  string    `json:"authorityName"`
+	AuthorityCode  string    `json:"authorityCode"`
 	ExpiryDuration *Duration `json:"expiryDate"`
 }
 
@@ -128,5 +128,5 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 
 type RemoveAuthorityRequest struct {
 	UserId        int    `json:"userId"`
-	AuthorityName string `json:"authorityName"`
+	AuthorityCode string `json:"authorityCode"`
 }
