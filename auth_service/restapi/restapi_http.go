@@ -13,7 +13,6 @@ import (
 	"github.com/jae2274/auth-service/auth_service/restapi/jwtresolver"
 	"github.com/jae2274/auth-service/auth_service/restapi/middleware"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
-	"github.com/jae2274/auth-service/auth_service/restapi/service"
 	"github.com/jae2274/auth-service/auth_service/utils"
 
 	"github.com/gorilla/handlers"
@@ -27,21 +26,20 @@ func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 	router.Use(httpmw.SetTraceIdMW()) //TODO: 불필요한 파라미터가 잘못 포함되어 있어 이후 라이브러리 수정 필요
 	jwtResolver := jwtresolver.NewJwtResolver(envVars.SecretKey)
 	router.Use(middleware.SetClaimsMW(jwtResolver))
-	userService := service.NewUserService(db)
-	ticketService := service.NewTicketService(db)
+
 	aesCryptor, err := aescryptor.NewJsonAesCryptor(utils.CreateHash(envVars.SecretKey))
 	if err != nil {
 		return err
 	}
 	googleAuth := ooauth.NewGoogleOauth(envVars.GoogleClientID, envVars.GoogleClientSecret, envVars.GoogleRedirectUrl)
-	controller := ctrlr.NewController(userService, jwtResolver, aesCryptor, googleAuth)
+	controller := ctrlr.NewController(db, jwtResolver, aesCryptor, googleAuth)
 	controller.RegisterRoutes(router)
 
-	ticketController := ctrlr.NewTicketController(ticketService)
+	ticketController := ctrlr.NewTicketController(db)
 	ticketController.RegisterRoutes(router)
 
 	adminRouter := router.NewRoute().Subrouter()
-	adminController := ctrlr.NewAdminController(userService, ticketService)
+	adminController := ctrlr.NewAdminController(db)
 	adminController.RegisterRoutes(adminRouter)
 	adminRouter.Use(middleware.CheckHasAuthority(domain.AuthorityAdmin))
 

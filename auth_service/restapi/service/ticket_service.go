@@ -16,18 +16,8 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-type TicketService struct {
-	mysqlDB *sql.DB
-}
-
-func NewTicketService(mysqlDB *sql.DB) *TicketService {
-	return &TicketService{
-		mysqlDB: mysqlDB,
-	}
-}
-
-func (t *TicketService) GetTicketInfo(ctx context.Context, ticketId string) (*dto.Ticket, bool, error) {
-	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId)).One(ctx, t.mysqlDB)
+func GetTicketInfo(ctx context.Context, db *sql.DB, ticketId string) (*dto.Ticket, bool, error) {
+	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId)).One(ctx, db)
 
 	if err != nil && err != sql.ErrNoRows {
 		return nil, false, terr.Wrap(err)
@@ -35,7 +25,7 @@ func (t *TicketService) GetTicketInfo(ctx context.Context, ticketId string) (*dt
 		return nil, false, nil
 	}
 
-	mTicketAuthorities, err := models.TicketAuthorities(models.TicketAuthorityWhere.TicketID.EQ(ticket.TicketID), qm.Load(models.TicketAuthorityRels.Authority)).All(ctx, t.mysqlDB)
+	mTicketAuthorities, err := models.TicketAuthorities(models.TicketAuthorityWhere.TicketID.EQ(ticket.TicketID), qm.Load(models.TicketAuthorityRels.Authority)).All(ctx, db)
 	if err != nil {
 		return nil, false, terr.Wrap(err)
 	}
@@ -61,13 +51,13 @@ func (t *TicketService) GetTicketInfo(ctx context.Context, ticketId string) (*dt
 	}, true, nil
 }
 
-func (t *TicketService) CreateTicket(ctx context.Context, authorities []*dto.UserAuthorityReq) (string, error) {
-	err := attachAuthorityIds(ctx, t.mysqlDB, authorities)
+func CreateTicket(ctx context.Context, db *sql.DB, authorities []*dto.UserAuthorityReq) (string, error) {
+	err := attachAuthorityIds(ctx, db, authorities)
 	if err != nil {
 		return "", err
 	}
 
-	return mysqldb.WithTransaction(ctx, t.mysqlDB, func(tx *sql.Tx) (string, error) {
+	return mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (string, error) {
 		ticket := &models.Ticket{UUID: uuid.New().String()}
 
 		if err := ticket.Insert(ctx, tx, boil.Infer()); err != nil {
@@ -95,8 +85,8 @@ func (t *TicketService) CreateTicket(ctx context.Context, authorities []*dto.Use
 	})
 }
 
-func (t *TicketService) UseTicket(ctx context.Context, userId int, ticketId string) (bool, error) {
-	return mysqldb.WithTransaction(ctx, t.mysqlDB, func(tx *sql.Tx) (bool, error) {
+func UseTicket(ctx context.Context, db *sql.DB, userId int, ticketId string) (bool, error) {
+	return mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (bool, error) {
 		ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId), models.TicketWhere.UsedBy.IsNull(), qm.Load(models.TicketRels.TicketAuthorities)).One(ctx, tx)
 		if err != nil && err != sql.ErrNoRows {
 			return false, terr.Wrap(err)

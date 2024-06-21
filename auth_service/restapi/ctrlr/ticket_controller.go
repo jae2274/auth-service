@@ -1,6 +1,7 @@
 package ctrlr
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -11,13 +12,11 @@ import (
 )
 
 type TicketController struct {
-	ticketService *service.TicketService
+	db *sql.DB
 }
 
-func NewTicketController(ticketService *service.TicketService) *TicketController {
-	return &TicketController{
-		ticketService: ticketService,
-	}
+func NewTicketController(db *sql.DB) *TicketController {
+	return &TicketController{db: db}
 }
 
 func (c *TicketController) RegisterRoutes(router *mux.Router) {
@@ -30,7 +29,7 @@ func (c *TicketController) GetTicketInfo(w http.ResponseWriter, r *http.Request)
 	vars := mux.Vars(r)
 	ticketUUID := vars["ticketUUID"]
 
-	ticket, isExisted, err := c.ticketService.GetTicketInfo(ctx, ticketUUID)
+	ticket, isExisted, err := service.GetTicketInfo(ctx, c.db, ticketUUID)
 	if errorHandler(ctx, w, err) {
 		return
 	}
@@ -62,7 +61,7 @@ func (c *TicketController) UseTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isExisted, err := c.ticketService.UseTicket(ctx, userId, ticketUUID)
+	isExisted, err := service.UseTicket(ctx, c.db, userId, ticketUUID)
 	if errorHandler(ctx, w, err) {
 		return
 	}

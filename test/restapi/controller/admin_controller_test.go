@@ -46,10 +46,9 @@ func TestAdminController(t *testing.T) {
 
 	rootUrl := initRootUrl(t)
 	jwtResolver := initJwtResolver(t)
-	userService := service.NewUserService(tinit.DB(t))
 
-	signUpTestUser := func(t *testing.T) *models.User {
-		user, err := userService.SignUp(ctx, &ooauth.UserInfo{AuthorizedBy: domain.GOOGLE, AuthorizedID: "authId", Email: "targetUser@test.com", Username: "target"}, nil)
+	signUpTestUser := func(t *testing.T, db *sql.DB) *models.User {
+		user, err := service.SignUp(ctx, db, &ooauth.UserInfo{AuthorizedBy: domain.GOOGLE, AuthorizedID: "authId", Email: "targetUser@test.com", Username: "target"}, nil)
 		require.NoError(t, err)
 
 		return user
@@ -80,8 +79,9 @@ func TestAdminController(t *testing.T) {
 	t.Run("AddAuthority", func(t *testing.T) {
 
 		t.Run("return 401 if not logged in", func(t *testing.T) {
-			initAuthority(ctx, t, tinit.DB(t))
-			targetUser := signUpTestUser(t)
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
+			targetUser := signUpTestUser(t, db)
 			res, err := http.DefaultClient.Post(rootUrl+"/auth/admin/authority", "application/json", strings.NewReader(fmt.Sprintf(addSampleJsonBody, targetUser.UserID)))
 			require.NoError(t, err)
 
@@ -89,12 +89,13 @@ func TestAdminController(t *testing.T) {
 		})
 
 		t.Run("return 403 if not authorized", func(t *testing.T) {
-			initAuthority(ctx, t, tinit.DB(t))
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
 
 			tokens, err := jwtResolver.CreateToken("notImportant", []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
 			require.NoError(t, err)
 
-			targetUser := signUpTestUser(t)
+			targetUser := signUpTestUser(t, db)
 			req, err := http.NewRequest("POST", rootUrl+"/auth/admin/authority", strings.NewReader(fmt.Sprintf(addSampleJsonBody, targetUser.UserID)))
 			require.NoError(t, err)
 			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
@@ -106,12 +107,13 @@ func TestAdminController(t *testing.T) {
 		})
 
 		t.Run("return 201 if successfully added", func(t *testing.T) {
-			initAuthority(ctx, t, tinit.DB(t))
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
 
 			tokens, err := jwtResolver.CreateToken("notImportant", []string{domain.AuthorityAdmin}, time.Now())
 			require.NoError(t, err)
 
-			targetUser := signUpTestUser(t)
+			targetUser := signUpTestUser(t, db)
 			req, err := http.NewRequest("POST", rootUrl+"/auth/admin/authority", strings.NewReader(fmt.Sprintf(addSampleJsonBody, targetUser.UserID)))
 			require.NoError(t, err)
 			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
@@ -121,7 +123,7 @@ func TestAdminController(t *testing.T) {
 
 			require.Equal(t, http.StatusCreated, res.StatusCode)
 
-			userAuthorities, err := userService.FindUserAuthorities(ctx, targetUser.UserID)
+			userAuthorities, err := service.FindUserAuthorities(ctx, db, targetUser.UserID)
 			require.NoError(t, err)
 			require.Len(t, userAuthorities, 2)
 			require.Equal(t, "AUTHORITY_USER", userAuthorities[0].AuthorityCode)
@@ -133,8 +135,9 @@ func TestAdminController(t *testing.T) {
 
 	t.Run("RemoveAuthority", func(t *testing.T) {
 		t.Run("return 401 if not logged in", func(t *testing.T) {
-			initAuthority(ctx, t, tinit.DB(t))
-			targetUser := signUpTestUser(t)
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
+			targetUser := signUpTestUser(t, db)
 			req, err := http.NewRequest("DELETE", rootUrl+"/auth/admin/authority", strings.NewReader(fmt.Sprintf(removeSampleJsonBody, targetUser.UserID)))
 			require.NoError(t, err)
 
@@ -145,11 +148,12 @@ func TestAdminController(t *testing.T) {
 		})
 
 		t.Run("return 403 if not authorized", func(t *testing.T) {
-			initAuthority(ctx, t, tinit.DB(t))
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
 			tokens, err := jwtResolver.CreateToken("notImportant", []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
 			require.NoError(t, err)
 
-			targetUser := signUpTestUser(t)
+			targetUser := signUpTestUser(t, db)
 			req, err := http.NewRequest("DELETE", rootUrl+"/auth/admin/authority", strings.NewReader(fmt.Sprintf(removeSampleJsonBody, targetUser.UserID)))
 			require.NoError(t, err)
 			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
@@ -161,11 +165,12 @@ func TestAdminController(t *testing.T) {
 		})
 
 		t.Run("return 204 if successfully removed", func(t *testing.T) {
-			initAuthority(ctx, t, tinit.DB(t))
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
 			tokens, err := jwtResolver.CreateToken("notImportant", []string{domain.AuthorityAdmin}, time.Now())
 			require.NoError(t, err)
 
-			targetUser := signUpTestUser(t)
+			targetUser := signUpTestUser(t, db)
 
 			req, err := http.NewRequest("POST", rootUrl+"/auth/admin/authority", strings.NewReader(fmt.Sprintf(addSampleJsonBody, targetUser.UserID)))
 			require.NoError(t, err)
@@ -173,7 +178,7 @@ func TestAdminController(t *testing.T) {
 			_, err = http.DefaultClient.Do(req)
 			require.NoError(t, err)
 
-			userAuthorities, err := userService.FindUserAuthorities(ctx, targetUser.UserID)
+			userAuthorities, err := service.FindUserAuthorities(ctx, db, targetUser.UserID)
 			require.NoError(t, err)
 			require.Len(t, userAuthorities, 2)
 
@@ -186,7 +191,7 @@ func TestAdminController(t *testing.T) {
 
 			require.Equal(t, http.StatusNoContent, res.StatusCode)
 
-			userAuthorities, err = userService.FindUserAuthorities(ctx, targetUser.UserID)
+			userAuthorities, err = service.FindUserAuthorities(ctx, db, targetUser.UserID)
 			require.NoError(t, err)
 			require.Len(t, userAuthorities, 1)
 		})

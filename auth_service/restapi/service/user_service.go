@@ -18,29 +18,8 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-type UserService interface {
-	SignUp(ctx context.Context, userinfo *ooauth.UserInfo, additionalAgreements []*dto.UserAgreementReq) (*models.User, error)
-	FindSignedUpUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*models.User, bool, error)
-	ApplyUserAgreements(ctx context.Context, userId int, agreements []*dto.UserAgreementReq) error
-	FindNecessaryAgreements(ctx context.Context, userId int) ([]*models.Agreement, error)
-	FindUserAuthorities(ctx context.Context, userId int) ([]*domain.UserAuthority, error)
-	AddUserAuthorities(ctx context.Context, userId int, authorities []*dto.UserAuthorityReq) error
-	FindAllAgreements(ctx context.Context) ([]*models.Agreement, error) //TODO: 테스트코드 작성
-	RemoveAuthority(ctx context.Context, userId int, authorityCode string) error
-}
-
-type UserServiceImpl struct {
-	mysqlDB *sql.DB
-}
-
-func NewUserService(mysqlDB *sql.DB) UserService {
-	return &UserServiceImpl{
-		mysqlDB: mysqlDB,
-	}
-}
-
-func (u *UserServiceImpl) SignUp(ctx context.Context, userinfo *ooauth.UserInfo, agreements []*dto.UserAgreementReq) (*models.User, error) {
-	return mysqldb.WithTransaction(ctx, u.mysqlDB, func(tx *sql.Tx) (*models.User, error) {
+func SignUp(ctx context.Context, db *sql.DB, userinfo *ooauth.UserInfo, agreements []*dto.UserAgreementReq) (*models.User, error) {
+	return mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (*models.User, error) {
 		user, err := mapper.SaveUser(ctx, tx, userinfo.AuthorizedBy, userinfo.AuthorizedID, userinfo.Email, userinfo.Username)
 		if err != nil {
 			return nil, err
@@ -63,12 +42,12 @@ func (u *UserServiceImpl) SignUp(ctx context.Context, userinfo *ooauth.UserInfo,
 	})
 }
 
-func (u *UserServiceImpl) FindSignedUpUser(ctx context.Context, authorizedBy domain.AuthorizedBy, authorizedID string) (*models.User, bool, error) {
-	return mapper.FindUserByAuthorized(ctx, u.mysqlDB, authorizedBy, authorizedID)
+func FindSignedUpUser(ctx context.Context, db *sql.DB, authorizedBy domain.AuthorizedBy, authorizedID string) (*models.User, bool, error) {
+	return mapper.FindUserByAuthorized(ctx, db, authorizedBy, authorizedID)
 }
 
-func (u *UserServiceImpl) ApplyUserAgreements(ctx context.Context, userId int, agreements []*dto.UserAgreementReq) error {
-	return mysqldb.WithTransactionVoid(ctx, u.mysqlDB, func(tx *sql.Tx) error {
+func ApplyUserAgreements(ctx context.Context, db *sql.DB, userId int, agreements []*dto.UserAgreementReq) error {
+	return mysqldb.WithTransactionVoid(ctx, db, func(tx *sql.Tx) error {
 		for _, addAgreement := range agreements {
 			userAgreement := models.UserAgreement{
 				UserID:      userId,
@@ -97,13 +76,13 @@ func (u *UserServiceImpl) ApplyUserAgreements(ctx context.Context, userId int, a
 	})
 }
 
-func (u *UserServiceImpl) FindNecessaryAgreements(ctx context.Context, userId int) ([]*models.Agreement, error) {
-	userAgreeds, err := mapper.FindUserAgreements(ctx, u.mysqlDB, userId, true)
+func FindNecessaryAgreements(ctx context.Context, db *sql.DB, userId int) ([]*models.Agreement, error) {
+	userAgreeds, err := mapper.FindUserAgreements(ctx, db, userId, true)
 	if err != nil {
 		return nil, err
 	}
 
-	requiredAgreements, err := mapper.FindRequiredAgreements(ctx, u.mysqlDB)
+	requiredAgreements, err := mapper.FindRequiredAgreements(ctx, db)
 	if err != nil {
 		return nil, err
 	}
@@ -123,12 +102,12 @@ func (u *UserServiceImpl) FindNecessaryAgreements(ctx context.Context, userId in
 	return necessaryAgreements, nil
 }
 
-func (u *UserServiceImpl) FindUserAuthorities(ctx context.Context, userId int) ([]*domain.UserAuthority, error) {
+func FindUserAuthorities(ctx context.Context, db *sql.DB, userId int) ([]*domain.UserAuthority, error) {
 	userAuthorities, err := models.UserAuthorities(models.UserAuthorityWhere.UserID.EQ(userId),
 		qm.Expr(models.UserAuthorityWhere.ExpiryDate.GTE(null.NewTime(time.Now(), true)), qm.Or2(models.UserAuthorityWhere.ExpiryDate.IsNull())),
 		qm.OrderBy(models.UserAuthorityColumns.CreatedDate),
 		qm.Load(models.UserAuthorityRels.Authority),
-	).All(ctx, u.mysqlDB)
+	).All(ctx, db)
 
 	if err != nil {
 		return nil, err
@@ -162,27 +141,27 @@ func checkHasAuthorityAdmin(userAuthorities []*dto.UserAuthorityReq) bool {
 	return false
 }
 
-func (u *UserServiceImpl) AddUserAuthorities(ctx context.Context, userId int, dUserAuthorities []*dto.UserAuthorityReq) error {
+func AddUserAuthorities(ctx context.Context, db *sql.DB, userId int, dUserAuthorities []*dto.UserAuthorityReq) error {
 	if checkHasAuthorityAdmin(dUserAuthorities) {
 		return terr.New("cannot add authority admin")
 	}
 
-	err := attachAuthorityIds(ctx, u.mysqlDB, dUserAuthorities)
+	err := attachAuthorityIds(ctx, db, dUserAuthorities)
 	if err != nil {
 		return err
 	}
 
-	return mysqldb.WithTransactionVoid(ctx, u.mysqlDB, func(tx *sql.Tx) error {
+	return mysqldb.WithTransactionVoid(ctx, db, func(tx *sql.Tx) error {
 		return addUserAuthorities(ctx, tx, userId, dUserAuthorities)
 	})
 }
 
-func (u *UserServiceImpl) FindAllAgreements(ctx context.Context) ([]*models.Agreement, error) {
-	return models.Agreements().All(ctx, u.mysqlDB)
+func FindAllAgreements(ctx context.Context, db *sql.DB) ([]*models.Agreement, error) {
+	return models.Agreements().All(ctx, db)
 }
 
-func (u *UserServiceImpl) RemoveAuthority(ctx context.Context, userId int, authorityCode string) error {
-	mAuthority, err := models.Authorities(models.AuthorityWhere.AuthorityCode.EQ(authorityCode)).One(ctx, u.mysqlDB)
+func RemoveAuthority(ctx context.Context, db *sql.DB, userId int, authorityCode string) error {
+	mAuthority, err := models.Authorities(models.AuthorityWhere.AuthorityCode.EQ(authorityCode)).One(ctx, db)
 	if err != nil && err != sql.ErrNoRows {
 		return terr.Wrap(err)
 	}
@@ -191,7 +170,7 @@ func (u *UserServiceImpl) RemoveAuthority(ctx context.Context, userId int, autho
 		return terr.New("authority not found")
 	}
 
-	_, err = models.UserAuthorities(models.UserAuthorityWhere.UserID.EQ(userId), models.UserAuthorityWhere.AuthorityID.EQ(mAuthority.AuthorityID)).DeleteAll(ctx, u.mysqlDB)
+	_, err = models.UserAuthorities(models.UserAuthorityWhere.UserID.EQ(userId), models.UserAuthorityWhere.AuthorityID.EQ(mAuthority.AuthorityID)).DeleteAll(ctx, db)
 
 	return err
 

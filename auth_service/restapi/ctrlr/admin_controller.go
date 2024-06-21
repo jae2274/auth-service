@@ -1,6 +1,7 @@
 package ctrlr
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 
@@ -10,12 +11,11 @@ import (
 )
 
 type AdminController struct {
-	userService   service.UserService
-	ticketService *service.TicketService
+	db *sql.DB
 }
 
-func NewAdminController(userService service.UserService, ticketService *service.TicketService) *AdminController {
-	return &AdminController{userService: userService, ticketService: ticketService}
+func NewAdminController(db *sql.DB) *AdminController {
+	return &AdminController{db: db}
 }
 
 func (a *AdminController) RegisterRoutes(router *mux.Router) {
@@ -33,7 +33,7 @@ func (a *AdminController) AddAuthority(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.userService.AddUserAuthorities(ctx, req.UserId, req.Authorities); errorHandler(ctx, w, err) {
+	if err := service.AddUserAuthorities(ctx, a.db, req.UserId, req.Authorities); errorHandler(ctx, w, err) {
 		return
 	}
 
@@ -49,7 +49,7 @@ func (a *AdminController) RemoveAuthority(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := a.userService.RemoveAuthority(ctx, req.UserId, req.AuthorityCode); errorHandler(ctx, w, err) {
+	if err := service.RemoveAuthority(ctx, a.db, req.UserId, req.AuthorityCode); errorHandler(ctx, w, err) {
 		return
 	}
 
@@ -65,7 +65,7 @@ func (a *AdminController) CreateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ticketId, err := a.ticketService.CreateTicket(ctx, req.TicketAuthorities)
+	ticketId, err := service.CreateTicket(ctx, a.db, req.TicketAuthorities)
 	if errorHandler(ctx, w, err) {
 		return
 	}

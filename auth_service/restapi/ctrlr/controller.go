@@ -3,6 +3,7 @@ package ctrlr
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	_ "embed"
 	"encoding/base64"
 	"encoding/json"
@@ -27,7 +28,7 @@ import (
 )
 
 type Controller struct {
-	userService       service.UserService
+	db                *sql.DB
 	jwtResolver       *jwtresolver.JwtResolver
 	store             *sessions.CookieStore
 	afterAuthHtmlTmpl *template.Template
@@ -38,7 +39,7 @@ type Controller struct {
 //go:embed after_auth.html
 var afterLoginHtml string
 
-func NewController(userService service.UserService, jwtResolver *jwtresolver.JwtResolver, aesCryptor *aescryptor.JsonAesCryptor, googleOauth ooauth.Ooauth) *Controller {
+func NewController(db *sql.DB, jwtResolver *jwtresolver.JwtResolver, aesCryptor *aescryptor.JsonAesCryptor, googleOauth ooauth.Ooauth) *Controller {
 
 	afterLoginHtmlTmpl, err := template.New("afterLogin").Parse(afterLoginHtml)
 
@@ -47,7 +48,7 @@ func NewController(userService service.UserService, jwtResolver *jwtresolver.Jwt
 	}
 
 	return &Controller{
-		userService:       userService,
+		db:                db,
 		jwtResolver:       jwtResolver,
 		store:             sessions.NewCookieStore([]byte("secret")),
 		afterAuthHtmlTmpl: afterLoginHtmlTmpl,
@@ -183,18 +184,18 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) signIn(ctx context.Context, userinfo *ooauth.UserInfo, additionalAgreements []*dto.UserAgreementReq) (*dto.SignInResponse, error) {
-	user, isExisted, err := c.userService.FindSignedUpUser(ctx, userinfo.AuthorizedBy, userinfo.AuthorizedID)
+	user, isExisted, err := service.FindSignedUpUser(ctx, c.db, userinfo.AuthorizedBy, userinfo.AuthorizedID)
 	if err != nil {
 		return nil, err
 	}
 
 	if isExisted {
-		err = c.userService.ApplyUserAgreements(ctx, user.UserID, additionalAgreements)
+		err = service.ApplyUserAgreements(ctx, c.db, user.UserID, additionalAgreements)
 		if err != nil {
 			return nil, err
 		}
 
-		agreements, err := c.userService.FindNecessaryAgreements(ctx, user.UserID)
+		agreements, err := service.FindNecessaryAgreements(ctx, c.db, user.UserID)
 		if err != nil {
 			return nil, err
 		}
@@ -205,7 +206,7 @@ func (c *Controller) signIn(ctx context.Context, userinfo *ooauth.UserInfo, addi
 				NecessaryAgreementsRes: signInNecessaryAgreements(agreements),
 			}, nil
 		} else {
-			successRes, err := signInSuccessRes(ctx, c.userService, c.jwtResolver, user)
+			successRes, err := signInSuccessRes(ctx, c.db, c.jwtResolver, user)
 			if err != nil {
 				return nil, err
 			}
@@ -216,7 +217,7 @@ func (c *Controller) signIn(ctx context.Context, userinfo *ooauth.UserInfo, addi
 			}, nil
 		}
 	} else {
-		signInNewUserRes, err := signInNewUserRes(ctx, c.userService, userinfo)
+		signInNewUserRes, err := signInNewUserRes(ctx, c.db, userinfo)
 		if err != nil {
 			return nil, err
 		}
@@ -241,8 +242,8 @@ func signInNecessaryAgreements(necessaryAgreements []*models.Agreement) *dto.Sig
 	return &dto.SignInNecessaryAgreementsRes{Agreements: agreementRes}
 }
 
-func signInSuccessRes(ctx context.Context, userService service.UserService, jwtResolver *jwtresolver.JwtResolver, user *models.User) (*dto.SignInSuccessRes, error) {
-	userAuthorities, err := userService.FindUserAuthorities(ctx, user.UserID)
+func signInSuccessRes(ctx context.Context, db *sql.DB, jwtResolver *jwtresolver.JwtResolver, user *models.User) (*dto.SignInSuccessRes, error) {
+	userAuthorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -264,8 +265,8 @@ func signInSuccessRes(ctx context.Context, userService service.UserService, jwtR
 	}, nil
 }
 
-func signInNewUserRes(ctx context.Context, userService service.UserService, userinfo *ooauth.UserInfo) (*dto.SignInNewUserRes, error) {
-	agreements, err := userService.FindAllAgreements(ctx)
+func signInNewUserRes(ctx context.Context, db *sql.DB, userinfo *ooauth.UserInfo) (*dto.SignInNewUserRes, error) {
+	agreements, err := service.FindAllAgreements(ctx, db)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +301,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = c.userService.SignUp(ctx, ooauthToken.UserInfo, req.Agreements)
+	_, err = service.SignUp(ctx, c.db, ooauthToken.UserInfo, req.Agreements)
 	if errorHandler(ctx, w, err) {
 		return
 	}
@@ -357,7 +358,7 @@ func (c *Controller) RefreshJwt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dUserAuthorities, err := c.userService.FindUserAuthorities(ctx, userId)
+	dUserAuthorities, err := service.FindUserAuthorities(ctx, c.db, userId)
 	if errorHandler(ctx, w, err) {
 		return
 	}

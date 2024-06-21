@@ -15,24 +15,21 @@ import (
 )
 
 func TestTicketService(t *testing.T) {
-	db := tinit.DB(t)
-	ticketService := service.NewTicketService(db)
-	userService := service.NewUserService(db)
 
 	t.Run("return false if ticket not existed", func(t *testing.T) {
-		tinit.DB(t)
+		db := tinit.DB(t)
 		ctx := context.Background()
 
-		_, isExisted, err := ticketService.GetTicketInfo(ctx, "notExistedTicketId")
+		_, isExisted, err := service.GetTicketInfo(ctx, db, "notExistedTicketId")
 		require.NoError(t, err)
 		require.False(t, isExisted)
 	})
 
 	t.Run("return error if authority not existed", func(t *testing.T) {
-		tinit.DB(t)
+		db := tinit.DB(t)
 		ctx := context.Background()
 
-		_, err := ticketService.CreateTicket(ctx, []*dto.UserAuthorityReq{{AuthorityCode: "notExistedAuthority"}})
+		_, err := service.CreateTicket(ctx, db, []*dto.UserAuthorityReq{{AuthorityCode: "notExistedAuthority"}})
 		require.Error(t, err)
 	})
 
@@ -44,11 +41,11 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
 		}
-		ticketId, err := ticketService.CreateTicket(ctx, ticketAuthorities)
+		ticketId, err := service.CreateTicket(ctx, db, ticketAuthorities)
 		require.NoError(t, err)
 		require.NotEmpty(t, ticketId)
 
-		res, isExisted, err := ticketService.GetTicketInfo(ctx, ticketId)
+		res, isExisted, err := service.GetTicketInfo(ctx, db, ticketId)
 		require.NoError(t, err)
 		require.True(t, isExisted)
 		require.Equal(t, ticketId, res.TicketId)
@@ -79,10 +76,10 @@ func TestTicketService(t *testing.T) {
 
 		ctx, _, _, _ := initAgreementFunc(t, db)
 
-		targetUser, err := userService.SignUp(ctx, userinfo, []*dto.UserAgreementReq{})
+		targetUser, err := service.SignUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		isExisted, err := ticketService.UseTicket(ctx, targetUser.UserID, "notExistedTicketId")
+		isExisted, err := service.UseTicket(ctx, db, targetUser.UserID, "notExistedTicketId")
 		require.NoError(t, err)
 		require.False(t, isExisted)
 	})
@@ -96,17 +93,17 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
 		}
-		ticketId, err := ticketService.CreateTicket(ctx, userAuthorityReqs)
+		ticketId, err := service.CreateTicket(ctx, db, userAuthorityReqs)
 		require.NoError(t, err)
 
-		targetUser, err := userService.SignUp(ctx, userinfo, []*dto.UserAgreementReq{})
+		targetUser, err := service.SignUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		isExisted, err := ticketService.UseTicket(ctx, targetUser.UserID, ticketId)
+		isExisted, err := service.UseTicket(ctx, db, targetUser.UserID, ticketId)
 		require.NoError(t, err)
 		require.True(t, isExisted)
 
-		userAuthorities, err := userService.FindUserAuthorities(ctx, targetUser.UserID)
+		userAuthorities, err := service.FindUserAuthorities(ctx, db, targetUser.UserID)
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, len(userAuthorityReqs))
 
@@ -125,21 +122,21 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
 		}
 
-		ticketId, err := ticketService.CreateTicket(ctx, userAuthorityReqs)
+		ticketId, err := service.CreateTicket(ctx, db, userAuthorityReqs)
 		require.NoError(t, err)
 
-		targetUser, err := userService.SignUp(ctx, userinfo, []*dto.UserAgreementReq{})
+		targetUser, err := service.SignUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		isExisted, err := ticketService.UseTicket(ctx, targetUser.UserID, ticketId)
+		isExisted, err := service.UseTicket(ctx, db, targetUser.UserID, ticketId)
 		require.NoError(t, err)
 		require.True(t, isExisted)
 
-		isExisted, err = ticketService.UseTicket(ctx, targetUser.UserID, ticketId)
+		isExisted, err = service.UseTicket(ctx, db, targetUser.UserID, ticketId)
 		require.NoError(t, err)
 		require.False(t, isExisted)
 
-		userAuthorities, err := userService.FindUserAuthorities(ctx, targetUser.UserID)
+		userAuthorities, err := service.FindUserAuthorities(ctx, db, targetUser.UserID)
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, len(userAuthorityReqs))
 
