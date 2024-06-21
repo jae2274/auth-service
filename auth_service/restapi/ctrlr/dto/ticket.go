@@ -1,11 +1,15 @@
 package dto
 
-type GetTicketInfoResponse struct {
-	TicketId          string `json:"ticketId"`
-	TicketAuthorities []*TicketAuthorityReq
+type CreateTicketRequest struct {
+	TicketAuthorities []*UserAuthorityReq `json:"ticketAuthorities"`
 }
 
-type TicketAuthorityReq struct {
+type Ticket struct {
+	TicketId          string `json:"ticketId"`
+	TicketAuthorities []*TicketAuthority
+}
+
+type TicketAuthority struct {
 	AuthorityCode    string `json:"authorityCode"`
 	AuthorityName    string `json:"authorityName"`
 	Summary          string `json:"summary"`

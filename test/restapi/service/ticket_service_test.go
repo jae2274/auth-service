@@ -19,6 +19,15 @@ func TestTicketService(t *testing.T) {
 	ticketService := service.NewTicketService(db)
 	userService := service.NewUserService(db)
 
+	t.Run("return false if ticket not existed", func(t *testing.T) {
+		tinit.DB(t)
+		ctx := context.Background()
+
+		_, isExisted, err := ticketService.GetTicketInfo(ctx, "notExistedTicketId")
+		require.NoError(t, err)
+		require.False(t, isExisted)
+	})
+
 	t.Run("return error if authority not existed", func(t *testing.T) {
 		tinit.DB(t)
 		ctx := context.Background()
@@ -27,13 +36,35 @@ func TestTicketService(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("return ticket id if authority existed", func(t *testing.T) {
+	t.Run("return ticket info if ticket existed", func(t *testing.T) {
 		db := tinit.DB(t)
 		ctx, _, _, authorities := initAgreementFunc(t, db)
 
-		ticketId, err := ticketService.CreateTicket(ctx, []*dto.UserAuthorityReq{{AuthorityCode: authorities[0].AuthorityCode}})
+		ticketAuthorities := []*dto.UserAuthorityReq{
+			{AuthorityCode: authorities[0].AuthorityCode},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
+		}
+		ticketId, err := ticketService.CreateTicket(ctx, ticketAuthorities)
 		require.NoError(t, err)
 		require.NotEmpty(t, ticketId)
+
+		res, isExisted, err := ticketService.GetTicketInfo(ctx, ticketId)
+		require.NoError(t, err)
+		require.True(t, isExisted)
+		require.Equal(t, ticketId, res.TicketId)
+		require.Len(t, res.TicketAuthorities, len(ticketAuthorities))
+
+		for i, ticketAuthority := range res.TicketAuthorities {
+			require.Equal(t, ticketAuthorities[i].AuthorityCode, ticketAuthority.AuthorityCode)
+			require.Equal(t, authorities[i].AuthorityName, ticketAuthority.AuthorityName) //UserAuthorityReq에서는 존재하지 않는 필드
+			require.Equal(t, authorities[i].Summary, ticketAuthority.Summary)             //UserAuthorityReq에서는 존재하지 않는 필드
+
+			if ticketAuthority.ExpiryDurationMS != nil {
+				require.Equal(t, int64(2*time.Hour/time.Millisecond), *ticketAuthority.ExpiryDurationMS)
+			} else {
+				require.Nil(t, ticketAuthority.ExpiryDurationMS)
+			}
+		}
 	})
 
 	userinfo := &ooauth.UserInfo{

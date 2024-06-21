@@ -28,6 +28,7 @@ func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 	jwtResolver := jwtresolver.NewJwtResolver(envVars.SecretKey)
 	router.Use(middleware.SetClaimsMW(jwtResolver))
 	userService := service.NewUserService(db)
+	ticketService := service.NewTicketService(db)
 	aesCryptor, err := aescryptor.NewJsonAesCryptor(utils.CreateHash(envVars.SecretKey))
 	if err != nil {
 		return err
@@ -36,8 +37,11 @@ func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 	controller := ctrlr.NewController(userService, jwtResolver, aesCryptor, googleAuth)
 	controller.RegisterRoutes(router)
 
+	ticketController := ctrlr.NewTicketController(ticketService)
+	ticketController.RegisterRoutes(router)
+
 	adminRouter := router.NewRoute().Subrouter()
-	adminController := ctrlr.NewAdminController(userService)
+	adminController := ctrlr.NewAdminController(userService, ticketService)
 	adminController.RegisterRoutes(adminRouter)
 	adminRouter.Use(middleware.CheckHasAuthority(domain.AuthorityAdmin))
 

@@ -20,21 +20,46 @@ type TicketService struct {
 	mysqlDB *sql.DB
 }
 
-func NewTicketService(mysqlDB *sql.DB) TicketService {
-	return TicketService{
+func NewTicketService(mysqlDB *sql.DB) *TicketService {
+	return &TicketService{
 		mysqlDB: mysqlDB,
 	}
 }
 
-// func (t *TicketService) GetTicketInfo(ctx context.Context, ticketId string) (*models.Ticket, bool, error) {
-// 	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId)).One(ctx, t.mysqlDB)
-// 	if err != nil && err != sql.ErrNoRows {
-// 		return nil, false, terr.Wrap(err)
-// 	} else if err == sql.ErrNoRows {
-// 		return nil, false, nil
-// 	}
+func (t *TicketService) GetTicketInfo(ctx context.Context, ticketId string) (*dto.Ticket, bool, error) {
+	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId)).One(ctx, t.mysqlDB)
 
-// }
+	if err != nil && err != sql.ErrNoRows {
+		return nil, false, terr.Wrap(err)
+	} else if err == sql.ErrNoRows {
+		return nil, false, nil
+	}
+
+	mTicketAuthorities, err := models.TicketAuthorities(models.TicketAuthorityWhere.TicketID.EQ(ticket.TicketID), qm.Load(models.TicketAuthorityRels.Authority)).All(ctx, t.mysqlDB)
+	if err != nil {
+		return nil, false, terr.Wrap(err)
+	}
+
+	ticketAuthorities := make([]*dto.TicketAuthority, 0, len(mTicketAuthorities))
+	for _, mTicketAuthority := range mTicketAuthorities {
+		authority := mTicketAuthority.R.Authority
+		var expiryDurationMS *int64
+		if mTicketAuthority.ExpiryDurationMS.Valid {
+			expiryDurationMS = ptr.P(mTicketAuthority.ExpiryDurationMS.Int64)
+		}
+		ticketAuthorities = append(ticketAuthorities, &dto.TicketAuthority{
+			AuthorityCode:    authority.AuthorityCode,
+			AuthorityName:    authority.AuthorityName,
+			Summary:          authority.Summary,
+			ExpiryDurationMS: expiryDurationMS,
+		})
+	}
+
+	return &dto.Ticket{
+		TicketId:          ticket.UUID,
+		TicketAuthorities: ticketAuthorities,
+	}, true, nil
+}
 
 func (t *TicketService) CreateTicket(ctx context.Context, authorities []*dto.UserAuthorityReq) (string, error) {
 	err := attachAuthorityIds(ctx, t.mysqlDB, authorities)
