@@ -448,4 +448,49 @@ func TestUserService(t *testing.T) {
 		err = removeAuthority(ctx, db, user.UserID, authorities[0].AuthorityCode)
 		require.NoError(t, err)
 	})
+
+	t.Run("return specified authorities", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+
+		actionOtherUserSignUP(t, ctx, db)
+
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
+			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: nil},
+		})
+		require.NoError(t, err)
+
+		userAuthorities, err := service.FindUserAuthoritiesByAuthorityIds(ctx, db, user.UserID, []int{authorities[0].AuthorityID})
+
+		require.NoError(t, err)
+		require.Len(t, userAuthorities, 1)
+		require.Equal(t, authorities[0].AuthorityCode, userAuthorities[0].AuthorityCode)
+		require.WithinDuration(t, time.Now().Add(time.Hour*24), *userAuthorities[0].ExpiryDate, time.Second)
+
+		userAuthorities, err = service.FindUserAuthoritiesByAuthorityIds(ctx, db, user.UserID, []int{authorities[1].AuthorityID})
+
+		require.NoError(t, err)
+		require.Len(t, userAuthorities, 1)
+		require.Equal(t, authorities[1].AuthorityCode, userAuthorities[0].AuthorityCode)
+		require.Nil(t, userAuthorities[0].ExpiryDate)
+	})
+
+	t.Run("return empty authorities when specified authorities are not existed", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+
+		actionOtherUserSignUP(t, ctx, db)
+
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		userAuthorities, err := service.FindUserAuthoritiesByAuthorityIds(ctx, db, user.UserID, []int{authorities[0].AuthorityID, authorities[1].AuthorityID})
+
+		require.NoError(t, err)
+		require.Empty(t, userAuthorities)
+	})
 }

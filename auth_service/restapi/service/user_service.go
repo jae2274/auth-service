@@ -126,6 +126,34 @@ func FindUserAuthorities(ctx context.Context, exec boil.ContextExecutor, userId 
 	return authorities, nil
 }
 
+func FindUserAuthoritiesByAuthorityIds(ctx context.Context, exec boil.ContextExecutor, userId int, authorityId []int) ([]*domain.UserAuthority, error) {
+	userAuthorities, err := models.UserAuthorities(
+		models.UserAuthorityWhere.UserID.EQ(userId), models.UserAuthorityWhere.AuthorityID.IN(authorityId),
+		qm.OrderBy(models.UserAuthorityColumns.CreatedDate),
+		qm.Load(models.UserAuthorityRels.Authority),
+	).All(ctx, exec)
+	if err != nil {
+		return nil, err
+	}
+
+	authorities := make([]*domain.UserAuthority, len(userAuthorities))
+	for i, userAuthority := range userAuthorities {
+		var expiryDate *time.Time = nil
+		if userAuthority.ExpiryDate.Valid {
+			expiryDate = &userAuthority.ExpiryDate.Time
+		}
+
+		authorities[i] = &domain.UserAuthority{
+			UserID:        userAuthority.UserID,
+			AuthorityID:   userAuthority.R.Authority.AuthorityID,
+			AuthorityCode: userAuthority.R.Authority.AuthorityCode,
+			ExpiryDate:    expiryDate,
+		}
+	}
+
+	return authorities, nil
+}
+
 func checkHasAuthorityAdmin(userAuthorities []*dto.UserAuthorityReq) bool {
 	for _, userAuthority := range userAuthorities {
 		if userAuthority.AuthorityCode == domain.AuthorityAdmin {
@@ -166,5 +194,4 @@ func RemoveAuthority(ctx context.Context, tx *sql.Tx, userId int, authorityCode 
 	_, err = models.UserAuthorities(models.UserAuthorityWhere.UserID.EQ(userId), models.UserAuthorityWhere.AuthorityID.EQ(mAuthority.AuthorityID)).DeleteAll(ctx, tx)
 
 	return err
-
 }

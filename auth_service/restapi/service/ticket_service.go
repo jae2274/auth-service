@@ -16,11 +16,10 @@ import (
 )
 
 func GetTicketInfo(ctx context.Context, exec boil.ContextExecutor, ticketId string) (*dto.Ticket, bool, error) {
-	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId)).One(ctx, exec)
-
-	if err != nil && err != sql.ErrNoRows {
+	ticket, isExisted, err := GetTicket(ctx, exec, ticketId)
+	if err != nil {
 		return nil, false, terr.Wrap(err)
-	} else if err == sql.ErrNoRows {
+	} else if !isExisted {
 		return nil, false, nil
 	}
 
@@ -33,21 +32,38 @@ func GetTicketInfo(ctx context.Context, exec boil.ContextExecutor, ticketId stri
 	for _, mTicketAuthority := range mTicketAuthorities {
 		authority := mTicketAuthority.R.Authority
 		var expiryDurationMS *int64
+		var expiryDuration *dto.Duration
 		if mTicketAuthority.ExpiryDurationMS.Valid {
 			expiryDurationMS = ptr.P(mTicketAuthority.ExpiryDurationMS.Int64)
+			expiryDuration = ptr.P(dto.Duration(time.Duration(mTicketAuthority.ExpiryDurationMS.Int64) * time.Millisecond))
 		}
 		ticketAuthorities = append(ticketAuthorities, &dto.TicketAuthority{
+			AuthorityId:      authority.AuthorityID,
 			AuthorityCode:    authority.AuthorityCode,
 			AuthorityName:    authority.AuthorityName,
 			Summary:          authority.Summary,
+			ExpiryDuration:   expiryDuration,
 			ExpiryDurationMS: expiryDurationMS,
 		})
 	}
 
 	return &dto.Ticket{
 		TicketId:          ticket.UUID,
+		IsUsed:            ticket.UsedBy.Valid,
 		TicketAuthorities: ticketAuthorities,
 	}, true, nil
+}
+
+func GetTicket(ctx context.Context, exec boil.ContextExecutor, ticketId string) (*models.Ticket, bool, error) {
+	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId), qm.Load(models.TicketRels.TicketAuthorities)).One(ctx, exec)
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, false, terr.Wrap(err)
+	} else if err == sql.ErrNoRows {
+		return nil, false, nil
+	}
+
+	return ticket, true, nil
 }
 
 func CreateTicket(ctx context.Context, tx *sql.Tx, authorities []*dto.UserAuthorityReq) (string, error) {
@@ -82,12 +98,10 @@ func CreateTicket(ctx context.Context, tx *sql.Tx, authorities []*dto.UserAuthor
 	return ticket.UUID, nil
 }
 
-func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) (bool, error) {
+func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) error {
 	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId), models.TicketWhere.UsedBy.IsNull(), qm.Load(models.TicketRels.TicketAuthorities)).One(ctx, tx)
-	if err != nil && err != sql.ErrNoRows {
-		return false, terr.Wrap(err)
-	} else if err == sql.ErrNoRows {
-		return false, nil
+	if err != nil {
+		return terr.Wrap(err)
 	}
 
 	ticket.UsedBy = null.IntFrom(userId)
@@ -109,8 +123,8 @@ func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) (bo
 	err = addUserAuthorities(ctx, tx, userId, dUserAuthorities)
 
 	if err != nil {
-		return false, terr.Wrap(err)
+		return terr.Wrap(err)
 	}
 
-	return true, nil
+	return nil
 }

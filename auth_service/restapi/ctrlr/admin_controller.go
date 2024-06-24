@@ -9,6 +9,7 @@ import (
 	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
+	"github.com/jae2274/goutils/terr"
 )
 
 type AdminController struct {
@@ -77,17 +78,24 @@ func (a *AdminController) CreateTicket(w http.ResponseWriter, r *http.Request) {
 	ticketId, err := mysqldb.WithTransaction(ctx, a.db, func(tx *sql.Tx) (string, error) {
 		return service.CreateTicket(ctx, tx, req.TicketAuthorities)
 	})
-
 	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	ticket, isExisted, err := service.GetTicketInfo(ctx, a.db, ticketId)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	if !isExisted {
+		errorHandler(ctx, w, terr.New("ticket not found"))
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	err = json.NewEncoder(w).Encode(struct {
-		TicketUUID string `json:"ticketUUID"`
-	}{TicketUUID: ticketId})
+	err = json.NewEncoder(w).Encode(ticket)
 
 	if errorHandler(ctx, w, err) {
 		return

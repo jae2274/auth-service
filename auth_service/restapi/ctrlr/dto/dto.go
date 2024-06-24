@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/jae2274/auth-service/auth_service/common/domain"
 	"github.com/jae2274/goutils/enum"
 )
 
@@ -106,7 +107,7 @@ type AddAuthorityRequest struct {
 type UserAuthorityReq struct {
 	AuthorityID    int       `json:"-"`
 	AuthorityCode  string    `json:"authorityCode"`
-	ExpiryDuration *Duration `json:"expiryDate"`
+	ExpiryDuration *Duration `json:"expiryDuration"`
 }
 
 type Duration time.Duration
@@ -129,4 +130,22 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 type RemoveAuthorityRequest struct {
 	UserId        int    `json:"userId"`
 	AuthorityCode string `json:"authorityCode"`
+}
+
+type TicketStatusValues struct{}
+type TicketStatus enum.Enum[TicketStatusValues]
+
+const (
+	NOT_EXISTED       = TicketStatus("not_existed")
+	ALREADY_USED      = TicketStatus("already_used")
+	SUCCESSFULLY_USED = TicketStatus("successfully_used")
+)
+
+func (TicketStatusValues) Values() []string {
+	return []string{string(NOT_EXISTED), string(ALREADY_USED), string(SUCCESSFULLY_USED)}
+}
+
+type UseTicketResponse struct {
+	TicketStatus       TicketStatus            `json:"ticketStatus"`
+	AppliedAuthorities []*domain.UserAuthority `json:"appliedAuthorities"`
 }

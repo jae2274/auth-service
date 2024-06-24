@@ -1,6 +1,7 @@
 package ctrlr
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
+	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
 	"github.com/jae2274/auth-service/auth_service/restapi/middleware"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
 )
@@ -22,7 +24,7 @@ func NewTicketController(db *sql.DB) *TicketController {
 
 func (c *TicketController) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/ticket/{ticketUUID}", c.GetTicketInfo).Methods("GET")
-	router.HandleFunc("auth/ticket/{ticketUUID}", c.UseTicket).Methods("PATCH")
+	router.HandleFunc("/auth/ticket/{ticketUUID}", c.UseTicket).Methods("PATCH")
 }
 
 func (c *TicketController) GetTicketInfo(w http.ResponseWriter, r *http.Request) {
@@ -62,18 +64,52 @@ func (c *TicketController) UseTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isExisted, err := mysqldb.WithTransaction(ctx, c.db, func(tx *sql.Tx) (bool, error) {
-		return service.UseTicket(ctx, tx, userId, ticketUUID)
+	res, err := mysqldb.WithTransaction(ctx, c.db, func(tx *sql.Tx) (*dto.UseTicketResponse, error) {
+		return c.useTicket(ctx, tx, userId, ticketUUID)
 	})
 
 	if errorHandler(ctx, w, err) {
 		return
 	}
 
-	if !isExisted {
-		http.Error(w, "ticket not existed", http.StatusNotFound)
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(res)
+	if errorHandler(ctx, w, err) {
 		return
 	}
+}
 
-	w.WriteHeader(http.StatusOK)
+func (c *TicketController) useTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) (*dto.UseTicketResponse, error) {
+	res := &dto.UseTicketResponse{}
+	ticket, isExisted, err := service.GetTicketInfo(ctx, tx, ticketId)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isExisted {
+		res.TicketStatus = dto.NOT_EXISTED
+		return res, nil
+	} else if ticket.IsUsed {
+		res.TicketStatus = dto.ALREADY_USED
+		return res, nil
+	}
+
+	err = service.UseTicket(ctx, tx, userId, ticketId)
+	if err != nil {
+		return nil, err
+	}
+	authorityIds := make([]int, len(ticket.TicketAuthorities))
+	for i, authority := range ticket.TicketAuthorities {
+		authorityIds[i] = authority.AuthorityId
+	}
+
+	userAuthorities, err := service.FindUserAuthoritiesByAuthorityIds(ctx, tx, userId, authorityIds)
+	if err != nil {
+		return nil, err
+	}
+
+	res.TicketStatus = dto.SUCCESSFULLY_USED
+	res.AppliedAuthorities = userAuthorities
+
+	return res, nil
 }

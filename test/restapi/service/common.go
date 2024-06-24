@@ -84,8 +84,8 @@ func signUp(ctx context.Context, db *sql.DB, userinfo *ooauth.UserInfo, agreemen
 	})
 }
 
-func useTicket(ctx context.Context, db *sql.DB, userId int, ticketId string) (bool, error) {
-	return mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (bool, error) {
+func useTicket(ctx context.Context, db *sql.DB, userId int, ticketId string) error {
+	return mysqldb.WithTransactionVoid(ctx, db, func(tx *sql.Tx) error {
 		return service.UseTicket(ctx, tx, userId, ticketId)
 	})
 }

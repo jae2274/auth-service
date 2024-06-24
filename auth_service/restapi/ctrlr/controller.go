@@ -13,11 +13,13 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/jae2274/auth-service/auth_service/common/domain"
 	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/models"
 	"github.com/jae2274/auth-service/auth_service/restapi/aescryptor"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
 	"github.com/jae2274/auth-service/auth_service/restapi/jwtresolver"
+	"github.com/jae2274/auth-service/auth_service/restapi/middleware"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
 	"github.com/jae2274/auth-service/auth_service/utils"
@@ -65,6 +67,7 @@ func (c *Controller) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/sign-in", c.SignIn).Methods("POST")
 	router.HandleFunc("/auth/sign-up", c.SignUp).Methods("POST")
 	router.HandleFunc("/auth/refresh", c.RefreshJwt).Methods("POST")
+	router.HandleFunc("/auth/authority", c.FindUserAuthorities).Methods("GET")
 }
 
 func (c *Controller) AuthCodeUrls(w http.ResponseWriter, r *http.Request) {
@@ -394,6 +397,35 @@ func (c *Controller) RefreshJwt(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = json.NewEncoder(w).Encode(res)
+
+	if errorHandler(ctx, w, err) {
+		return
+	}
+}
+
+func (c *Controller) FindUserAuthorities(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	claims, isExisted := middleware.GetClaims(ctx)
+	if !isExisted {
+		http.Error(w, "no claims in context", http.StatusUnauthorized)
+		return
+	}
+
+	userId, err := strconv.Atoi(claims.UserId)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	userAuthorities, err := service.FindUserAuthorities(ctx, c.db, userId)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(struct {
+		Authorities []*domain.UserAuthority `json:"authorities"`
+	}{Authorities: userAuthorities})
 
 	if errorHandler(ctx, w, err) {
 		return
