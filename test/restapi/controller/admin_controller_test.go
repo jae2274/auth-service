@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -13,6 +14,7 @@ import (
 	"github.com/jae2274/auth-service/auth_service/common/domain"
 	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/models"
+	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
 	"github.com/jae2274/auth-service/auth_service/restapi/jwtresolver"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
@@ -79,13 +81,71 @@ func TestAdminController(t *testing.T) {
 	  }
 	`
 
+	adminAuthority := "/auth/admin/authority"
+	adminTicket := "/auth/admin/ticket"
+	t.Run("GetAllAuthorities", func(t *testing.T) {
+
+		t.Run("return 401 if not logged in", func(t *testing.T) {
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
+			res, err := http.DefaultClient.Get(rootUrl + adminAuthority)
+			require.NoError(t, err)
+
+			require.Equal(t, http.StatusUnauthorized, res.StatusCode)
+		})
+
+		t.Run("return 403 if not authorized", func(t *testing.T) {
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
+
+			tokens, err := jwtResolver.CreateToken("notImportant", []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
+			require.NoError(t, err)
+
+			req, err := http.NewRequest("GET", rootUrl+adminAuthority, nil)
+			require.NoError(t, err)
+			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
+
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+
+			require.Equal(t, http.StatusForbidden, res.StatusCode)
+		})
+
+		t.Run("return 200 with authorities", func(t *testing.T) {
+			db := tinit.DB(t)
+			authorities := initAuthority(ctx, t, db)
+
+			tokens, err := jwtResolver.CreateToken("notImportant", []string{domain.AuthorityAdmin}, time.Now())
+			require.NoError(t, err)
+
+			req, err := http.NewRequest("GET", rootUrl+adminAuthority, nil)
+			require.NoError(t, err)
+			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
+
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+
+			require.Equal(t, http.StatusOK, res.StatusCode)
+
+			var resObj dto.GetAllAuthoritiesResponse
+			json.NewDecoder(res.Body).Decode(&resObj)
+
+			require.Len(t, resObj.Authorities, len(authorities)-1) //관리자 권한은 제외
+			for i, authority := range authorities[1:] {            //관리자 권한은 제외
+				require.Equal(t, authority.AuthorityCode, resObj.Authorities[i].AuthorityCode)
+				require.Equal(t, authority.AuthorityName, resObj.Authorities[i].AuthorityName)
+				require.Equal(t, authority.Summary, resObj.Authorities[i].Summary)
+			}
+		})
+	})
+
 	t.Run("AddAuthority", func(t *testing.T) {
 
 		t.Run("return 401 if not logged in", func(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 			targetUser := signUpTestUser(t, db)
-			res, err := http.DefaultClient.Post(rootUrl+"/auth/admin/authority", "application/json", strings.NewReader(fmt.Sprintf(addSampleJsonBody, targetUser.UserID)))
+			res, err := http.DefaultClient.Post(rootUrl+adminAuthority, "application/json", strings.NewReader(fmt.Sprintf(addSampleJsonBody, targetUser.UserID)))
 			require.NoError(t, err)
 
 			require.Equal(t, http.StatusUnauthorized, res.StatusCode)
@@ -99,7 +159,7 @@ func TestAdminController(t *testing.T) {
 			require.NoError(t, err)
 
 			targetUser := signUpTestUser(t, db)
-			req, err := http.NewRequest("POST", rootUrl+"/auth/admin/authority", strings.NewReader(fmt.Sprintf(addSampleJsonBody, targetUser.UserID)))
+			req, err := http.NewRequest("POST", rootUrl+adminAuthority, strings.NewReader(fmt.Sprintf(addSampleJsonBody, targetUser.UserID)))
 			require.NoError(t, err)
 			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
 
@@ -117,7 +177,7 @@ func TestAdminController(t *testing.T) {
 			require.NoError(t, err)
 
 			targetUser := signUpTestUser(t, db)
-			req, err := http.NewRequest("POST", rootUrl+"/auth/admin/authority", strings.NewReader(fmt.Sprintf(addSampleJsonBody, targetUser.UserID)))
+			req, err := http.NewRequest("POST", rootUrl+adminAuthority, strings.NewReader(fmt.Sprintf(addSampleJsonBody, targetUser.UserID)))
 			require.NoError(t, err)
 			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
 
@@ -141,7 +201,7 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 			targetUser := signUpTestUser(t, db)
-			req, err := http.NewRequest("DELETE", rootUrl+"/auth/admin/authority", strings.NewReader(fmt.Sprintf(removeSampleJsonBody, targetUser.UserID)))
+			req, err := http.NewRequest("DELETE", rootUrl+adminAuthority, strings.NewReader(fmt.Sprintf(removeSampleJsonBody, targetUser.UserID)))
 			require.NoError(t, err)
 
 			res, err := http.DefaultClient.Do(req)
@@ -157,7 +217,7 @@ func TestAdminController(t *testing.T) {
 			require.NoError(t, err)
 
 			targetUser := signUpTestUser(t, db)
-			req, err := http.NewRequest("DELETE", rootUrl+"/auth/admin/authority", strings.NewReader(fmt.Sprintf(removeSampleJsonBody, targetUser.UserID)))
+			req, err := http.NewRequest("DELETE", rootUrl+adminAuthority, strings.NewReader(fmt.Sprintf(removeSampleJsonBody, targetUser.UserID)))
 			require.NoError(t, err)
 			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
 
@@ -175,7 +235,7 @@ func TestAdminController(t *testing.T) {
 
 			targetUser := signUpTestUser(t, db)
 
-			req, err := http.NewRequest("POST", rootUrl+"/auth/admin/authority", strings.NewReader(fmt.Sprintf(addSampleJsonBody, targetUser.UserID)))
+			req, err := http.NewRequest("POST", rootUrl+adminAuthority, strings.NewReader(fmt.Sprintf(addSampleJsonBody, targetUser.UserID)))
 			require.NoError(t, err)
 			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
 			_, err = http.DefaultClient.Do(req)
@@ -185,7 +245,7 @@ func TestAdminController(t *testing.T) {
 			require.NoError(t, err)
 			require.Len(t, userAuthorities, 2)
 
-			req, err = http.NewRequest("DELETE", rootUrl+"/auth/admin/authority", strings.NewReader(fmt.Sprintf(removeSampleJsonBody, targetUser.UserID)))
+			req, err = http.NewRequest("DELETE", rootUrl+adminAuthority, strings.NewReader(fmt.Sprintf(removeSampleJsonBody, targetUser.UserID)))
 			require.NoError(t, err)
 			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
 
@@ -197,6 +257,142 @@ func TestAdminController(t *testing.T) {
 			userAuthorities, err = service.FindUserAuthorities(ctx, db, targetUser.UserID)
 			require.NoError(t, err)
 			require.Len(t, userAuthorities, 1)
+		})
+	})
+
+	createTicketReq := `
+	{
+		"ticketAuthorities": [
+			{
+				"authorityCode": "AUTHORITY_USER",
+				"expiryDuration": "720h"
+			},
+			{
+				"authorityCode": "AUTHORITY_GUEST"
+			}
+		]
+	}
+	`
+	t.Run("CreateTicket", func(t *testing.T) {
+
+		t.Run("return 401 if not logged in", func(t *testing.T) {
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
+			res, err := http.DefaultClient.Post(rootUrl+adminTicket, "application/json", strings.NewReader(createTicketReq))
+			require.NoError(t, err)
+
+			require.Equal(t, http.StatusUnauthorized, res.StatusCode)
+		})
+
+		t.Run("return 403 if not authorized", func(t *testing.T) {
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
+
+			tokens, err := jwtResolver.CreateToken("notImportant", []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
+			require.NoError(t, err)
+
+			req, err := http.NewRequest("POST", rootUrl+adminTicket, strings.NewReader(createTicketReq))
+			require.NoError(t, err)
+			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
+
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+
+			require.Equal(t, http.StatusForbidden, res.StatusCode)
+		})
+
+		t.Run("return 201 if successfully created", func(t *testing.T) {
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
+
+			tokens, err := jwtResolver.CreateToken("notImportant", []string{domain.AuthorityAdmin}, time.Now())
+			require.NoError(t, err)
+
+			req, err := http.NewRequest("POST", rootUrl+adminTicket, strings.NewReader(createTicketReq))
+			require.NoError(t, err)
+			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
+
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+
+			require.Equal(t, http.StatusCreated, res.StatusCode)
+
+			var resObj *dto.Ticket
+			json.NewDecoder(res.Body).Decode(&resObj)
+
+			require.Len(t, resObj.TicketAuthorities, 2)
+			require.NotEmpty(t, resObj.TicketId)
+			require.Equal(t, "AUTHORITY_USER", resObj.TicketAuthorities[0].AuthorityCode)
+			require.Equal(t, 720*time.Hour/time.Millisecond, time.Duration(*resObj.TicketAuthorities[0].ExpiryDurationMS))
+			require.Equal(t, "AUTHORITY_GUEST", resObj.TicketAuthorities[1].AuthorityCode)
+			require.Nil(t, resObj.TicketAuthorities[1].ExpiryDurationMS)
+
+			_, isExisted, err := service.GetTicketInfo(ctx, db, resObj.TicketId)
+			require.NoError(t, err)
+			require.True(t, isExisted)
+		})
+	})
+
+	t.Run("GetAllTickets", func(t *testing.T) {
+		t.Run("return 401 if not logged in", func(t *testing.T) {
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
+			res, err := http.DefaultClient.Get(rootUrl + adminTicket)
+			require.NoError(t, err)
+
+			require.Equal(t, http.StatusUnauthorized, res.StatusCode)
+		})
+
+		t.Run("return 403 if not authorized", func(t *testing.T) {
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
+
+			tokens, err := jwtResolver.CreateToken("notImportant", []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
+			require.NoError(t, err)
+
+			req, err := http.NewRequest("GET", rootUrl+adminTicket, nil)
+			require.NoError(t, err)
+			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
+
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+
+			require.Equal(t, http.StatusForbidden, res.StatusCode)
+		})
+
+		t.Run("return 200 with tickets", func(t *testing.T) {
+			db := tinit.DB(t)
+			initAuthority(ctx, t, db)
+
+			tokens, err := jwtResolver.CreateToken("notImportant", []string{domain.AuthorityAdmin}, time.Now())
+			require.NoError(t, err)
+
+			req, err := http.NewRequest("POST", rootUrl+adminTicket, strings.NewReader(createTicketReq))
+			require.NoError(t, err)
+			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
+
+			_, err = http.DefaultClient.Do(req)
+			require.NoError(t, err)
+
+			req, err = http.NewRequest("GET", rootUrl+adminTicket, nil)
+			require.NoError(t, err)
+			req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
+
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+
+			require.Equal(t, http.StatusOK, res.StatusCode)
+			var resObj dto.GetAllTicketsResponse
+			json.NewDecoder(res.Body).Decode(&resObj)
+
+			require.Len(t, resObj.Tickets, 1)
+			ticketRes := resObj.Tickets[0]
+			require.Len(t, ticketRes.TicketAuthorities, 2)
+			require.NotEmpty(t, ticketRes.TicketId)
+			require.Equal(t, "AUTHORITY_USER", ticketRes.TicketAuthorities[0].AuthorityCode)
+			require.Equal(t, 720*time.Hour/time.Millisecond, time.Duration(*ticketRes.TicketAuthorities[0].ExpiryDurationMS))
+			require.Equal(t, "AUTHORITY_GUEST", ticketRes.TicketAuthorities[1].AuthorityCode)
+			require.Nil(t, ticketRes.TicketAuthorities[1].ExpiryDurationMS)
 		})
 	})
 }

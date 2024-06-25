@@ -21,9 +21,37 @@ func NewAdminController(db *sql.DB) *AdminController {
 }
 
 func (a *AdminController) RegisterRoutes(router *mux.Router) {
+	router.HandleFunc("/auth/admin/authority", a.GetAllAuthorities).Methods("GET")
 	router.HandleFunc("/auth/admin/authority", a.AddAuthority).Methods("POST")
 	router.HandleFunc("/auth/admin/authority", a.RemoveAuthority).Methods("DELETE")
+	router.HandleFunc("/auth/admin/ticket", a.GetAllTickets).Methods("GET")
 	router.HandleFunc("/auth/admin/ticket", a.CreateTicket).Methods("POST")
+}
+
+func (a *AdminController) GetAllAuthorities(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	authorities, err := service.GetAllAuthorities(ctx, a.db)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	authoritiesRes := make([]*dto.AuthorityRes, 0, len(authorities))
+	for _, authority := range authorities {
+		authoritiesRes = append(authoritiesRes, &dto.AuthorityRes{
+			AuthorityCode: authority.AuthorityCode,
+			AuthorityName: authority.AuthorityName,
+			Summary:       authority.Summary,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	err = json.NewEncoder(w).Encode(&dto.GetAllAuthoritiesResponse{Authorities: authoritiesRes})
+	if errorHandler(ctx, w, err) {
+		return
+	}
 }
 
 func (a *AdminController) AddAuthority(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +92,23 @@ func (a *AdminController) RemoveAuthority(w http.ResponseWriter, r *http.Request
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (a *AdminController) GetAllTickets(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	tickets, err := service.GetAllTickets(ctx, a.db)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	err = json.NewEncoder(w).Encode(&dto.GetAllTicketsResponse{Tickets: tickets})
+	if errorHandler(ctx, w, err) {
+		return
+	}
 }
 
 func (a *AdminController) CreateTicket(w http.ResponseWriter, r *http.Request) {

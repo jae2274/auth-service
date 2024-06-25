@@ -150,3 +150,16 @@ type UseTicketResponse struct {
 	AccessToken        *string                 `json:"accessToken"`
 	AppliedAuthorities []*domain.UserAuthority `json:"appliedAuthorities"`
 }
+
+type GetAllAuthoritiesResponse struct {
+	Authorities []*AuthorityRes `json:"authorities"`
+}
+type AuthorityRes struct {
+	AuthorityCode string `json:"authorityCode"`
+	AuthorityName string `json:"authorityName"`
+	Summary       string `json:"summary"`
+}
+
+type GetAllTicketsResponse struct {
+	Tickets []*Ticket `json:"tickets"`
+}

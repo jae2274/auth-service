@@ -493,4 +493,20 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, userAuthorities)
 	})
+
+	t.Run("return all authorities", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, savedAuthorities := initAgreementFunc(t, db)
+
+		authorities, err := service.GetAllAuthorities(ctx, db)
+		require.NoError(t, err)
+		require.Len(t, authorities, len(savedAuthorities))
+
+		for i, authority := range authorities { //AUTHORITY_ADMIN 제외
+			require.Equal(t, savedAuthorities[i].AuthorityID, authority.AuthorityID)
+			require.Equal(t, savedAuthorities[i].AuthorityCode, authority.AuthorityCode)
+			require.Equal(t, savedAuthorities[i].AuthorityName, authority.AuthorityName)
+			require.Equal(t, savedAuthorities[i].Summary, authority.Summary)
+		}
+	})
 }

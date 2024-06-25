@@ -16,46 +16,56 @@ import (
 )
 
 func GetTicketInfo(ctx context.Context, exec boil.ContextExecutor, ticketId string) (*dto.Ticket, bool, error) {
-	ticket, isExisted, err := GetTicket(ctx, exec, ticketId)
+	ticket, isExisted, err := getTicket(ctx, exec, ticketId)
 	if err != nil {
 		return nil, false, terr.Wrap(err)
 	} else if !isExisted {
 		return nil, false, nil
 	}
 
-	mTicketAuthorities, err := models.TicketAuthorities(models.TicketAuthorityWhere.TicketID.EQ(ticket.TicketID), qm.Load(models.TicketAuthorityRels.Authority)).All(ctx, exec)
-	if err != nil {
-		return nil, false, terr.Wrap(err)
-	}
+	// mTicketAuthorities, err := models.TicketAuthorities(models.TicketAuthorityWhere.TicketID.EQ(ticket.TicketID), qm.Load(models.TicketAuthorityRels.Authority)).All(ctx, exec)
+	// if err != nil {
+	// 	return nil, false, terr.Wrap(err)
+	// }
 
-	ticketAuthorities := make([]*dto.TicketAuthority, 0, len(mTicketAuthorities))
-	for _, mTicketAuthority := range mTicketAuthorities {
-		authority := mTicketAuthority.R.Authority
-		var expiryDurationMS *int64
-		var expiryDuration *dto.Duration
-		if mTicketAuthority.ExpiryDurationMS.Valid {
-			expiryDurationMS = ptr.P(mTicketAuthority.ExpiryDurationMS.Int64)
-			expiryDuration = ptr.P(dto.Duration(time.Duration(mTicketAuthority.ExpiryDurationMS.Int64) * time.Millisecond))
-		}
-		ticketAuthorities = append(ticketAuthorities, &dto.TicketAuthority{
-			AuthorityId:      authority.AuthorityID,
-			AuthorityCode:    authority.AuthorityCode,
-			AuthorityName:    authority.AuthorityName,
-			Summary:          authority.Summary,
-			ExpiryDuration:   expiryDuration,
-			ExpiryDurationMS: expiryDurationMS,
-		})
+	return convertToDtoTicket(ticket), true, nil
+}
+
+// func convert
+func convertToDtoTicket(ticket *models.Ticket) *dto.Ticket {
+	ticketAuthorities := make([]*dto.TicketAuthority, 0, len(ticket.R.TicketAuthorities))
+	for _, mTicketAuthority := range ticket.R.TicketAuthorities {
+		ticketAuthorities = append(ticketAuthorities, convertToDtoTicketAuthority(mTicketAuthority))
 	}
 
 	return &dto.Ticket{
 		TicketId:          ticket.UUID,
 		IsUsed:            ticket.UsedBy.Valid,
 		TicketAuthorities: ticketAuthorities,
-	}, true, nil
+	}
 }
 
-func GetTicket(ctx context.Context, exec boil.ContextExecutor, ticketId string) (*models.Ticket, bool, error) {
-	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId), qm.Load(models.TicketRels.TicketAuthorities)).One(ctx, exec)
+func convertToDtoTicketAuthority(mTicketAuthority *models.TicketAuthority) *dto.TicketAuthority {
+	authority := mTicketAuthority.R.Authority
+	var expiryDurationMS *int64
+	var expiryDuration *dto.Duration
+	if mTicketAuthority.ExpiryDurationMS.Valid {
+		expiryDurationMS = ptr.P(mTicketAuthority.ExpiryDurationMS.Int64)
+		expiryDuration = ptr.P(dto.Duration(time.Duration(mTicketAuthority.ExpiryDurationMS.Int64) * time.Millisecond))
+	}
+	return &dto.TicketAuthority{
+		AuthorityId:      authority.AuthorityID,
+		AuthorityCode:    authority.AuthorityCode,
+		AuthorityName:    authority.AuthorityName,
+		Summary:          authority.Summary,
+		ExpiryDuration:   expiryDuration,
+		ExpiryDurationMS: expiryDurationMS,
+	}
+
+}
+
+func getTicket(ctx context.Context, exec boil.ContextExecutor, ticketId string) (*models.Ticket, bool, error) {
+	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId), qm.Load(models.TicketRels.TicketAuthorities+"."+models.TicketAuthorityRels.Authority)).One(ctx, exec)
 
 	if err != nil && err != sql.ErrNoRows {
 		return nil, false, terr.Wrap(err)
@@ -127,4 +137,18 @@ func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) err
 	}
 
 	return nil
+}
+
+func GetAllTickets(ctx context.Context, exec boil.ContextExecutor) ([]*dto.Ticket, error) {
+	tickets, err := models.Tickets(qm.Load(models.TicketRels.TicketAuthorities+"."+models.TicketAuthorityRels.Authority)).All(ctx, exec)
+	if err != nil {
+		return nil, terr.Wrap(err)
+	}
+
+	dtoTickets := make([]*dto.Ticket, 0, len(tickets))
+	for _, ticket := range tickets {
+		dtoTickets = append(dtoTickets, convertToDtoTicket(ticket))
+	}
+
+	return dtoTickets, nil
 }

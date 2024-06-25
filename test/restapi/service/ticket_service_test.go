@@ -166,4 +166,52 @@ func TestTicketService(t *testing.T) {
 		require.True(t, isExisted)
 		require.True(t, res.IsUsed)
 	})
+
+	t.Run("return empty tickets if no ticket existed", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx := context.Background()
+
+		tickets, err := service.GetAllTickets(ctx, db)
+		require.NoError(t, err)
+		require.Empty(t, tickets)
+	})
+
+	t.Run("return all tickets if tickets existed", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+
+		userAuthorityReqs := [][]*dto.UserAuthorityReq{
+			{{AuthorityCode: authorities[0].AuthorityCode}},
+			{{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))}},
+		}
+
+		ticketIds := make([]string, 0, len(userAuthorityReqs))
+		for _, userAuthorityReq := range userAuthorityReqs {
+			ticketId, err := createTicketWithTx(ctx, db, userAuthorityReq)
+			require.NoError(t, err)
+
+			ticketIds = append(ticketIds, ticketId)
+		}
+
+		user, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+		err = useTicket(ctx, db, user.UserID, ticketIds[0])
+		require.NoError(t, err)
+
+		tickets, err := service.GetAllTickets(ctx, db)
+		require.NoError(t, err)
+		require.Len(t, tickets, len(userAuthorityReqs))
+
+		require.True(t, tickets[0].IsUsed)
+		require.Equal(t, userAuthorityReqs[0][0].AuthorityCode, tickets[0].TicketAuthorities[0].AuthorityCode)
+		require.Equal(t, authorities[0].AuthorityName, tickets[0].TicketAuthorities[0].AuthorityName)
+		require.Equal(t, authorities[0].Summary, tickets[0].TicketAuthorities[0].Summary)
+		require.Nil(t, tickets[0].TicketAuthorities[0].ExpiryDurationMS)
+
+		require.False(t, tickets[1].IsUsed)
+		require.Equal(t, userAuthorityReqs[1][0].AuthorityCode, tickets[1].TicketAuthorities[0].AuthorityCode)
+		require.Equal(t, authorities[1].AuthorityName, tickets[1].TicketAuthorities[0].AuthorityName)
+		require.Equal(t, authorities[1].Summary, tickets[1].TicketAuthorities[0].Summary)
+		require.Equal(t, int64(2*time.Hour/time.Millisecond), *tickets[1].TicketAuthorities[0].ExpiryDurationMS)
+	})
 }
