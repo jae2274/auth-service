@@ -35,7 +35,7 @@ func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 	controller := ctrlr.NewController(db, jwtResolver, aesCryptor, googleAuth)
 	controller.RegisterRoutes(router)
 
-	ticketController := ctrlr.NewTicketController(db)
+	ticketController := ctrlr.NewTicketController(db, jwtResolver)
 	ticketController.RegisterRoutes(router)
 
 	adminRouter := router.NewRoute().Subrouter()

@@ -147,5 +147,6 @@ func (TicketStatusValues) Values() []string {
 
 type UseTicketResponse struct {
 	TicketStatus       TicketStatus            `json:"ticketStatus"`
+	AccessToken        *string                 `json:"accessToken"`
 	AppliedAuthorities []*domain.UserAuthority `json:"appliedAuthorities"`
 }

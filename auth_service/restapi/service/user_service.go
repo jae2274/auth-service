@@ -119,6 +119,8 @@ func FindUserAuthorities(ctx context.Context, exec boil.ContextExecutor, userId 
 			UserID:        userAuthority.UserID,
 			AuthorityID:   userAuthority.R.Authority.AuthorityID,
 			AuthorityCode: userAuthority.R.Authority.AuthorityCode,
+			AuthorityName: userAuthority.R.Authority.AuthorityName,
+			Summary:       userAuthority.R.Authority.Summary,
 			ExpiryDate:    expiryDate,
 		}
 	}
@@ -147,6 +149,8 @@ func FindUserAuthoritiesByAuthorityIds(ctx context.Context, exec boil.ContextExe
 			UserID:        userAuthority.UserID,
 			AuthorityID:   userAuthority.R.Authority.AuthorityID,
 			AuthorityCode: userAuthority.R.Authority.AuthorityCode,
+			AuthorityName: userAuthority.R.Authority.AuthorityName,
+			Summary:       userAuthority.R.Authority.Summary,
 			ExpiryDate:    expiryDate,
 		}
 	}

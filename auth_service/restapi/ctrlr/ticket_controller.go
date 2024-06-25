@@ -6,20 +6,23 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
+	"github.com/jae2274/auth-service/auth_service/restapi/jwtresolver"
 	"github.com/jae2274/auth-service/auth_service/restapi/middleware"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
 )
 
 type TicketController struct {
-	db *sql.DB
+	db          *sql.DB
+	jwtResolver *jwtresolver.JwtResolver
 }
 
-func NewTicketController(db *sql.DB) *TicketController {
-	return &TicketController{db: db}
+func NewTicketController(db *sql.DB, jwtResolver *jwtresolver.JwtResolver) *TicketController {
+	return &TicketController{db: db, jwtResolver: jwtResolver}
 }
 
 func (c *TicketController) RegisterRoutes(router *mux.Router) {
@@ -108,8 +111,18 @@ func (c *TicketController) useTicket(ctx context.Context, tx *sql.Tx, userId int
 		return nil, err
 	}
 
-	res.TicketStatus = dto.SUCCESSFULLY_USED
-	res.AppliedAuthorities = userAuthorities
+	allAuthorities, err := service.FindUserAuthorities(ctx, tx, userId)
+	if err != nil {
+		return nil, err
+	}
+	allAuthorityCodes := make([]string, 0, len(allAuthorities))
+	for _, authority := range allAuthorities {
+		allAuthorityCodes = append(allAuthorityCodes, authority.AuthorityCode)
+	}
+	tokens, err := c.jwtResolver.CreateToken(strconv.Itoa(userId), allAuthorityCodes, time.Now())
 
+	res.TicketStatus = dto.SUCCESSFULLY_USED
+	res.AccessToken = &tokens.AccessToken
+	res.AppliedAuthorities = userAuthorities
 	return res, nil
 }

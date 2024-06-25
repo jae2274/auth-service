@@ -63,7 +63,7 @@ func TestAdminController(t *testing.T) {
 		"authorities": [
 		  {
 			"authorityCode": "AUTHORITY_USER",
-			"expiryDate": "720h"
+			"expiryDuration": "720h"
 		  },
 		  {
 			"authorityCode": "AUTHORITY_GUEST"
