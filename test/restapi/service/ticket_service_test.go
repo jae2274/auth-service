@@ -39,7 +39,7 @@ func TestTicketService(t *testing.T) {
 
 		ticketAuthorities := []*dto.UserAuthorityReq{
 			{AuthorityCode: authorities[0].AuthorityCode},
-			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
 		ticketId, err := createTicketWithTx(ctx, db, ticketAuthorities)
 		require.NoError(t, err)
@@ -91,7 +91,7 @@ func TestTicketService(t *testing.T) {
 
 		userAuthorityReqs := []*dto.UserAuthorityReq{
 			{AuthorityCode: authorities[0].AuthorityCode},
-			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
 		ticketId, err := createTicketWithTx(ctx, db, userAuthorityReqs)
 		require.NoError(t, err)
@@ -118,7 +118,7 @@ func TestTicketService(t *testing.T) {
 		ctx, _, _, authorities := initAgreementFunc(t, db)
 		userAuthorityReqs := []*dto.UserAuthorityReq{
 			{AuthorityCode: authorities[0].AuthorityCode},
-			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
 
 		ticketId, err := createTicketWithTx(ctx, db, userAuthorityReqs)
@@ -149,7 +149,7 @@ func TestTicketService(t *testing.T) {
 		ctx, _, _, authorities := initAgreementFunc(t, db)
 		userAuthorityReqs := []*dto.UserAuthorityReq{
 			{AuthorityCode: authorities[0].AuthorityCode},
-			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
 
 		ticketId, err := createTicketWithTx(ctx, db, userAuthorityReqs)
@@ -182,7 +182,7 @@ func TestTicketService(t *testing.T) {
 
 		userAuthorityReqs := [][]*dto.UserAuthorityReq{
 			{{AuthorityCode: authorities[0].AuthorityCode}},
-			{{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(2 * time.Hour))}},
+			{{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))}},
 		}
 
 		ticketIds := make([]string, 0, len(userAuthorityReqs))

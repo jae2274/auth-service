@@ -36,8 +36,8 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = addUserAuthorities(ctx, db, otherUser.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: "AUTHORITY_USER", ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
-			{AuthorityCode: "AUTHORITY_GUEST", ExpiryDuration: nil},
+			{AuthorityCode: "AUTHORITY_USER", ExpiryDurationMS: ptr.P(int64(time.Hour * 24 / time.Millisecond))},
+			{AuthorityCode: "AUTHORITY_GUEST", ExpiryDurationMS: nil},
 		})
 		require.NoError(t, err)
 
@@ -214,7 +214,7 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: "notExistedAuthority", ExpiryDuration: nil},
+			{AuthorityCode: "notExistedAuthority", ExpiryDurationMS: nil},
 		})
 		require.Error(t, err)
 	})
@@ -230,8 +230,8 @@ func TestUserService(t *testing.T) {
 
 		userId := user.UserID
 		insertedAuthorities := []*dto.UserAuthorityReq{
-			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
-			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: nil},
+			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDurationMS: ptr.P(int64(time.Hour * 24 / time.Millisecond))},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: nil},
 		}
 		err = addUserAuthorities(ctx, db, userId, insertedAuthorities)
 		require.NoError(t, err)
@@ -258,8 +258,8 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(1 * time.Second))}, //2초 후
-			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(1 * time.Second))}, //1초 후
+			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDurationMS: ptr.P(int64(1 * time.Second / time.Millisecond))}, //2초 후
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(1 * time.Second / time.Millisecond))}, //1초 후
 		})
 		require.NoError(t, err)
 		time.Sleep(time.Second * 2) //2초 대기, 1초 후에 만료되는 AUTHORITY_USER는 만료되었을 것이다.
@@ -280,12 +280,12 @@ func TestUserService(t *testing.T) {
 
 		sameAuthority := authorities[0].AuthorityCode
 		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
+			{AuthorityCode: sameAuthority, ExpiryDurationMS: ptr.P(int64(time.Hour * 24 / time.Millisecond))},
 		})
 		require.NoError(t, err)
 
 		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
+			{AuthorityCode: sameAuthority, ExpiryDurationMS: ptr.P(int64(time.Hour * 4 / time.Millisecond))},
 		})
 		require.NoError(t, err)
 
@@ -308,12 +308,12 @@ func TestUserService(t *testing.T) {
 
 		sameAuthority := authorities[0].AuthorityCode
 		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: sameAuthority, ExpiryDuration: nil},
+			{AuthorityCode: sameAuthority, ExpiryDurationMS: nil},
 		})
 		require.NoError(t, err)
 
 		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
+			{AuthorityCode: sameAuthority, ExpiryDurationMS: ptr.P(int64(time.Hour * 4 / time.Millisecond))},
 		})
 		require.NoError(t, err)
 
@@ -338,13 +338,13 @@ func TestUserService(t *testing.T) {
 
 		sameAuthority := authorities[0].AuthorityCode
 		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Second * 1))},
+			{AuthorityCode: sameAuthority, ExpiryDurationMS: ptr.P(int64(time.Second * 1 / time.Millisecond))},
 		})
 		require.NoError(t, err)
 		time.Sleep(time.Second * 2) //2초 대기, AUTHORITY_ADMIN은 만료되었을 것이다.
 
 		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 4))},
+			{AuthorityCode: sameAuthority, ExpiryDurationMS: ptr.P(int64(time.Hour * 4 / time.Millisecond))},
 		})
 		require.NoError(t, err)
 
@@ -367,12 +367,12 @@ func TestUserService(t *testing.T) {
 
 		sameAuthority := authorities[0].AuthorityCode
 		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: sameAuthority, ExpiryDuration: ptr.P(dto.Duration(time.Second * 1))},
+			{AuthorityCode: sameAuthority, ExpiryDurationMS: ptr.P(int64(time.Second * 1))},
 		})
 		require.NoError(t, err)
 
 		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: sameAuthority, ExpiryDuration: nil},
+			{AuthorityCode: sameAuthority, ExpiryDurationMS: nil},
 		})
 		require.NoError(t, err)
 
@@ -394,7 +394,7 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: domain.AuthorityAdmin, ExpiryDuration: nil},
+			{AuthorityCode: domain.AuthorityAdmin, ExpiryDurationMS: nil},
 		})
 		require.Error(t, err)
 	})
@@ -409,8 +409,8 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDuration: nil},
-			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: nil},
+			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDurationMS: nil},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: nil},
 		})
 		require.NoError(t, err)
 
@@ -459,8 +459,8 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 
 		err = addUserAuthorities(ctx, db, user.UserID, []*dto.UserAuthorityReq{
-			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDuration: ptr.P(dto.Duration(time.Hour * 24))},
-			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDuration: nil},
+			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDurationMS: ptr.P(int64(time.Hour * 24 / time.Millisecond))},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: nil},
 		})
 		require.NoError(t, err)
 

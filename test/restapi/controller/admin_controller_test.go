@@ -65,7 +65,7 @@ func TestAdminController(t *testing.T) {
 		"authorities": [
 		  {
 			"authorityCode": "AUTHORITY_USER",
-			"expiryDuration": "720h"
+			"expiryDurationMS": 2592000000
 		  },
 		  {
 			"authorityCode": "AUTHORITY_GUEST"
@@ -190,7 +190,7 @@ func TestAdminController(t *testing.T) {
 			require.NoError(t, err)
 			require.Len(t, userAuthorities, 2)
 			require.Equal(t, "AUTHORITY_USER", userAuthorities[0].AuthorityCode)
-			require.WithinDuration(t, time.Now().Add(720*time.Hour), *userAuthorities[0].ExpiryDate, 1*time.Second)
+			require.WithinDuration(t, time.Now().Add(720*time.Hour).UTC(), (userAuthorities[0].ExpiryDate).UTC(), 1*time.Second)
 			require.Equal(t, "AUTHORITY_GUEST", userAuthorities[1].AuthorityCode)
 			require.Nil(t, userAuthorities[1].ExpiryDate)
 		})
@@ -265,7 +265,7 @@ func TestAdminController(t *testing.T) {
 		"ticketAuthorities": [
 			{
 				"authorityCode": "AUTHORITY_USER",
-				"expiryDuration": "720h"
+				"expiryDurationMS": 2592000000
 			},
 			{
 				"authorityCode": "AUTHORITY_GUEST"

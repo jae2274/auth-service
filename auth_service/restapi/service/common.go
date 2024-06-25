@@ -39,9 +39,9 @@ func attachAuthorityIds(ctx context.Context, exec boil.ContextExecutor, dUserAut
 	return nil
 }
 
-func addExpiryDate(date time.Time, duration *dto.Duration) null.Time {
-	if duration != nil {
-		return null.NewTime(date.Add(time.Duration(*duration)), true)
+func addExpiryDate(date time.Time, durationMS *int64) null.Time {
+	if durationMS != nil {
+		return null.NewTime(date.Add(time.Duration(*durationMS)*time.Millisecond), true)
 	} else {
 		return null.NewTime(time.Time{}, false)
 	}
@@ -63,7 +63,7 @@ func addUserAuthorities(ctx context.Context, exec boil.ContextExecutor, userId i
 		}
 
 		if err == sql.ErrNoRows {
-			mUserAuthority.ExpiryDate = addExpiryDate(now, dUserAuthority.ExpiryDuration)
+			mUserAuthority.ExpiryDate = addExpiryDate(now, dUserAuthority.ExpiryDurationMS)
 
 			if err := mUserAuthority.Insert(ctx, exec, boil.Infer()); err != nil {
 				return terr.Wrap(err)
@@ -74,7 +74,7 @@ func addUserAuthorities(ctx context.Context, exec boil.ContextExecutor, userId i
 					mUserAuthority.ExpiryDate = null.NewTime(now, true)
 				}
 
-				mUserAuthority.ExpiryDate = addExpiryDate(mUserAuthority.ExpiryDate.Time, dUserAuthority.ExpiryDuration)
+				mUserAuthority.ExpiryDate = addExpiryDate(mUserAuthority.ExpiryDate.Time, dUserAuthority.ExpiryDurationMS)
 
 				if _, err := mUserAuthority.Update(ctx, exec, boil.Infer()); err != nil {
 					return terr.Wrap(err)

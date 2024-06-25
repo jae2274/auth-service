@@ -1,8 +1,6 @@
 package dto
 
 import (
-	"time"
-
 	"github.com/jae2274/auth-service/auth_service/common/domain"
 	"github.com/jae2274/goutils/enum"
 )
@@ -105,26 +103,9 @@ type AddAuthorityRequest struct {
 }
 
 type UserAuthorityReq struct {
-	AuthorityID    int       `json:"-"`
-	AuthorityCode  string    `json:"authorityCode"`
-	ExpiryDuration *Duration `json:"expiryDuration"`
-}
-
-type Duration time.Duration
-
-func (d Duration) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + time.Duration(d).String() + `"`), nil
-}
-
-func (d *Duration) UnmarshalJSON(data []byte) error {
-	duration, err := time.ParseDuration(string(data[1 : len(data)-1]))
-	if err != nil {
-		return err
-	}
-
-	*d = Duration(duration)
-
-	return nil
+	AuthorityID      int    `json:"-"`
+	AuthorityCode    string `json:"authorityCode"`
+	ExpiryDurationMS *int64 `json:"expiryDurationMS"`
 }
 
 type RemoveAuthorityRequest struct {

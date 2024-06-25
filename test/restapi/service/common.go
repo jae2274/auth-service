@@ -65,8 +65,8 @@ func newAuthorities() []*models.Authority {
 func requireEqualUserRole(t *testing.T, userId int, now time.Time, expected *dto.UserAuthorityReq, actual *domain.UserAuthority) {
 	require.Equal(t, expected.AuthorityCode, actual.AuthorityCode)
 	require.Equal(t, userId, actual.UserID)
-	if expected.ExpiryDuration != nil {
-		require.WithinDuration(t, now.Add(time.Duration(*expected.ExpiryDuration)), *actual.ExpiryDate, time.Second)
+	if expected.ExpiryDurationMS != nil {
+		require.WithinDuration(t, now.Add(time.Duration(*expected.ExpiryDurationMS)*time.Millisecond), *actual.ExpiryDate, time.Second)
 	} else {
 		require.Nil(t, actual.ExpiryDate)
 	}

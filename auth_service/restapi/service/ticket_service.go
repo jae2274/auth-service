@@ -91,8 +91,8 @@ func CreateTicket(ctx context.Context, tx *sql.Tx, authorities []*dto.UserAuthor
 	ticketAuthorities := make([]*models.TicketAuthority, len(authorities))
 	for i, authority := range authorities {
 		expiryDurationMS := null.NewInt64(0, false)
-		if authority.ExpiryDuration != nil {
-			expiryDurationMS = null.NewInt64(int64(time.Duration((*authority.ExpiryDuration))/time.Millisecond), true)
+		if authority.ExpiryDurationMS != nil {
+			expiryDurationMS = null.NewInt64(*authority.ExpiryDurationMS, true)
 		}
 		ticketAuthorities[i] = &models.TicketAuthority{
 			TicketID:         ticket.TicketID,
@@ -119,14 +119,14 @@ func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) err
 
 	dUserAuthorities := make([]*dto.UserAuthorityReq, 0, len(ticket.R.TicketAuthorities))
 	for _, ticketAuthority := range ticket.R.TicketAuthorities {
-		var expiryDuration *dto.Duration
+		var expiryDurationMS *int64
 		if ticketAuthority.ExpiryDurationMS.Valid {
-			expiryDuration = ptr.P(dto.Duration(time.Duration(ticketAuthority.ExpiryDurationMS.Int64) * time.Millisecond))
+			expiryDurationMS = ptr.P(ticketAuthority.ExpiryDurationMS.Int64)
 		}
 
 		dUserAuthorities = append(dUserAuthorities, &dto.UserAuthorityReq{
-			AuthorityID:    ticketAuthority.AuthorityID,
-			ExpiryDuration: expiryDuration,
+			AuthorityID:      ticketAuthority.AuthorityID,
+			ExpiryDurationMS: expiryDurationMS,
 		})
 	}
 
