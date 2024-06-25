@@ -11,10 +11,9 @@ type Ticket struct {
 }
 
 type TicketAuthority struct {
-	AuthorityId      int       `json:"-"`
-	AuthorityCode    string    `json:"authorityCode"`
-	AuthorityName    string    `json:"authorityName"`
-	Summary          string    `json:"summary"`
-	ExpiryDuration   *Duration `json:"expiryDuration"`
-	ExpiryDurationMS *int64    `json:"expiryDurationMS"`
+	AuthorityId      int    `json:"-"`
+	AuthorityCode    string `json:"authorityCode"`
+	AuthorityName    string `json:"authorityName"`
+	Summary          string `json:"summary"`
+	ExpiryDurationMS *int64 `json:"expiryDurationMS"`
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/jae2274/auth-service/auth_service/restapi/mapper"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 	"github.com/jae2274/auth-service/auth_service/utils"
+	"github.com/jae2274/goutils/ptr"
 	"github.com/jae2274/goutils/terr"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -110,18 +111,18 @@ func FindUserAuthorities(ctx context.Context, exec boil.ContextExecutor, userId 
 
 	authorities := make([]*domain.UserAuthority, len(userAuthorities))
 	for i, userAuthority := range userAuthorities {
-		var expiryDate *time.Time = nil
+		var expiryDate *int64 = nil
 		if userAuthority.ExpiryDate.Valid {
-			expiryDate = &userAuthority.ExpiryDate.Time
+			expiryDate = ptr.P(userAuthority.ExpiryDate.Time.UnixMilli())
 		}
 
 		authorities[i] = &domain.UserAuthority{
-			UserID:        userAuthority.UserID,
-			AuthorityID:   userAuthority.R.Authority.AuthorityID,
-			AuthorityCode: userAuthority.R.Authority.AuthorityCode,
-			AuthorityName: userAuthority.R.Authority.AuthorityName,
-			Summary:       userAuthority.R.Authority.Summary,
-			ExpiryDate:    expiryDate,
+			UserID:          userAuthority.UserID,
+			AuthorityID:     userAuthority.R.Authority.AuthorityID,
+			AuthorityCode:   userAuthority.R.Authority.AuthorityCode,
+			AuthorityName:   userAuthority.R.Authority.AuthorityName,
+			Summary:         userAuthority.R.Authority.Summary,
+			ExpiryUnixMilli: expiryDate,
 		}
 	}
 
@@ -140,18 +141,18 @@ func FindUserAuthoritiesByAuthorityIds(ctx context.Context, exec boil.ContextExe
 
 	authorities := make([]*domain.UserAuthority, len(userAuthorities))
 	for i, userAuthority := range userAuthorities {
-		var expiryDate *time.Time = nil
+		var expiryDate *int64 = nil
 		if userAuthority.ExpiryDate.Valid {
-			expiryDate = &userAuthority.ExpiryDate.Time
+			expiryDate = ptr.P(userAuthority.ExpiryDate.Time.UnixMilli())
 		}
 
 		authorities[i] = &domain.UserAuthority{
-			UserID:        userAuthority.UserID,
-			AuthorityID:   userAuthority.R.Authority.AuthorityID,
-			AuthorityCode: userAuthority.R.Authority.AuthorityCode,
-			AuthorityName: userAuthority.R.Authority.AuthorityName,
-			Summary:       userAuthority.R.Authority.Summary,
-			ExpiryDate:    expiryDate,
+			UserID:          userAuthority.UserID,
+			AuthorityID:     userAuthority.R.Authority.AuthorityID,
+			AuthorityCode:   userAuthority.R.Authority.AuthorityCode,
+			AuthorityName:   userAuthority.R.Authority.AuthorityName,
+			Summary:         userAuthority.R.Authority.Summary,
+			ExpiryUnixMilli: expiryDate,
 		}
 	}
 

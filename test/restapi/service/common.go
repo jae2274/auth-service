@@ -66,9 +66,9 @@ func requireEqualUserRole(t *testing.T, userId int, now time.Time, expected *dto
 	require.Equal(t, expected.AuthorityCode, actual.AuthorityCode)
 	require.Equal(t, userId, actual.UserID)
 	if expected.ExpiryDurationMS != nil {
-		require.WithinDuration(t, now.Add(time.Duration(*expected.ExpiryDurationMS)*time.Millisecond), *actual.ExpiryDate, time.Second)
+		require.WithinDuration(t, now.Add(time.Duration(*expected.ExpiryDurationMS)*time.Millisecond).UTC(), time.UnixMilli(*actual.ExpiryUnixMilli).UTC(), time.Second)
 	} else {
-		require.Nil(t, actual.ExpiryDate)
+		require.Nil(t, actual.ExpiryUnixMilli)
 	}
 }
 

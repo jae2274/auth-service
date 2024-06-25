@@ -294,7 +294,7 @@ func TestUserService(t *testing.T) {
 		require.Len(t, userAuthorities, 1)
 
 		require.Equal(t, sameAuthority, userAuthorities[0].AuthorityCode)
-		require.WithinDuration(t, time.Now().Add(time.Hour*24).Add(time.Hour*4), *userAuthorities[0].ExpiryDate, time.Second)
+		require.WithinDuration(t, time.Now().Add(time.Hour*24).Add(time.Hour*4).UTC(), time.UnixMilli(*userAuthorities[0].ExpiryUnixMilli).UTC(), time.Second)
 	})
 
 	t.Run("return unexpired authority when existed authority had not expiry date", func(t *testing.T) {
@@ -323,7 +323,7 @@ func TestUserService(t *testing.T) {
 
 		require.Equal(t, user.UserID, userAuthorities[0].UserID)
 		require.Equal(t, sameAuthority, userAuthorities[0].AuthorityCode)
-		require.Nil(t, userAuthorities[0].ExpiryDate)
+		require.Nil(t, userAuthorities[0].ExpiryUnixMilli)
 	})
 
 	//이미 지난 기한에 추가된 역할은 만료된 것으로 간주하고 새로운 만료일을 설정한다.
@@ -353,7 +353,7 @@ func TestUserService(t *testing.T) {
 		require.Len(t, userAuthorities, 1)
 
 		require.Equal(t, sameAuthority, userAuthorities[0].AuthorityCode)
-		require.WithinDuration(t, time.Now().Add(time.Hour*4), *userAuthorities[0].ExpiryDate, time.Millisecond*600)
+		require.WithinDuration(t, time.Now().Add(time.Hour*4).UTC(), time.UnixMilli(*userAuthorities[0].ExpiryUnixMilli).UTC(), time.Millisecond*600)
 	})
 
 	t.Run("return unexpired authority when existed authority was given with no expiry date", func(t *testing.T) {
@@ -381,7 +381,7 @@ func TestUserService(t *testing.T) {
 		require.Len(t, dUserAuthorities, 1)
 
 		require.Equal(t, sameAuthority, dUserAuthorities[0].AuthorityCode)
-		require.Nil(t, dUserAuthorities[0].ExpiryDate)
+		require.Nil(t, dUserAuthorities[0].ExpiryUnixMilli)
 	})
 
 	t.Run("can't add AUTHORITY_ADMIN to user", func(t *testing.T) {
@@ -469,14 +469,14 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, 1)
 		require.Equal(t, authorities[0].AuthorityCode, userAuthorities[0].AuthorityCode)
-		require.WithinDuration(t, time.Now().Add(time.Hour*24), *userAuthorities[0].ExpiryDate, time.Second)
+		require.WithinDuration(t, time.Now().Add(time.Hour*24).UTC(), time.UnixMilli(*userAuthorities[0].ExpiryUnixMilli).UTC(), time.Second)
 
 		userAuthorities, err = service.FindUserAuthoritiesByAuthorityIds(ctx, db, user.UserID, []int{authorities[1].AuthorityID})
 
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, 1)
 		require.Equal(t, authorities[1].AuthorityCode, userAuthorities[0].AuthorityCode)
-		require.Nil(t, userAuthorities[0].ExpiryDate)
+		require.Nil(t, userAuthorities[0].ExpiryUnixMilli)
 	})
 
 	t.Run("return empty authorities when specified authorities are not existed", func(t *testing.T) {

@@ -190,9 +190,9 @@ func TestAdminController(t *testing.T) {
 			require.NoError(t, err)
 			require.Len(t, userAuthorities, 2)
 			require.Equal(t, "AUTHORITY_USER", userAuthorities[0].AuthorityCode)
-			require.WithinDuration(t, time.Now().Add(720*time.Hour).UTC(), (userAuthorities[0].ExpiryDate).UTC(), 1*time.Second)
+			require.WithinDuration(t, time.Now().Add(720*time.Hour).UTC(), time.UnixMilli(*(userAuthorities[0].ExpiryUnixMilli)).UTC(), 1*time.Second)
 			require.Equal(t, "AUTHORITY_GUEST", userAuthorities[1].AuthorityCode)
-			require.Nil(t, userAuthorities[1].ExpiryDate)
+			require.Nil(t, userAuthorities[1].ExpiryUnixMilli)
 		})
 	})
 

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jae2274/auth-service/auth_service/models"
@@ -48,17 +47,14 @@ func convertToDtoTicket(ticket *models.Ticket) *dto.Ticket {
 func convertToDtoTicketAuthority(mTicketAuthority *models.TicketAuthority) *dto.TicketAuthority {
 	authority := mTicketAuthority.R.Authority
 	var expiryDurationMS *int64
-	var expiryDuration *dto.Duration
 	if mTicketAuthority.ExpiryDurationMS.Valid {
 		expiryDurationMS = ptr.P(mTicketAuthority.ExpiryDurationMS.Int64)
-		expiryDuration = ptr.P(dto.Duration(time.Duration(mTicketAuthority.ExpiryDurationMS.Int64) * time.Millisecond))
 	}
 	return &dto.TicketAuthority{
 		AuthorityId:      authority.AuthorityID,
 		AuthorityCode:    authority.AuthorityCode,
 		AuthorityName:    authority.AuthorityName,
 		Summary:          authority.Summary,
-		ExpiryDuration:   expiryDuration,
 		ExpiryDurationMS: expiryDurationMS,
 	}
 
