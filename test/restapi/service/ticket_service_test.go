@@ -102,7 +102,7 @@ func TestTicketService(t *testing.T) {
 		err = useTicket(ctx, db, targetUser.UserID, ticketId)
 		require.NoError(t, err)
 
-		userAuthorities, err := service.FindUserAuthorities(ctx, db, targetUser.UserID)
+		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, targetUser.UserID)
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, len(userAuthorityReqs))
 
@@ -133,7 +133,7 @@ func TestTicketService(t *testing.T) {
 		err = useTicket(ctx, db, targetUser.UserID, ticketId)
 		require.Error(t, err)
 
-		userAuthorities, err := service.FindUserAuthorities(ctx, db, targetUser.UserID)
+		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, targetUser.UserID)
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, len(userAuthorityReqs))
 

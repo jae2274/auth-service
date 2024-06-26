@@ -199,7 +199,7 @@ func TestUserService(t *testing.T) {
 		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		authorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
+		authorities, err := service.FindValidUserAuthorities(ctx, db, user.UserID)
 		require.NoError(t, err)
 		require.Empty(t, authorities)
 	})
@@ -236,7 +236,7 @@ func TestUserService(t *testing.T) {
 		err = addUserAuthorities(ctx, db, userId, insertedAuthorities)
 		require.NoError(t, err)
 
-		userAuthorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
+		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, user.UserID)
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, len(insertedAuthorities))
 
@@ -264,7 +264,7 @@ func TestUserService(t *testing.T) {
 		require.NoError(t, err)
 		time.Sleep(time.Second * 2) //2초 대기, 1초 후에 만료되는 AUTHORITY_USER는 만료되었을 것이다.
 
-		userAuthorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
+		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, user.UserID)
 		require.NoError(t, err)
 		require.Empty(t, userAuthorities)
 	})
@@ -289,7 +289,7 @@ func TestUserService(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		userAuthorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
+		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, user.UserID)
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, 1)
 
@@ -317,7 +317,7 @@ func TestUserService(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		userAuthorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
+		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, user.UserID)
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, 1)
 
@@ -348,7 +348,7 @@ func TestUserService(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		userAuthorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
+		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, user.UserID)
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, 1)
 
@@ -376,7 +376,7 @@ func TestUserService(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		dUserAuthorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
+		dUserAuthorities, err := service.FindValidUserAuthorities(ctx, db, user.UserID)
 		require.NoError(t, err)
 		require.Len(t, dUserAuthorities, 1)
 
@@ -417,10 +417,51 @@ func TestUserService(t *testing.T) {
 		err = removeAuthority(ctx, db, user.UserID, authorities[1].AuthorityCode)
 		require.NoError(t, err)
 
-		userAuthorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
+		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, user.UserID)
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, 1)
 		require.Equal(t, authorities[0].AuthorityCode, userAuthorities[0].AuthorityCode)
+	})
+
+	t.Run("return empty userAuthorities", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, _ := initAgreementFunc(t, db)
+
+		actionOtherUserSignUP(t, ctx, db)
+
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		userAuthorities, err := service.FindAllUserAuthorities(ctx, db, user.UserID)
+		require.NoError(t, err)
+		require.Empty(t, userAuthorities)
+	})
+
+	t.Run("return userAuthorities even if expired", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+
+		actionOtherUserSignUP(t, ctx, db)
+
+		user, err := signUp(ctx, db, &userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		req := []*dto.UserAuthorityReq{
+			{AuthorityCode: authorities[0].AuthorityCode},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(1 * time.Second / time.Millisecond))}, //1초 후
+		}
+		now := time.Now()
+		err = addUserAuthorities(ctx, db, user.UserID, req)
+		require.NoError(t, err)
+		time.Sleep(time.Second * 2) //2초 대기, 1초 후에 만료되는 AUTHORITY_USER는 만료되었을 것이다.
+
+		userAuthorities, err := service.FindAllUserAuthorities(ctx, db, user.UserID)
+		require.NoError(t, err)
+		require.Len(t, userAuthorities, 2)
+
+		for i, authority := range userAuthorities {
+			requireEqualUserRole(t, user.UserID, now, req[i], authority)
+		}
 	})
 
 	t.Run("return error when try to remove not existed authority", func(t *testing.T) {

@@ -114,7 +114,7 @@ func (c *TicketController) useTicket(ctx context.Context, tx *sql.Tx, userId int
 	// 	return nil, err
 	// }
 
-	allAuthorities, err := service.FindUserAuthorities(ctx, tx, userId)
+	allAuthorities, err := service.FindValidUserAuthorities(ctx, tx, userId)
 	if err != nil {
 		return nil, err
 	}

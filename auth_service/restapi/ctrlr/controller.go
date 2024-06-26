@@ -67,7 +67,7 @@ func (c *Controller) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/sign-in", c.SignIn).Methods("POST")
 	router.HandleFunc("/auth/sign-up", c.SignUp).Methods("POST")
 	router.HandleFunc("/auth/refresh", c.RefreshJwt).Methods("POST")
-	router.HandleFunc("/auth/authority", c.FindUserAuthorities).Methods("GET")
+	router.HandleFunc("/auth/authority", c.FindAllUserAuthorities).Methods("GET")
 }
 
 func (c *Controller) AuthCodeUrls(w http.ResponseWriter, r *http.Request) {
@@ -251,7 +251,7 @@ func signInNecessaryAgreements(necessaryAgreements []*models.Agreement) *dto.Sig
 }
 
 func signInSuccessRes(ctx context.Context, db boil.ContextExecutor, jwtResolver *jwtresolver.JwtResolver, user *models.User) (*dto.SignInSuccessRes, error) {
-	userAuthorities, err := service.FindUserAuthorities(ctx, db, user.UserID)
+	userAuthorities, err := service.FindValidUserAuthorities(ctx, db, user.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +371,7 @@ func (c *Controller) RefreshJwt(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := mysqldb.WithTransaction(ctx, c.db, func(tx *sql.Tx) (*dto.RefreshJwtResponse, error) {
-		dUserAuthorities, err := service.FindUserAuthorities(ctx, tx, userId)
+		dUserAuthorities, err := service.FindValidUserAuthorities(ctx, tx, userId)
 		if err != nil {
 			return nil, err
 		}
@@ -403,7 +403,7 @@ func (c *Controller) RefreshJwt(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (c *Controller) FindUserAuthorities(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) FindAllUserAuthorities(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	claims, isExisted := middleware.GetClaims(ctx)
@@ -417,7 +417,7 @@ func (c *Controller) FindUserAuthorities(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userAuthorities, err := service.FindUserAuthorities(ctx, c.db, userId)
+	userAuthorities, err := service.FindAllUserAuthorities(ctx, c.db, userId)
 	if errorHandler(ctx, w, err) {
 		return
 	}

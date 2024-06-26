@@ -186,7 +186,7 @@ func TestAdminController(t *testing.T) {
 
 			require.Equal(t, http.StatusCreated, res.StatusCode)
 
-			userAuthorities, err := service.FindUserAuthorities(ctx, db, targetUser.UserID)
+			userAuthorities, err := service.FindValidUserAuthorities(ctx, db, targetUser.UserID)
 			require.NoError(t, err)
 			require.Len(t, userAuthorities, 2)
 			require.Equal(t, "AUTHORITY_USER", userAuthorities[0].AuthorityCode)
@@ -241,7 +241,7 @@ func TestAdminController(t *testing.T) {
 			_, err = http.DefaultClient.Do(req)
 			require.NoError(t, err)
 
-			userAuthorities, err := service.FindUserAuthorities(ctx, db, targetUser.UserID)
+			userAuthorities, err := service.FindValidUserAuthorities(ctx, db, targetUser.UserID)
 			require.NoError(t, err)
 			require.Len(t, userAuthorities, 2)
 
@@ -254,7 +254,7 @@ func TestAdminController(t *testing.T) {
 
 			require.Equal(t, http.StatusNoContent, res.StatusCode)
 
-			userAuthorities, err = service.FindUserAuthorities(ctx, db, targetUser.UserID)
+			userAuthorities, err = service.FindValidUserAuthorities(ctx, db, targetUser.UserID)
 			require.NoError(t, err)
 			require.Len(t, userAuthorities, 1)
 		})

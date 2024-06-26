@@ -98,7 +98,7 @@ func FindNecessaryAgreements(ctx context.Context, exec boil.ContextExecutor, use
 	return necessaryAgreements, nil
 }
 
-func FindUserAuthorities(ctx context.Context, exec boil.ContextExecutor, userId int) ([]*domain.UserAuthority, error) {
+func FindValidUserAuthorities(ctx context.Context, exec boil.ContextExecutor, userId int) ([]*domain.UserAuthority, error) {
 	userAuthorities, err := models.UserAuthorities(models.UserAuthorityWhere.UserID.EQ(userId),
 		qm.Expr(models.UserAuthorityWhere.ExpiryDate.GTE(null.NewTime(time.Now(), true)), qm.Or2(models.UserAuthorityWhere.ExpiryDate.IsNull())),
 		qm.OrderBy(models.UserAuthorityColumns.CreatedDate),
@@ -109,8 +109,25 @@ func FindUserAuthorities(ctx context.Context, exec boil.ContextExecutor, userId 
 		return nil, err
 	}
 
-	authorities := make([]*domain.UserAuthority, len(userAuthorities))
-	for i, userAuthority := range userAuthorities {
+	return convertToUserAuthority(userAuthorities), nil
+}
+
+func FindAllUserAuthorities(ctx context.Context, exec boil.ContextExecutor, userId int) ([]*domain.UserAuthority, error) {
+	userAuthorities, err := models.UserAuthorities(models.UserAuthorityWhere.UserID.EQ(userId),
+		qm.OrderBy(models.UserAuthorityColumns.CreatedDate),
+		qm.Load(models.UserAuthorityRels.Authority),
+	).All(ctx, exec)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return convertToUserAuthority(userAuthorities), nil
+}
+
+func convertToUserAuthority(mUserAuthorities models.UserAuthoritySlice) []*domain.UserAuthority {
+	authorities := make([]*domain.UserAuthority, len(mUserAuthorities))
+	for i, userAuthority := range mUserAuthorities {
 		var expiryDate *int64 = nil
 		if userAuthority.ExpiryDate.Valid {
 			expiryDate = ptr.P(userAuthority.ExpiryDate.Time.UnixMilli())
@@ -126,7 +143,7 @@ func FindUserAuthorities(ctx context.Context, exec boil.ContextExecutor, userId 
 		}
 	}
 
-	return authorities, nil
+	return authorities
 }
 
 /*
