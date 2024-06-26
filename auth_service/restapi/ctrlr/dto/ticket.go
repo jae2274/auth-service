@@ -5,9 +5,10 @@ type CreateTicketRequest struct {
 }
 
 type Ticket struct {
-	TicketId          string `json:"ticketId"`
-	IsUsed            bool   `json:"isUsed"`
-	TicketAuthorities []*TicketAuthority
+	TicketId          string             `json:"ticketId"`
+	IsUsed            bool               `json:"isUsed"`
+	TicketAuthorities []*TicketAuthority `json:"ticketAuthorities"`
+	CreateUnixMilli   int64              `json:"createUnixMilli"`
 }
 
 type TicketAuthority struct {

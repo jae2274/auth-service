@@ -41,6 +41,7 @@ func convertToDtoTicket(ticket *models.Ticket) *dto.Ticket {
 		TicketId:          ticket.UUID,
 		IsUsed:            ticket.UsedBy.Valid,
 		TicketAuthorities: ticketAuthorities,
+		CreateUnixMilli:   ticket.CreateDate.UnixMilli(),
 	}
 }
 

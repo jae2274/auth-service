@@ -129,35 +129,38 @@ func FindUserAuthorities(ctx context.Context, exec boil.ContextExecutor, userId 
 	return authorities, nil
 }
 
-func FindUserAuthoritiesByAuthorityIds(ctx context.Context, exec boil.ContextExecutor, userId int, authorityId []int) ([]*domain.UserAuthority, error) {
-	userAuthorities, err := models.UserAuthorities(
-		models.UserAuthorityWhere.UserID.EQ(userId), models.UserAuthorityWhere.AuthorityID.IN(authorityId),
-		qm.OrderBy(models.UserAuthorityColumns.CreatedDate),
-		qm.Load(models.UserAuthorityRels.Authority),
-	).All(ctx, exec)
-	if err != nil {
-		return nil, err
-	}
+/*
+	추후 해당 기능이 사용될 여지가 있을 것으로 판단되어 주석처리하였습니다.
+*/
+// func FindUserAuthoritiesByAuthorityIds(ctx context.Context, exec boil.ContextExecutor, userId int, authorityId []int) ([]*domain.UserAuthority, error) {
+// 	userAuthorities, err := models.UserAuthorities(
+// 		models.UserAuthorityWhere.UserID.EQ(userId), models.UserAuthorityWhere.AuthorityID.IN(authorityId),
+// 		qm.OrderBy(models.UserAuthorityColumns.CreatedDate),
+// 		qm.Load(models.UserAuthorityRels.Authority),
+// 	).All(ctx, exec)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	authorities := make([]*domain.UserAuthority, len(userAuthorities))
-	for i, userAuthority := range userAuthorities {
-		var expiryDate *int64 = nil
-		if userAuthority.ExpiryDate.Valid {
-			expiryDate = ptr.P(userAuthority.ExpiryDate.Time.UnixMilli())
-		}
+// 	authorities := make([]*domain.UserAuthority, len(userAuthorities))
+// 	for i, userAuthority := range userAuthorities {
+// 		var expiryDate *int64 = nil
+// 		if userAuthority.ExpiryDate.Valid {
+// 			expiryDate = ptr.P(userAuthority.ExpiryDate.Time.UnixMilli())
+// 		}
 
-		authorities[i] = &domain.UserAuthority{
-			UserID:          userAuthority.UserID,
-			AuthorityID:     userAuthority.R.Authority.AuthorityID,
-			AuthorityCode:   userAuthority.R.Authority.AuthorityCode,
-			AuthorityName:   userAuthority.R.Authority.AuthorityName,
-			Summary:         userAuthority.R.Authority.Summary,
-			ExpiryUnixMilli: expiryDate,
-		}
-	}
+// 		authorities[i] = &domain.UserAuthority{
+// 			UserID:          userAuthority.UserID,
+// 			AuthorityID:     userAuthority.R.Authority.AuthorityID,
+// 			AuthorityCode:   userAuthority.R.Authority.AuthorityCode,
+// 			AuthorityName:   userAuthority.R.Authority.AuthorityName,
+// 			Summary:         userAuthority.R.Authority.Summary,
+// 			ExpiryUnixMilli: expiryDate,
+// 		}
+// 	}
 
-	return authorities, nil
-}
+// 	return authorities, nil
+// }
 
 func checkHasAuthorityAdmin(userAuthorities []*dto.UserAuthorityReq) bool {
 	for _, userAuthority := range userAuthorities {

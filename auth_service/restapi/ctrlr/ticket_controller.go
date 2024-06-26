@@ -106,10 +106,13 @@ func (c *TicketController) useTicket(ctx context.Context, tx *sql.Tx, userId int
 		authorityIds[i] = authority.AuthorityId
 	}
 
-	userAuthorities, err := service.FindUserAuthoritiesByAuthorityIds(ctx, tx, userId, authorityIds)
-	if err != nil {
-		return nil, err
-	}
+	/*
+		추후 해당 기능이 사용될 여지가 있을 것으로 판단되어 주석처리하였습니다.
+	*/
+	// userAuthorities, err := service.FindUserAuthoritiesByAuthorityIds(ctx, tx, userId, authorityIds)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	allAuthorities, err := service.FindUserAuthorities(ctx, tx, userId)
 	if err != nil {
@@ -120,9 +123,11 @@ func (c *TicketController) useTicket(ctx context.Context, tx *sql.Tx, userId int
 		allAuthorityCodes = append(allAuthorityCodes, authority.AuthorityCode)
 	}
 	tokens, err := c.jwtResolver.CreateToken(strconv.Itoa(userId), allAuthorityCodes, time.Now())
-
+	if err != nil {
+		return nil, err
+	}
 	res.TicketStatus = dto.SUCCESSFULLY_USED
 	res.AccessToken = &tokens.AccessToken
-	res.AppliedAuthorities = userAuthorities
+	// res.AppliedAuthorities = userAuthorities
 	return res, nil
 }
