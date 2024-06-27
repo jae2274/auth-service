@@ -113,7 +113,6 @@ func (c *TicketController) useTicket(ctx context.Context, tx *sql.Tx, userId int
 	// if err != nil {
 	// 	return nil, err
 	// }
-
 	allAuthorities, err := service.FindValidUserAuthorities(ctx, tx, userId)
 	if err != nil {
 		return nil, err
@@ -128,6 +127,7 @@ func (c *TicketController) useTicket(ctx context.Context, tx *sql.Tx, userId int
 	}
 	res.TicketStatus = dto.SUCCESSFULLY_USED
 	res.AccessToken = &tokens.AccessToken
+	res.Authorities = allAuthorityCodes
 	// res.AppliedAuthorities = userAuthorities
 	return res, nil
 }
