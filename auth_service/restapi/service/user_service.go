@@ -220,3 +220,45 @@ func RemoveAuthority(ctx context.Context, tx *sql.Tx, userId int, authorityCode 
 
 	return err
 }
+
+func GetAllUsers(ctx context.Context, exec boil.ContextExecutor) ([]*domain.User, error) {
+	mUsers, err := models.Users(qm.Load(models.UserRels.UserAuthorities+"."+models.UserAuthorityRels.Authority)).All(ctx, exec)
+	if err != nil {
+		return nil, err
+	}
+
+	users := make([]*domain.User, len(mUsers))
+	for i, mUser := range mUsers {
+		users[i] = convertToUser(mUser)
+	}
+
+	return users, nil
+}
+
+func convertToUser(mUser *models.User) *domain.User {
+	userAuthorities := make([]*domain.UserAuthority, len(mUser.R.UserAuthorities))
+	for i, mUserAuthority := range mUser.R.UserAuthorities {
+		var expiryUnixMilli *int64 = nil
+		if mUserAuthority.ExpiryDate.Valid {
+			expiryUnixMilli = ptr.P(mUserAuthority.ExpiryDate.Time.UnixMilli())
+		}
+		userAuthorities[i] = &domain.UserAuthority{
+			UserID:          mUserAuthority.UserID,
+			AuthorityID:     mUserAuthority.AuthorityID,
+			AuthorityCode:   mUserAuthority.R.Authority.AuthorityCode,
+			AuthorityName:   mUserAuthority.R.Authority.AuthorityName,
+			Summary:         mUserAuthority.R.Authority.Summary,
+			ExpiryUnixMilli: expiryUnixMilli,
+		}
+	}
+
+	return &domain.User{
+		UserID:           mUser.UserID,
+		AuthorizedBy:     domain.AuthorizedBy(mUser.AuthorizedBy),
+		AuthorizedID:     mUser.AuthorizedID,
+		UserName:         mUser.Name,
+		Email:            mUser.Email,
+		Authorities:      userAuthorities,
+		CreatedUnixMilli: mUser.CreateDate.UnixMilli(),
+	}
+}

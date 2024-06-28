@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"github.com/jae2274/auth-service/auth_service/common/domain"
 	"github.com/jae2274/goutils/enum"
 )
 
@@ -144,4 +145,8 @@ type AuthorityRes struct {
 
 type GetAllTicketsResponse struct {
 	Tickets []*Ticket `json:"tickets"`
+}
+
+type GetAllUsersResponse struct {
+	Users []*domain.User `json:"users"`
 }

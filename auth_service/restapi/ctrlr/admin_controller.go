@@ -26,6 +26,7 @@ func (a *AdminController) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/admin/authority", a.RemoveAuthority).Methods("DELETE")
 	router.HandleFunc("/auth/admin/ticket", a.GetAllTickets).Methods("GET")
 	router.HandleFunc("/auth/admin/ticket", a.CreateTicket).Methods("POST")
+	router.HandleFunc("/auth/admin/user", a.GetAllUsers).Methods("GET")
 }
 
 func (a *AdminController) GetAllAuthorities(w http.ResponseWriter, r *http.Request) {
@@ -142,6 +143,23 @@ func (a *AdminController) CreateTicket(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(ticket)
 
+	if errorHandler(ctx, w, err) {
+		return
+	}
+}
+
+func (a *AdminController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	users, err := service.GetAllUsers(ctx, a.db)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	err = json.NewEncoder(w).Encode(&dto.GetAllUsersResponse{Users: users})
 	if errorHandler(ctx, w, err) {
 		return
 	}

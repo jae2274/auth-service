@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"time"
-
 	"github.com/jae2274/goutils/enum"
 )
 
@@ -18,11 +16,11 @@ func (AuthorizedByValues) Values() []string {
 }
 
 type User struct {
-	UserID       string
-	AuthorizedBy AuthorizedBy
-	AuthorizedID string
-	Email        string
-	Roles        []string
-	AgreeMail    bool
-	CreateDate   time.Time
+	UserID           int              `json:"userId"`
+	AuthorizedBy     AuthorizedBy     `json:"authorizedBy"`
+	AuthorizedID     string           `json:"authorizedId"`
+	UserName         string           `json:"userName"`
+	Email            string           `json:"email"`
+	Authorities      []*UserAuthority `json:"authorities"`
+	CreatedUnixMilli int64            `json:"createdUnixMilli"`
 }
