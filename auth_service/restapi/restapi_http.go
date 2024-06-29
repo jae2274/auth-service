@@ -50,7 +50,7 @@ func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 	originsOk := handlers.AllowedOrigins(allowOrigins)
 	credentialsOk := handlers.AllowCredentials()
 	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
-	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "PATCH", "OPTIONS"})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})
 
 	llog.Msg("Starting restapi grpc server...").Data("port", envVars.ApiPort).Log(ctx)
 	err = http.ListenAndServe(fmt.Sprintf(":%d", envVars.ApiPort), handlers.CORS(originsOk, credentialsOk, headersOk, methodsOk)(router))

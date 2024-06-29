@@ -206,7 +206,13 @@ func FindAllAgreements(ctx context.Context, exec boil.ContextExecutor) ([]*model
 	return models.Agreements().All(ctx, exec)
 }
 
+var ErrCannotControlAuthorityAdmin = terr.New("cannot control authority admin")
+
 func RemoveAuthority(ctx context.Context, tx *sql.Tx, userId int, authorityCode string) error {
+	if authorityCode == domain.AuthorityAdmin {
+		return ErrCannotControlAuthorityAdmin
+	}
+
 	mAuthority, err := models.Authorities(models.AuthorityWhere.AuthorityCode.EQ(authorityCode)).One(ctx, tx)
 	if err != nil && err != sql.ErrNoRows {
 		return terr.Wrap(err)

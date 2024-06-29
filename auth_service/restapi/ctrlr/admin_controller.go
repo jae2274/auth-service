@@ -88,6 +88,10 @@ func (a *AdminController) RemoveAuthority(w http.ResponseWriter, r *http.Request
 		return service.RemoveAuthority(ctx, tx, req.UserId, req.AuthorityCode)
 	})
 
+	if err == service.ErrCannotControlAuthorityAdmin {
+		http.Error(w, "cannot control authority admin", http.StatusBadRequest)
+	}
+
 	if errorHandler(ctx, w, err) {
 		return
 	}
