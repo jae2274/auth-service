@@ -51,7 +51,7 @@ func TestTicketService(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, isExisted)
 		require.Equal(t, ticketId, res.TicketId)
-		require.Nil(t, res.UsedUnixMilli)
+		require.False(t, res.IsUsed)
 		require.Equal(t, ticketName, res.TicketName)
 		require.Len(t, res.TicketAuthorities, len(ticketAuthorities))
 
@@ -170,7 +170,7 @@ func TestTicketService(t *testing.T) {
 		res, isExisted, err := service.GetTicketInfo(ctx, db, ticketId)
 		require.NoError(t, err)
 		require.True(t, isExisted)
-		require.WithinDuration(t, time.Now().UTC(), time.UnixMilli(*res.UsedUnixMilli).UTC(), time.Second)
+		require.True(t, res.IsUsed)
 	})
 
 	t.Run("return empty tickets if no ticket existed", func(t *testing.T) {
@@ -209,14 +209,18 @@ func TestTicketService(t *testing.T) {
 		require.Len(t, tickets, len(userAuthorityReqs))
 
 		require.Equal(t, "ticket0", tickets[0].TicketName)
-		require.WithinDuration(t, time.Now().UTC(), time.UnixMilli(*tickets[0].UsedUnixMilli).UTC(), time.Second)
+		require.True(t, tickets[0].IsUsed)
+		require.Equal(t, user.UserID, (*tickets[0].UsedInfo).UsedBy)
+		require.Equal(t, userinfo.Username, (*tickets[0].UsedInfo).UsedUserName)
+		require.WithinDuration(t, time.Now().UTC(), time.UnixMilli(*tickets[0].UsedInfo.UsedUnixMilli).UTC(), time.Second)
 		require.Equal(t, userAuthorityReqs[0][0].AuthorityCode, tickets[0].TicketAuthorities[0].AuthorityCode)
 		require.Equal(t, authorities[0].AuthorityName, tickets[0].TicketAuthorities[0].AuthorityName)
 		require.Equal(t, authorities[0].Summary, tickets[0].TicketAuthorities[0].Summary)
 		require.Nil(t, tickets[0].TicketAuthorities[0].ExpiryDurationMS)
 
 		require.Equal(t, "ticket1", tickets[1].TicketName)
-		require.Nil(t, tickets[1].UsedUnixMilli)
+		require.False(t, tickets[1].IsUsed)
+		require.Nil(t, tickets[1].UsedInfo)
 		require.Equal(t, userAuthorityReqs[1][0].AuthorityCode, tickets[1].TicketAuthorities[0].AuthorityCode)
 		require.Equal(t, authorities[1].AuthorityName, tickets[1].TicketAuthorities[0].AuthorityName)
 		require.Equal(t, authorities[1].Summary, tickets[1].TicketAuthorities[0].Summary)

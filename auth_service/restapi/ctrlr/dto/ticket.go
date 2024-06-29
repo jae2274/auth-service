@@ -10,7 +10,19 @@ type Ticket struct {
 	TicketName        string             `json:"ticketName"`
 	TicketAuthorities []*TicketAuthority `json:"ticketAuthorities"`
 	CreateUnixMilli   int64              `json:"createUnixMilli"`
-	UsedUnixMilli     *int64             `json:"usedUnixMilli"`
+	IsUsed            bool               `json:"isUsed"`
+	// UsedInfo          *UsedInfo          `json:"usedInfo"`
+}
+
+type TicketDetail struct {
+	Ticket
+	*UsedInfo
+}
+
+type UsedInfo struct {
+	UsedBy        int    `json:"usedBy"`
+	UsedUserName  string `json:"usedUserName"`
+	UsedUnixMilli *int64 `json:"usedUnixMilli"`
 }
 
 type TicketAuthority struct {

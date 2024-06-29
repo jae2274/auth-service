@@ -38,16 +38,12 @@ func convertToDtoTicket(ticket *models.Ticket) *dto.Ticket {
 		ticketAuthorities = append(ticketAuthorities, convertToDtoTicketAuthority(mTicketAuthority))
 	}
 
-	var usedUnixMilli *int64
-	if ticket.UsedDate.Valid {
-		usedUnixMilli = ptr.P(ticket.UsedDate.Time.UnixMilli())
-	}
 	return &dto.Ticket{
 		TicketId:          ticket.UUID,
 		TicketName:        ticket.TicketName,
 		TicketAuthorities: ticketAuthorities,
 		CreateUnixMilli:   ticket.CreateDate.UnixMilli(),
-		UsedUnixMilli:     usedUnixMilli,
+		IsUsed:            ticket.UsedBy.Valid && ticket.UsedDate.Valid,
 	}
 }
 
@@ -143,16 +139,34 @@ func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) err
 	return nil
 }
 
-func GetAllTickets(ctx context.Context, exec boil.ContextExecutor) ([]*dto.Ticket, error) {
-	tickets, err := models.Tickets(qm.Load(models.TicketRels.TicketAuthorities+"."+models.TicketAuthorityRels.Authority)).All(ctx, exec)
+func GetAllTickets(ctx context.Context, exec boil.ContextExecutor) ([]*dto.TicketDetail, error) {
+	tickets, err := models.Tickets(
+		qm.Load(models.TicketRels.TicketAuthorities+"."+models.TicketAuthorityRels.Authority),
+		qm.Load(models.TicketRels.UsedByUser),
+	).All(ctx, exec)
 	if err != nil {
 		return nil, terr.Wrap(err)
 	}
 
-	dtoTickets := make([]*dto.Ticket, 0, len(tickets))
+	dtoTickets := make([]*dto.TicketDetail, 0, len(tickets))
 	for _, ticket := range tickets {
-		dtoTickets = append(dtoTickets, convertToDtoTicket(ticket))
+		dtoTickets = append(dtoTickets, &dto.TicketDetail{
+			Ticket:   *convertToDtoTicket(ticket),
+			UsedInfo: convertUsedInfo(ticket),
+		})
 	}
 
 	return dtoTickets, nil
+}
+
+func convertUsedInfo(ticket *models.Ticket) *dto.UsedInfo {
+	if ticket.UsedBy.Valid && ticket.UsedDate.Valid {
+		return &dto.UsedInfo{
+			UsedBy:        ticket.UsedBy.Int,
+			UsedUserName:  ticket.R.UsedByUser.Name,
+			UsedUnixMilli: ptr.P(ticket.UsedDate.Time.UnixMilli()),
+		}
+	}
+
+	return nil
 }

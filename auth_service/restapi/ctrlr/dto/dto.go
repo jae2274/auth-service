@@ -144,7 +144,7 @@ type AuthorityRes struct {
 }
 
 type GetAllTicketsResponse struct {
-	Tickets []*Ticket `json:"tickets"`
+	Tickets []*TicketDetail `json:"tickets"`
 }
 
 type GetAllUsersResponse struct {
