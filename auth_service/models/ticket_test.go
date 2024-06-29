@@ -722,7 +722,7 @@ func testTicketsSelect(t *testing.T) {
 }
 
 var (
-	ticketDBTypes = map[string]string{`TicketID`: `int`, `UUID`: `varchar`, `TicketName`: `varchar`, `UsedBy`: `int`, `CreateDate`: `datetime`}
+	ticketDBTypes = map[string]string{`TicketID`: `int`, `UUID`: `varchar`, `TicketName`: `varchar`, `UsedBy`: `int`, `UsedDate`: `datetime`, `CreateDate`: `datetime`}
 	_             = bytes.MinRead
 )
 

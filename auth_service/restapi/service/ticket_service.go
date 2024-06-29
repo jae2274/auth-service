@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jae2274/auth-service/auth_service/models"
@@ -37,12 +38,16 @@ func convertToDtoTicket(ticket *models.Ticket) *dto.Ticket {
 		ticketAuthorities = append(ticketAuthorities, convertToDtoTicketAuthority(mTicketAuthority))
 	}
 
+	var usedUnixMilli *int64
+	if ticket.UsedDate.Valid {
+		usedUnixMilli = ptr.P(ticket.UsedDate.Time.UnixMilli())
+	}
 	return &dto.Ticket{
 		TicketId:          ticket.UUID,
 		TicketName:        ticket.TicketName,
-		IsUsed:            ticket.UsedBy.Valid,
 		TicketAuthorities: ticketAuthorities,
 		CreateUnixMilli:   ticket.CreateDate.UnixMilli(),
+		UsedUnixMilli:     usedUnixMilli,
 	}
 }
 
@@ -113,6 +118,7 @@ func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) err
 	}
 
 	ticket.UsedBy = null.IntFrom(userId)
+	ticket.UsedDate = null.TimeFrom(time.Now())
 	ticket.Update(ctx, tx, boil.Infer())
 
 	dUserAuthorities := make([]*dto.UserAuthorityReq, 0, len(ticket.R.TicketAuthorities))

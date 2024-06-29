@@ -8,9 +8,9 @@ type CreateTicketRequest struct {
 type Ticket struct {
 	TicketId          string             `json:"ticketId"`
 	TicketName        string             `json:"ticketName"`
-	IsUsed            bool               `json:"isUsed"`
 	TicketAuthorities []*TicketAuthority `json:"ticketAuthorities"`
 	CreateUnixMilli   int64              `json:"createUnixMilli"`
+	UsedUnixMilli     *int64             `json:"usedUnixMilli"`
 }
 
 type TicketAuthority struct {

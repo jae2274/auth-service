@@ -28,6 +28,7 @@ type Ticket struct {
 	UUID       string    `boil:"uuid" json:"uuid" toml:"uuid" yaml:"uuid"`
 	TicketName string    `boil:"ticket_name" json:"ticket_name" toml:"ticket_name" yaml:"ticket_name"`
 	UsedBy     null.Int  `boil:"used_by" json:"used_by,omitempty" toml:"used_by" yaml:"used_by,omitempty"`
+	UsedDate   null.Time `boil:"used_date" json:"used_date,omitempty" toml:"used_date" yaml:"used_date,omitempty"`
 	CreateDate time.Time `boil:"create_date" json:"create_date" toml:"create_date" yaml:"create_date"`
 
 	R *ticketR `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -39,12 +40,14 @@ var TicketColumns = struct {
 	UUID       string
 	TicketName string
 	UsedBy     string
+	UsedDate   string
 	CreateDate string
 }{
 	TicketID:   "ticket_id",
 	UUID:       "uuid",
 	TicketName: "ticket_name",
 	UsedBy:     "used_by",
+	UsedDate:   "used_date",
 	CreateDate: "create_date",
 }
 
@@ -53,12 +56,14 @@ var TicketTableColumns = struct {
 	UUID       string
 	TicketName string
 	UsedBy     string
+	UsedDate   string
 	CreateDate string
 }{
 	TicketID:   "ticket.ticket_id",
 	UUID:       "ticket.uuid",
 	TicketName: "ticket.ticket_name",
 	UsedBy:     "ticket.used_by",
+	UsedDate:   "ticket.used_date",
 	CreateDate: "ticket.create_date",
 }
 
@@ -102,6 +107,30 @@ func (w whereHelpernull_Int) NIN(slice []int) qm.QueryMod {
 func (w whereHelpernull_Int) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
 func (w whereHelpernull_Int) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
 
+type whereHelpernull_Time struct{ field string }
+
+func (w whereHelpernull_Time) EQ(x null.Time) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, false, x)
+}
+func (w whereHelpernull_Time) NEQ(x null.Time) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, true, x)
+}
+func (w whereHelpernull_Time) LT(x null.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpernull_Time) LTE(x null.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpernull_Time) GT(x null.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpernull_Time) GTE(x null.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
+func (w whereHelpernull_Time) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
+func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
+
 type whereHelpertime_Time struct{ field string }
 
 func (w whereHelpertime_Time) EQ(x time.Time) qm.QueryMod {
@@ -128,12 +157,14 @@ var TicketWhere = struct {
 	UUID       whereHelperstring
 	TicketName whereHelperstring
 	UsedBy     whereHelpernull_Int
+	UsedDate   whereHelpernull_Time
 	CreateDate whereHelpertime_Time
 }{
 	TicketID:   whereHelperint{field: "`ticket`.`ticket_id`"},
 	UUID:       whereHelperstring{field: "`ticket`.`uuid`"},
 	TicketName: whereHelperstring{field: "`ticket`.`ticket_name`"},
 	UsedBy:     whereHelpernull_Int{field: "`ticket`.`used_by`"},
+	UsedDate:   whereHelpernull_Time{field: "`ticket`.`used_date`"},
 	CreateDate: whereHelpertime_Time{field: "`ticket`.`create_date`"},
 }
 
@@ -165,8 +196,8 @@ func (r *ticketR) GetTicketAuthorities() TicketAuthoritySlice {
 type ticketL struct{}
 
 var (
-	ticketAllColumns            = []string{"ticket_id", "uuid", "ticket_name", "used_by", "create_date"}
-	ticketColumnsWithoutDefault = []string{"uuid", "ticket_name", "used_by"}
+	ticketAllColumns            = []string{"ticket_id", "uuid", "ticket_name", "used_by", "used_date", "create_date"}
+	ticketColumnsWithoutDefault = []string{"uuid", "ticket_name", "used_by", "used_date"}
 	ticketColumnsWithDefault    = []string{"ticket_id", "create_date"}
 	ticketPrimaryKeyColumns     = []string{"ticket_id"}
 	ticketGeneratedColumns      = []string{}
@@ -934,6 +965,7 @@ func (o TicketSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, c
 
 var mySQLTicketUniqueColumns = []string{
 	"ticket_id",
+	"uuid",
 }
 
 // Upsert attempts an insert using an executor, and does an update or ignore on conflict.
