@@ -8,6 +8,7 @@ import "testing"
 // TestToOne tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToOne(t *testing.T) {
+	t.Run("TicketToUserUsingCreatedByUser", testTicketToOneUserUsingCreatedByUser)
 	t.Run("TicketToUserUsingUsedByUser", testTicketToOneUserUsingUsedByUser)
 	t.Run("TicketAuthorityToAuthorityUsingAuthority", testTicketAuthorityToOneAuthorityUsingAuthority)
 	t.Run("TicketAuthorityToTicketUsingTicket", testTicketAuthorityToOneTicketUsingTicket)
@@ -28,6 +29,7 @@ func TestToMany(t *testing.T) {
 	t.Run("AuthorityToTicketAuthorities", testAuthorityToManyTicketAuthorities)
 	t.Run("AuthorityToUserAuthorities", testAuthorityToManyUserAuthorities)
 	t.Run("TicketToTicketAuthorities", testTicketToManyTicketAuthorities)
+	t.Run("UserToCreatedByTickets", testUserToManyCreatedByTickets)
 	t.Run("UserToUsedByTickets", testUserToManyUsedByTickets)
 	t.Run("UserToUserAgreements", testUserToManyUserAgreements)
 	t.Run("UserToUserAuthorities", testUserToManyUserAuthorities)
@@ -36,6 +38,7 @@ func TestToMany(t *testing.T) {
 // TestToOneSet tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToOneSet(t *testing.T) {
+	t.Run("TicketToUserUsingCreatedByTickets", testTicketToOneSetOpUserUsingCreatedByUser)
 	t.Run("TicketToUserUsingUsedByTickets", testTicketToOneSetOpUserUsingUsedByUser)
 	t.Run("TicketAuthorityToAuthorityUsingTicketAuthorities", testTicketAuthorityToOneSetOpAuthorityUsingAuthority)
 	t.Run("TicketAuthorityToTicketUsingTicketAuthorities", testTicketAuthorityToOneSetOpTicketUsingTicket)
@@ -66,6 +69,7 @@ func TestToManyAdd(t *testing.T) {
 	t.Run("AuthorityToTicketAuthorities", testAuthorityToManyAddOpTicketAuthorities)
 	t.Run("AuthorityToUserAuthorities", testAuthorityToManyAddOpUserAuthorities)
 	t.Run("TicketToTicketAuthorities", testTicketToManyAddOpTicketAuthorities)
+	t.Run("UserToCreatedByTickets", testUserToManyAddOpCreatedByTickets)
 	t.Run("UserToUsedByTickets", testUserToManyAddOpUsedByTickets)
 	t.Run("UserToUserAgreements", testUserToManyAddOpUserAgreements)
 	t.Run("UserToUserAuthorities", testUserToManyAddOpUserAuthorities)

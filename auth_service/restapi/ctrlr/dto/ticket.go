@@ -17,6 +17,7 @@ type Ticket struct {
 type TicketDetail struct {
 	Ticket
 	*UsedInfo
+	CreatedBy int `json:"createdBy"`
 }
 
 type UsedInfo struct {

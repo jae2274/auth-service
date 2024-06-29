@@ -2,11 +2,14 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/jae2274/auth-service/auth_service/common/domain"
+	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
+	"github.com/jae2274/auth-service/auth_service/models"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
@@ -16,6 +19,14 @@ import (
 )
 
 func TestTicketService(t *testing.T) {
+	signUpAdminUser := func(t *testing.T, ctx context.Context, db *sql.DB) *models.User {
+		user, err := mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (*models.User, error) {
+			return service.SignUp(ctx, tx, &ooauth.UserInfo{AuthorizedBy: domain.GOOGLE, AuthorizedID: "authId", Email: "targetUser@test.com", Username: "target"}, nil)
+		})
+		require.NoError(t, err)
+
+		return user
+	}
 
 	t.Run("return false if ticket not existed", func(t *testing.T) {
 		db := tinit.DB(t)
@@ -29,21 +40,23 @@ func TestTicketService(t *testing.T) {
 	t.Run("return error if authority not existed", func(t *testing.T) {
 		db := tinit.DB(t)
 		ctx := context.Background()
+		admin := signUpAdminUser(t, ctx, db)
 
-		_, err := createTicketWithTx(ctx, db, "ticketName", []*dto.UserAuthorityReq{{AuthorityCode: "notExistedAuthority"}})
+		_, err := createTicketWithTx(ctx, db, admin.UserID, "ticketName", []*dto.UserAuthorityReq{{AuthorityCode: "notExistedAuthority"}})
 		require.Error(t, err)
 	})
 
 	t.Run("return ticket info if ticket existed", func(t *testing.T) {
 		db := tinit.DB(t)
 		ctx, _, _, authorities := initAgreementFunc(t, db)
+		admin := signUpAdminUser(t, ctx, db)
 
 		ticketName := "ticketName"
 		ticketAuthorities := []*dto.UserAuthorityReq{
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
-		ticketId, err := createTicketWithTx(ctx, db, ticketName, ticketAuthorities)
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities)
 		require.NoError(t, err)
 		require.NotEmpty(t, ticketId)
 
@@ -91,13 +104,14 @@ func TestTicketService(t *testing.T) {
 		db := tinit.DB(t)
 
 		ctx, _, _, authorities := initAgreementFunc(t, db)
+		admin := signUpAdminUser(t, ctx, db)
 
 		ticketName := "ticketName"
 		userAuthorityReqs := []*dto.UserAuthorityReq{
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
-		ticketId, err := createTicketWithTx(ctx, db, ticketName, userAuthorityReqs)
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs)
 		require.NoError(t, err)
 
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
@@ -120,13 +134,15 @@ func TestTicketService(t *testing.T) {
 		db := tinit.DB(t)
 
 		ctx, _, _, authorities := initAgreementFunc(t, db)
+		admin := signUpAdminUser(t, ctx, db)
+
 		userAuthorityReqs := []*dto.UserAuthorityReq{
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
 
 		ticketName := "ticketName"
-		ticketId, err := createTicketWithTx(ctx, db, ticketName, userAuthorityReqs)
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs)
 		require.NoError(t, err)
 
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
@@ -150,15 +166,15 @@ func TestTicketService(t *testing.T) {
 
 	t.Run("return isUsed true after ticket is used", func(t *testing.T) {
 		db := tinit.DB(t)
-
 		ctx, _, _, authorities := initAgreementFunc(t, db)
+		admin := signUpAdminUser(t, context.Background(), db)
 		userAuthorityReqs := []*dto.UserAuthorityReq{
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
 
 		ticketName := "ticketName"
-		ticketId, err := createTicketWithTx(ctx, db, ticketName, userAuthorityReqs)
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs)
 		require.NoError(t, err)
 
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
@@ -185,7 +201,7 @@ func TestTicketService(t *testing.T) {
 	t.Run("return all tickets if tickets existed", func(t *testing.T) {
 		db := tinit.DB(t)
 		ctx, _, _, authorities := initAgreementFunc(t, db)
-
+		admin := signUpAdminUser(t, context.Background(), db)
 		userAuthorityReqs := [][]*dto.UserAuthorityReq{
 			{{AuthorityCode: authorities[0].AuthorityCode}},
 			{{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))}},
@@ -193,7 +209,7 @@ func TestTicketService(t *testing.T) {
 
 		ticketIds := make([]string, 0, len(userAuthorityReqs))
 		for i, userAuthorityReq := range userAuthorityReqs {
-			ticketId, err := createTicketWithTx(ctx, db, "ticket"+strconv.Itoa(i), userAuthorityReq)
+			ticketId, err := createTicketWithTx(ctx, db, admin.UserID, "ticket"+strconv.Itoa(i), userAuthorityReq)
 			require.NoError(t, err)
 
 			ticketIds = append(ticketIds, ticketId)
@@ -217,6 +233,7 @@ func TestTicketService(t *testing.T) {
 		require.Equal(t, authorities[0].AuthorityName, tickets[0].TicketAuthorities[0].AuthorityName)
 		require.Equal(t, authorities[0].Summary, tickets[0].TicketAuthorities[0].Summary)
 		require.Nil(t, tickets[0].TicketAuthorities[0].ExpiryDurationMS)
+		require.Equal(t, tickets[0].CreatedBy, admin.UserID)
 
 		require.Equal(t, "ticket1", tickets[1].TicketName)
 		require.False(t, tickets[1].IsUsed)

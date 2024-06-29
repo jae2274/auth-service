@@ -72,9 +72,9 @@ func requireEqualUserRole(t *testing.T, userId int, now time.Time, expected *dto
 	}
 }
 
-func createTicketWithTx(ctx context.Context, db *sql.DB, ticketName string, authorities []*dto.UserAuthorityReq) (string, error) {
+func createTicketWithTx(ctx context.Context, db *sql.DB, createdByUser int, ticketName string, authorities []*dto.UserAuthorityReq) (string, error) {
 	return mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (string, error) {
-		return service.CreateTicket(ctx, tx, ticketName, authorities)
+		return service.CreateTicket(ctx, tx, createdByUser, ticketName, authorities)
 	})
 }
 

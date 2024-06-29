@@ -30,6 +30,7 @@ type Ticket struct {
 	UsedBy     null.Int  `boil:"used_by" json:"used_by,omitempty" toml:"used_by" yaml:"used_by,omitempty"`
 	UsedDate   null.Time `boil:"used_date" json:"used_date,omitempty" toml:"used_date" yaml:"used_date,omitempty"`
 	CreateDate time.Time `boil:"create_date" json:"create_date" toml:"create_date" yaml:"create_date"`
+	CreatedBy  int       `boil:"created_by" json:"created_by" toml:"created_by" yaml:"created_by"`
 
 	R *ticketR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L ticketL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -42,6 +43,7 @@ var TicketColumns = struct {
 	UsedBy     string
 	UsedDate   string
 	CreateDate string
+	CreatedBy  string
 }{
 	TicketID:   "ticket_id",
 	UUID:       "uuid",
@@ -49,6 +51,7 @@ var TicketColumns = struct {
 	UsedBy:     "used_by",
 	UsedDate:   "used_date",
 	CreateDate: "create_date",
+	CreatedBy:  "created_by",
 }
 
 var TicketTableColumns = struct {
@@ -58,6 +61,7 @@ var TicketTableColumns = struct {
 	UsedBy     string
 	UsedDate   string
 	CreateDate string
+	CreatedBy  string
 }{
 	TicketID:   "ticket.ticket_id",
 	UUID:       "ticket.uuid",
@@ -65,6 +69,7 @@ var TicketTableColumns = struct {
 	UsedBy:     "ticket.used_by",
 	UsedDate:   "ticket.used_date",
 	CreateDate: "ticket.create_date",
+	CreatedBy:  "ticket.created_by",
 }
 
 // Generated where
@@ -159,6 +164,7 @@ var TicketWhere = struct {
 	UsedBy     whereHelpernull_Int
 	UsedDate   whereHelpernull_Time
 	CreateDate whereHelpertime_Time
+	CreatedBy  whereHelperint
 }{
 	TicketID:   whereHelperint{field: "`ticket`.`ticket_id`"},
 	UUID:       whereHelperstring{field: "`ticket`.`uuid`"},
@@ -166,19 +172,23 @@ var TicketWhere = struct {
 	UsedBy:     whereHelpernull_Int{field: "`ticket`.`used_by`"},
 	UsedDate:   whereHelpernull_Time{field: "`ticket`.`used_date`"},
 	CreateDate: whereHelpertime_Time{field: "`ticket`.`create_date`"},
+	CreatedBy:  whereHelperint{field: "`ticket`.`created_by`"},
 }
 
 // TicketRels is where relationship names are stored.
 var TicketRels = struct {
+	CreatedByUser     string
 	UsedByUser        string
 	TicketAuthorities string
 }{
+	CreatedByUser:     "CreatedByUser",
 	UsedByUser:        "UsedByUser",
 	TicketAuthorities: "TicketAuthorities",
 }
 
 // ticketR is where relationships are stored.
 type ticketR struct {
+	CreatedByUser     *User                `boil:"CreatedByUser" json:"CreatedByUser" toml:"CreatedByUser" yaml:"CreatedByUser"`
 	UsedByUser        *User                `boil:"UsedByUser" json:"UsedByUser" toml:"UsedByUser" yaml:"UsedByUser"`
 	TicketAuthorities TicketAuthoritySlice `boil:"TicketAuthorities" json:"TicketAuthorities" toml:"TicketAuthorities" yaml:"TicketAuthorities"`
 }
@@ -186,6 +196,13 @@ type ticketR struct {
 // NewStruct creates a new relationship struct
 func (*ticketR) NewStruct() *ticketR {
 	return &ticketR{}
+}
+
+func (r *ticketR) GetCreatedByUser() *User {
+	if r == nil {
+		return nil
+	}
+	return r.CreatedByUser
 }
 
 func (r *ticketR) GetUsedByUser() *User {
@@ -206,8 +223,8 @@ func (r *ticketR) GetTicketAuthorities() TicketAuthoritySlice {
 type ticketL struct{}
 
 var (
-	ticketAllColumns            = []string{"ticket_id", "uuid", "ticket_name", "used_by", "used_date", "create_date"}
-	ticketColumnsWithoutDefault = []string{"uuid", "ticket_name", "used_by", "used_date"}
+	ticketAllColumns            = []string{"ticket_id", "uuid", "ticket_name", "used_by", "used_date", "create_date", "created_by"}
+	ticketColumnsWithoutDefault = []string{"uuid", "ticket_name", "used_by", "used_date", "created_by"}
 	ticketColumnsWithDefault    = []string{"ticket_id", "create_date"}
 	ticketPrimaryKeyColumns     = []string{"ticket_id"}
 	ticketGeneratedColumns      = []string{}
@@ -518,6 +535,17 @@ func (q ticketQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (boo
 	return count > 0, nil
 }
 
+// CreatedByUser pointed to by the foreign key.
+func (o *Ticket) CreatedByUser(mods ...qm.QueryMod) userQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("`user_id` = ?", o.CreatedBy),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Users(queryMods...)
+}
+
 // UsedByUser pointed to by the foreign key.
 func (o *Ticket) UsedByUser(mods ...qm.QueryMod) userQuery {
 	queryMods := []qm.QueryMod{
@@ -541,6 +569,126 @@ func (o *Ticket) TicketAuthorities(mods ...qm.QueryMod) ticketAuthorityQuery {
 	)
 
 	return TicketAuthorities(queryMods...)
+}
+
+// LoadCreatedByUser allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (ticketL) LoadCreatedByUser(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTicket interface{}, mods queries.Applicator) error {
+	var slice []*Ticket
+	var object *Ticket
+
+	if singular {
+		var ok bool
+		object, ok = maybeTicket.(*Ticket)
+		if !ok {
+			object = new(Ticket)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeTicket)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeTicket))
+			}
+		}
+	} else {
+		s, ok := maybeTicket.(*[]*Ticket)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeTicket)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeTicket))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &ticketR{}
+		}
+		args[object.CreatedBy] = struct{}{}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &ticketR{}
+			}
+
+			args[obj.CreatedBy] = struct{}{}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`user`),
+		qm.WhereIn(`user.user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load User")
+	}
+
+	var resultSlice []*User
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice User")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for user")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for user")
+	}
+
+	if len(userAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.CreatedByUser = foreign
+		if foreign.R == nil {
+			foreign.R = &userR{}
+		}
+		foreign.R.CreatedByTickets = append(foreign.R.CreatedByTickets, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.CreatedBy == foreign.UserID {
+				local.R.CreatedByUser = foreign
+				if foreign.R == nil {
+					foreign.R = &userR{}
+				}
+				foreign.R.CreatedByTickets = append(foreign.R.CreatedByTickets, local)
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadUsedByUser allows an eager lookup of values, cached into the
@@ -775,6 +923,53 @@ func (ticketL) LoadTicketAuthorities(ctx context.Context, e boil.ContextExecutor
 				break
 			}
 		}
+	}
+
+	return nil
+}
+
+// SetCreatedByUser of the ticket to the related item.
+// Sets o.R.CreatedByUser to related.
+// Adds o to related.R.CreatedByTickets.
+func (o *Ticket) SetCreatedByUser(ctx context.Context, exec boil.ContextExecutor, insert bool, related *User) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE `ticket` SET %s WHERE %s",
+		strmangle.SetParamNames("`", "`", 0, []string{"created_by"}),
+		strmangle.WhereClause("`", "`", 0, ticketPrimaryKeyColumns),
+	)
+	values := []interface{}{related.UserID, o.TicketID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	o.CreatedBy = related.UserID
+	if o.R == nil {
+		o.R = &ticketR{
+			CreatedByUser: related,
+		}
+	} else {
+		o.R.CreatedByUser = related
+	}
+
+	if related.R == nil {
+		related.R = &userR{
+			CreatedByTickets: TicketSlice{o},
+		}
+	} else {
+		related.R.CreatedByTickets = append(related.R.CreatedByTickets, o)
 	}
 
 	return nil

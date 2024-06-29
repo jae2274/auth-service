@@ -75,13 +75,13 @@ func getTicket(ctx context.Context, exec boil.ContextExecutor, ticketId string) 
 	return ticket, true, nil
 }
 
-func CreateTicket(ctx context.Context, tx *sql.Tx, ticketName string, authorities []*dto.UserAuthorityReq) (string, error) {
+func CreateTicket(ctx context.Context, tx *sql.Tx, createdByUser int, ticketName string, authorities []*dto.UserAuthorityReq) (string, error) {
 	err := attachAuthorityIds(ctx, tx, authorities)
 	if err != nil {
 		return "", err
 	}
 
-	ticket := &models.Ticket{UUID: uuid.New().String(), TicketName: ticketName}
+	ticket := &models.Ticket{UUID: uuid.New().String(), TicketName: ticketName, CreatedBy: createdByUser}
 
 	if err := ticket.Insert(ctx, tx, boil.Infer()); err != nil {
 		return "", terr.Wrap(err)
@@ -151,8 +151,9 @@ func GetAllTickets(ctx context.Context, exec boil.ContextExecutor) ([]*dto.Ticke
 	dtoTickets := make([]*dto.TicketDetail, 0, len(tickets))
 	for _, ticket := range tickets {
 		dtoTickets = append(dtoTickets, &dto.TicketDetail{
-			Ticket:   *convertToDtoTicket(ticket),
-			UsedInfo: convertUsedInfo(ticket),
+			Ticket:    *convertToDtoTicket(ticket),
+			UsedInfo:  convertUsedInfo(ticket),
+			CreatedBy: ticket.CreatedBy,
 		})
 	}
 

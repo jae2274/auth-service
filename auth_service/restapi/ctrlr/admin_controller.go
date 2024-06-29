@@ -4,10 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
+	"github.com/jae2274/auth-service/auth_service/restapi/middleware"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
 	"github.com/jae2274/goutils/terr"
 )
@@ -118,15 +120,24 @@ func (a *AdminController) GetAllTickets(w http.ResponseWriter, r *http.Request) 
 
 func (a *AdminController) CreateTicket(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	claims, isExisted := middleware.GetClaims(ctx)
+	if !isExisted {
+		errorHandler(ctx, w, terr.New("no claims"))
+		return
+	}
+	adminUserId, err := strconv.Atoi(claims.UserId)
+	if errorHandler(ctx, w, err) {
+		return
+	}
 
 	var req *dto.CreateTicketRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err = json.NewDecoder(r.Body).Decode(&req)
 	if errorHandler(ctx, w, err) {
 		return
 	}
 
 	ticketId, err := mysqldb.WithTransaction(ctx, a.db, func(tx *sql.Tx) (string, error) {
-		return service.CreateTicket(ctx, tx, req.TicketName, req.TicketAuthorities)
+		return service.CreateTicket(ctx, tx, adminUserId, req.TicketName, req.TicketAuthorities)
 	})
 	if errorHandler(ctx, w, err) {
 		return
