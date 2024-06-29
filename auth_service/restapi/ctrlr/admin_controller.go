@@ -126,7 +126,7 @@ func (a *AdminController) CreateTicket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ticketId, err := mysqldb.WithTransaction(ctx, a.db, func(tx *sql.Tx) (string, error) {
-		return service.CreateTicket(ctx, tx, req.TicketAuthorities)
+		return service.CreateTicket(ctx, tx, req.TicketName, req.TicketAuthorities)
 	})
 	if errorHandler(ctx, w, err) {
 		return

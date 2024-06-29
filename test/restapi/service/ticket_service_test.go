@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -29,7 +30,7 @@ func TestTicketService(t *testing.T) {
 		db := tinit.DB(t)
 		ctx := context.Background()
 
-		_, err := createTicketWithTx(ctx, db, []*dto.UserAuthorityReq{{AuthorityCode: "notExistedAuthority"}})
+		_, err := createTicketWithTx(ctx, db, "ticketName", []*dto.UserAuthorityReq{{AuthorityCode: "notExistedAuthority"}})
 		require.Error(t, err)
 	})
 
@@ -37,11 +38,12 @@ func TestTicketService(t *testing.T) {
 		db := tinit.DB(t)
 		ctx, _, _, authorities := initAgreementFunc(t, db)
 
+		ticketName := "ticketName"
 		ticketAuthorities := []*dto.UserAuthorityReq{
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
-		ticketId, err := createTicketWithTx(ctx, db, ticketAuthorities)
+		ticketId, err := createTicketWithTx(ctx, db, ticketName, ticketAuthorities)
 		require.NoError(t, err)
 		require.NotEmpty(t, ticketId)
 
@@ -50,6 +52,7 @@ func TestTicketService(t *testing.T) {
 		require.True(t, isExisted)
 		require.Equal(t, ticketId, res.TicketId)
 		require.False(t, res.IsUsed)
+		require.Equal(t, ticketName, res.TicketName)
 		require.Len(t, res.TicketAuthorities, len(ticketAuthorities))
 
 		for i, ticketAuthority := range res.TicketAuthorities {
@@ -89,11 +92,12 @@ func TestTicketService(t *testing.T) {
 
 		ctx, _, _, authorities := initAgreementFunc(t, db)
 
+		ticketName := "ticketName"
 		userAuthorityReqs := []*dto.UserAuthorityReq{
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
-		ticketId, err := createTicketWithTx(ctx, db, userAuthorityReqs)
+		ticketId, err := createTicketWithTx(ctx, db, ticketName, userAuthorityReqs)
 		require.NoError(t, err)
 
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
@@ -121,7 +125,8 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
 
-		ticketId, err := createTicketWithTx(ctx, db, userAuthorityReqs)
+		ticketName := "ticketName"
+		ticketId, err := createTicketWithTx(ctx, db, ticketName, userAuthorityReqs)
 		require.NoError(t, err)
 
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
@@ -152,7 +157,8 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
 
-		ticketId, err := createTicketWithTx(ctx, db, userAuthorityReqs)
+		ticketName := "ticketName"
+		ticketId, err := createTicketWithTx(ctx, db, ticketName, userAuthorityReqs)
 		require.NoError(t, err)
 
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
@@ -186,8 +192,8 @@ func TestTicketService(t *testing.T) {
 		}
 
 		ticketIds := make([]string, 0, len(userAuthorityReqs))
-		for _, userAuthorityReq := range userAuthorityReqs {
-			ticketId, err := createTicketWithTx(ctx, db, userAuthorityReq)
+		for i, userAuthorityReq := range userAuthorityReqs {
+			ticketId, err := createTicketWithTx(ctx, db, "ticket"+strconv.Itoa(i), userAuthorityReq)
 			require.NoError(t, err)
 
 			ticketIds = append(ticketIds, ticketId)
@@ -202,12 +208,14 @@ func TestTicketService(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, tickets, len(userAuthorityReqs))
 
+		require.Equal(t, "ticket0", tickets[0].TicketName)
 		require.True(t, tickets[0].IsUsed)
 		require.Equal(t, userAuthorityReqs[0][0].AuthorityCode, tickets[0].TicketAuthorities[0].AuthorityCode)
 		require.Equal(t, authorities[0].AuthorityName, tickets[0].TicketAuthorities[0].AuthorityName)
 		require.Equal(t, authorities[0].Summary, tickets[0].TicketAuthorities[0].Summary)
 		require.Nil(t, tickets[0].TicketAuthorities[0].ExpiryDurationMS)
 
+		require.Equal(t, "ticket1", tickets[1].TicketName)
 		require.False(t, tickets[1].IsUsed)
 		require.Equal(t, userAuthorityReqs[1][0].AuthorityCode, tickets[1].TicketAuthorities[0].AuthorityCode)
 		require.Equal(t, authorities[1].AuthorityName, tickets[1].TicketAuthorities[0].AuthorityName)

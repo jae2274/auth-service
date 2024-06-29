@@ -39,6 +39,7 @@ func convertToDtoTicket(ticket *models.Ticket) *dto.Ticket {
 
 	return &dto.Ticket{
 		TicketId:          ticket.UUID,
+		TicketName:        ticket.TicketName,
 		IsUsed:            ticket.UsedBy.Valid,
 		TicketAuthorities: ticketAuthorities,
 		CreateUnixMilli:   ticket.CreateDate.UnixMilli(),
@@ -73,13 +74,13 @@ func getTicket(ctx context.Context, exec boil.ContextExecutor, ticketId string) 
 	return ticket, true, nil
 }
 
-func CreateTicket(ctx context.Context, tx *sql.Tx, authorities []*dto.UserAuthorityReq) (string, error) {
+func CreateTicket(ctx context.Context, tx *sql.Tx, ticketName string, authorities []*dto.UserAuthorityReq) (string, error) {
 	err := attachAuthorityIds(ctx, tx, authorities)
 	if err != nil {
 		return "", err
 	}
 
-	ticket := &models.Ticket{UUID: uuid.New().String()}
+	ticket := &models.Ticket{UUID: uuid.New().String(), TicketName: ticketName}
 
 	if err := ticket.Insert(ctx, tx, boil.Infer()); err != nil {
 		return "", terr.Wrap(err)

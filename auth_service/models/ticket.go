@@ -26,6 +26,7 @@ import (
 type Ticket struct {
 	TicketID   int       `boil:"ticket_id" json:"ticket_id" toml:"ticket_id" yaml:"ticket_id"`
 	UUID       string    `boil:"uuid" json:"uuid" toml:"uuid" yaml:"uuid"`
+	TicketName string    `boil:"ticket_name" json:"ticket_name" toml:"ticket_name" yaml:"ticket_name"`
 	UsedBy     null.Int  `boil:"used_by" json:"used_by,omitempty" toml:"used_by" yaml:"used_by,omitempty"`
 	CreateDate time.Time `boil:"create_date" json:"create_date" toml:"create_date" yaml:"create_date"`
 
@@ -36,11 +37,13 @@ type Ticket struct {
 var TicketColumns = struct {
 	TicketID   string
 	UUID       string
+	TicketName string
 	UsedBy     string
 	CreateDate string
 }{
 	TicketID:   "ticket_id",
 	UUID:       "uuid",
+	TicketName: "ticket_name",
 	UsedBy:     "used_by",
 	CreateDate: "create_date",
 }
@@ -48,11 +51,13 @@ var TicketColumns = struct {
 var TicketTableColumns = struct {
 	TicketID   string
 	UUID       string
+	TicketName string
 	UsedBy     string
 	CreateDate string
 }{
 	TicketID:   "ticket.ticket_id",
 	UUID:       "ticket.uuid",
+	TicketName: "ticket.ticket_name",
 	UsedBy:     "ticket.used_by",
 	CreateDate: "ticket.create_date",
 }
@@ -121,11 +126,13 @@ func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
 var TicketWhere = struct {
 	TicketID   whereHelperint
 	UUID       whereHelperstring
+	TicketName whereHelperstring
 	UsedBy     whereHelpernull_Int
 	CreateDate whereHelpertime_Time
 }{
 	TicketID:   whereHelperint{field: "`ticket`.`ticket_id`"},
 	UUID:       whereHelperstring{field: "`ticket`.`uuid`"},
+	TicketName: whereHelperstring{field: "`ticket`.`ticket_name`"},
 	UsedBy:     whereHelpernull_Int{field: "`ticket`.`used_by`"},
 	CreateDate: whereHelpertime_Time{field: "`ticket`.`create_date`"},
 }
@@ -158,8 +165,8 @@ func (r *ticketR) GetTicketAuthorities() TicketAuthoritySlice {
 type ticketL struct{}
 
 var (
-	ticketAllColumns            = []string{"ticket_id", "uuid", "used_by", "create_date"}
-	ticketColumnsWithoutDefault = []string{"uuid", "used_by"}
+	ticketAllColumns            = []string{"ticket_id", "uuid", "ticket_name", "used_by", "create_date"}
+	ticketColumnsWithoutDefault = []string{"uuid", "ticket_name", "used_by"}
 	ticketColumnsWithDefault    = []string{"ticket_id", "create_date"}
 	ticketPrimaryKeyColumns     = []string{"ticket_id"}
 	ticketGeneratedColumns      = []string{}

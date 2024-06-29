@@ -1058,7 +1058,6 @@ func (o AuthoritySlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor
 var mySQLAuthorityUniqueColumns = []string{
 	"authority_id",
 	"authority_code",
-	"authority_name",
 }
 
 // Upsert attempts an insert using an executor, and does an update or ignore on conflict.
