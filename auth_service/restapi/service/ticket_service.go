@@ -64,7 +64,9 @@ func convertToDtoTicketAuthority(mTicketAuthority *models.TicketAuthority) *dto.
 }
 
 func getTicket(ctx context.Context, exec boil.ContextExecutor, ticketId string) (*models.Ticket, bool, error) {
-	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId), qm.Load(models.TicketRels.TicketAuthorities+"."+models.TicketAuthorityRels.Authority)).One(ctx, exec)
+	ticket, err := models.Tickets(
+		models.TicketWhere.UUID.EQ(ticketId), qm.Or2(models.TicketWhere.TicketName.EQ(ticketId)),
+		qm.Load(models.TicketRels.TicketAuthorities+"."+models.TicketAuthorityRels.Authority)).One(ctx, exec)
 
 	if err != nil && err != sql.ErrNoRows {
 		return nil, false, terr.Wrap(err)

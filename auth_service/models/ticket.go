@@ -1386,6 +1386,7 @@ func (o TicketSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, c
 var mySQLTicketUniqueColumns = []string{
 	"ticket_id",
 	"uuid",
+	"ticket_name",
 }
 
 // Upsert attempts an insert using an executor, and does an update or ignore on conflict.

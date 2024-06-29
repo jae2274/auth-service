@@ -81,6 +81,60 @@ func TestTicketService(t *testing.T) {
 		}
 	})
 
+	t.Run("can get ticket info by ticket name", func(t *testing.T) {
+
+		db := tinit.DB(t)
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+		admin := signUpAdminUser(t, ctx, db)
+
+		ticketName := "ticketName"
+		ticketAuthorities := []*dto.UserAuthorityReq{
+			{AuthorityCode: authorities[0].AuthorityCode},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
+		}
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities)
+		require.NoError(t, err)
+		require.NotEmpty(t, ticketId)
+
+		res, isExisted, err := service.GetTicketInfo(ctx, db, ticketName)
+		require.NoError(t, err)
+		require.True(t, isExisted)
+		require.Equal(t, ticketId, res.TicketId)
+		require.False(t, res.IsUsed)
+		require.Equal(t, ticketName, res.TicketName)
+		require.Len(t, res.TicketAuthorities, len(ticketAuthorities))
+
+		for i, ticketAuthority := range res.TicketAuthorities {
+			require.Equal(t, ticketAuthorities[i].AuthorityCode, ticketAuthority.AuthorityCode)
+			require.Equal(t, authorities[i].AuthorityName, ticketAuthority.AuthorityName) //UserAuthorityReq에서는 존재하지 않는 필드
+			require.Equal(t, authorities[i].Summary, ticketAuthority.Summary)             //UserAuthorityReq에서는 존재하지 않는 필드
+
+			if ticketAuthority.ExpiryDurationMS != nil {
+				require.Equal(t, int64(2*time.Hour/time.Millisecond), *ticketAuthority.ExpiryDurationMS)
+			} else {
+				require.Nil(t, ticketAuthority.ExpiryDurationMS)
+			}
+		}
+	})
+
+	t.Run("return error if create with same ticket name", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+		admin := signUpAdminUser(t, ctx, db)
+
+		ticketName := "ticketName"
+		ticketAuthorities := []*dto.UserAuthorityReq{
+			{AuthorityCode: authorities[0].AuthorityCode},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
+		}
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities)
+		require.NoError(t, err)
+		require.NotEmpty(t, ticketId)
+
+		_, err = createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities)
+		require.Error(t, err)
+	})
+
 	userinfo := &ooauth.UserInfo{
 		AuthorizedBy: domain.GOOGLE,
 		AuthorizedID: "123456",

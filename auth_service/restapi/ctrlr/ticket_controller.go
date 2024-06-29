@@ -26,16 +26,20 @@ func NewTicketController(db *sql.DB, jwtResolver *jwtresolver.JwtResolver) *Tick
 }
 
 func (c *TicketController) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/auth/ticket/{ticketUUID}", c.GetTicketInfo).Methods("GET")
+	router.HandleFunc("/auth/ticket", c.GetTicketInfo).Methods("GET")
 	router.HandleFunc("/auth/ticket/{ticketUUID}", c.UseTicket).Methods("PATCH")
 }
 
 func (c *TicketController) GetTicketInfo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	vars := mux.Vars(r)
-	ticketUUID := vars["ticketUUID"]
 
-	ticket, isExisted, err := service.GetTicketInfo(ctx, c.db, ticketUUID)
+	ticketCode := r.URL.Query().Get("ticket_code")
+	if ticketCode == "" {
+		http.Error(w, "ticket_code is required", http.StatusBadRequest)
+		return
+	}
+
+	ticket, isExisted, err := service.GetTicketInfo(ctx, c.db, ticketCode)
 	if errorHandler(ctx, w, err) {
 		return
 	}
