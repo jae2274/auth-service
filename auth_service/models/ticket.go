@@ -109,18 +109,18 @@ var TicketWhere = struct {
 var TicketRels = struct {
 	CreatedByUser     string
 	TicketAuthorities string
-	TicketSubs        string
+	TicketUseds       string
 }{
 	CreatedByUser:     "CreatedByUser",
 	TicketAuthorities: "TicketAuthorities",
-	TicketSubs:        "TicketSubs",
+	TicketUseds:       "TicketUseds",
 }
 
 // ticketR is where relationships are stored.
 type ticketR struct {
 	CreatedByUser     *User                `boil:"CreatedByUser" json:"CreatedByUser" toml:"CreatedByUser" yaml:"CreatedByUser"`
 	TicketAuthorities TicketAuthoritySlice `boil:"TicketAuthorities" json:"TicketAuthorities" toml:"TicketAuthorities" yaml:"TicketAuthorities"`
-	TicketSubs        TicketSubSlice       `boil:"TicketSubs" json:"TicketSubs" toml:"TicketSubs" yaml:"TicketSubs"`
+	TicketUseds       TicketUsedSlice      `boil:"TicketUseds" json:"TicketUseds" toml:"TicketUseds" yaml:"TicketUseds"`
 }
 
 // NewStruct creates a new relationship struct
@@ -142,11 +142,11 @@ func (r *ticketR) GetTicketAuthorities() TicketAuthoritySlice {
 	return r.TicketAuthorities
 }
 
-func (r *ticketR) GetTicketSubs() TicketSubSlice {
+func (r *ticketR) GetTicketUseds() TicketUsedSlice {
 	if r == nil {
 		return nil
 	}
-	return r.TicketSubs
+	return r.TicketUseds
 }
 
 // ticketL is where Load methods for each relationship are stored.
@@ -490,18 +490,18 @@ func (o *Ticket) TicketAuthorities(mods ...qm.QueryMod) ticketAuthorityQuery {
 	return TicketAuthorities(queryMods...)
 }
 
-// TicketSubs retrieves all the ticket_sub's TicketSubs with an executor.
-func (o *Ticket) TicketSubs(mods ...qm.QueryMod) ticketSubQuery {
+// TicketUseds retrieves all the ticket_used's TicketUseds with an executor.
+func (o *Ticket) TicketUseds(mods ...qm.QueryMod) ticketUsedQuery {
 	var queryMods []qm.QueryMod
 	if len(mods) != 0 {
 		queryMods = append(queryMods, mods...)
 	}
 
 	queryMods = append(queryMods,
-		qm.Where("`ticket_sub`.`ticket_id`=?", o.TicketID),
+		qm.Where("`ticket_used`.`ticket_id`=?", o.TicketID),
 	)
 
-	return TicketSubs(queryMods...)
+	return TicketUseds(queryMods...)
 }
 
 // LoadCreatedByUser allows an eager lookup of values, cached into the
@@ -737,9 +737,9 @@ func (ticketL) LoadTicketAuthorities(ctx context.Context, e boil.ContextExecutor
 	return nil
 }
 
-// LoadTicketSubs allows an eager lookup of values, cached into the
+// LoadTicketUseds allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
-func (ticketL) LoadTicketSubs(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTicket interface{}, mods queries.Applicator) error {
+func (ticketL) LoadTicketUseds(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTicket interface{}, mods queries.Applicator) error {
 	var slice []*Ticket
 	var object *Ticket
 
@@ -792,8 +792,8 @@ func (ticketL) LoadTicketSubs(ctx context.Context, e boil.ContextExecutor, singu
 	}
 
 	query := NewQuery(
-		qm.From(`ticket_sub`),
-		qm.WhereIn(`ticket_sub.ticket_id in ?`, argsSlice...),
+		qm.From(`ticket_used`),
+		qm.WhereIn(`ticket_used.ticket_id in ?`, argsSlice...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -801,22 +801,22 @@ func (ticketL) LoadTicketSubs(ctx context.Context, e boil.ContextExecutor, singu
 
 	results, err := query.QueryContext(ctx, e)
 	if err != nil {
-		return errors.Wrap(err, "failed to eager load ticket_sub")
+		return errors.Wrap(err, "failed to eager load ticket_used")
 	}
 
-	var resultSlice []*TicketSub
+	var resultSlice []*TicketUsed
 	if err = queries.Bind(results, &resultSlice); err != nil {
-		return errors.Wrap(err, "failed to bind eager loaded slice ticket_sub")
+		return errors.Wrap(err, "failed to bind eager loaded slice ticket_used")
 	}
 
 	if err = results.Close(); err != nil {
-		return errors.Wrap(err, "failed to close results in eager load on ticket_sub")
+		return errors.Wrap(err, "failed to close results in eager load on ticket_used")
 	}
 	if err = results.Err(); err != nil {
-		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for ticket_sub")
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for ticket_used")
 	}
 
-	if len(ticketSubAfterSelectHooks) != 0 {
+	if len(ticketUsedAfterSelectHooks) != 0 {
 		for _, obj := range resultSlice {
 			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
 				return err
@@ -824,10 +824,10 @@ func (ticketL) LoadTicketSubs(ctx context.Context, e boil.ContextExecutor, singu
 		}
 	}
 	if singular {
-		object.R.TicketSubs = resultSlice
+		object.R.TicketUseds = resultSlice
 		for _, foreign := range resultSlice {
 			if foreign.R == nil {
-				foreign.R = &ticketSubR{}
+				foreign.R = &ticketUsedR{}
 			}
 			foreign.R.Ticket = object
 		}
@@ -837,9 +837,9 @@ func (ticketL) LoadTicketSubs(ctx context.Context, e boil.ContextExecutor, singu
 	for _, foreign := range resultSlice {
 		for _, local := range slice {
 			if local.TicketID == foreign.TicketID {
-				local.R.TicketSubs = append(local.R.TicketSubs, foreign)
+				local.R.TicketUseds = append(local.R.TicketUseds, foreign)
 				if foreign.R == nil {
-					foreign.R = &ticketSubR{}
+					foreign.R = &ticketUsedR{}
 				}
 				foreign.R.Ticket = local
 				break
@@ -950,11 +950,11 @@ func (o *Ticket) AddTicketAuthorities(ctx context.Context, exec boil.ContextExec
 	return nil
 }
 
-// AddTicketSubs adds the given related objects to the existing relationships
+// AddTicketUseds adds the given related objects to the existing relationships
 // of the ticket, optionally inserting them as new records.
-// Appends related to o.R.TicketSubs.
+// Appends related to o.R.TicketUseds.
 // Sets related.R.Ticket appropriately.
-func (o *Ticket) AddTicketSubs(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*TicketSub) error {
+func (o *Ticket) AddTicketUseds(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*TicketUsed) error {
 	var err error
 	for _, rel := range related {
 		if insert {
@@ -964,9 +964,9 @@ func (o *Ticket) AddTicketSubs(ctx context.Context, exec boil.ContextExecutor, i
 			}
 		} else {
 			updateQuery := fmt.Sprintf(
-				"UPDATE `ticket_sub` SET %s WHERE %s",
+				"UPDATE `ticket_used` SET %s WHERE %s",
 				strmangle.SetParamNames("`", "`", 0, []string{"ticket_id"}),
-				strmangle.WhereClause("`", "`", 0, ticketSubPrimaryKeyColumns),
+				strmangle.WhereClause("`", "`", 0, ticketUsedPrimaryKeyColumns),
 			)
 			values := []interface{}{o.TicketID, rel.TicketID, rel.UsedBy}
 
@@ -985,15 +985,15 @@ func (o *Ticket) AddTicketSubs(ctx context.Context, exec boil.ContextExecutor, i
 
 	if o.R == nil {
 		o.R = &ticketR{
-			TicketSubs: related,
+			TicketUseds: related,
 		}
 	} else {
-		o.R.TicketSubs = append(o.R.TicketSubs, related...)
+		o.R.TicketUseds = append(o.R.TicketUseds, related...)
 	}
 
 	for _, rel := range related {
 		if rel.R == nil {
-			rel.R = &ticketSubR{
+			rel.R = &ticketUsedR{
 				Ticket: o,
 			}
 		} else {

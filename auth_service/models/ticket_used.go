@@ -21,17 +21,17 @@ import (
 	"github.com/volatiletech/strmangle"
 )
 
-// TicketSub is an object representing the database table.
-type TicketSub struct {
+// TicketUsed is an object representing the database table.
+type TicketUsed struct {
 	TicketID int       `boil:"ticket_id" json:"ticket_id" toml:"ticket_id" yaml:"ticket_id"`
 	UsedBy   int       `boil:"used_by" json:"used_by" toml:"used_by" yaml:"used_by"`
 	UsedDate time.Time `boil:"used_date" json:"used_date" toml:"used_date" yaml:"used_date"`
 
-	R *ticketSubR `boil:"-" json:"-" toml:"-" yaml:"-"`
-	L ticketSubL  `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *ticketUsedR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	L ticketUsedL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
-var TicketSubColumns = struct {
+var TicketUsedColumns = struct {
 	TicketID string
 	UsedBy   string
 	UsedDate string
@@ -41,30 +41,30 @@ var TicketSubColumns = struct {
 	UsedDate: "used_date",
 }
 
-var TicketSubTableColumns = struct {
+var TicketUsedTableColumns = struct {
 	TicketID string
 	UsedBy   string
 	UsedDate string
 }{
-	TicketID: "ticket_sub.ticket_id",
-	UsedBy:   "ticket_sub.used_by",
-	UsedDate: "ticket_sub.used_date",
+	TicketID: "ticket_used.ticket_id",
+	UsedBy:   "ticket_used.used_by",
+	UsedDate: "ticket_used.used_date",
 }
 
 // Generated where
 
-var TicketSubWhere = struct {
+var TicketUsedWhere = struct {
 	TicketID whereHelperint
 	UsedBy   whereHelperint
 	UsedDate whereHelpertime_Time
 }{
-	TicketID: whereHelperint{field: "`ticket_sub`.`ticket_id`"},
-	UsedBy:   whereHelperint{field: "`ticket_sub`.`used_by`"},
-	UsedDate: whereHelpertime_Time{field: "`ticket_sub`.`used_date`"},
+	TicketID: whereHelperint{field: "`ticket_used`.`ticket_id`"},
+	UsedBy:   whereHelperint{field: "`ticket_used`.`used_by`"},
+	UsedDate: whereHelpertime_Time{field: "`ticket_used`.`used_date`"},
 }
 
-// TicketSubRels is where relationship names are stored.
-var TicketSubRels = struct {
+// TicketUsedRels is where relationship names are stored.
+var TicketUsedRels = struct {
 	Ticket     string
 	UsedByUser string
 }{
@@ -72,65 +72,65 @@ var TicketSubRels = struct {
 	UsedByUser: "UsedByUser",
 }
 
-// ticketSubR is where relationships are stored.
-type ticketSubR struct {
+// ticketUsedR is where relationships are stored.
+type ticketUsedR struct {
 	Ticket     *Ticket `boil:"Ticket" json:"Ticket" toml:"Ticket" yaml:"Ticket"`
 	UsedByUser *User   `boil:"UsedByUser" json:"UsedByUser" toml:"UsedByUser" yaml:"UsedByUser"`
 }
 
 // NewStruct creates a new relationship struct
-func (*ticketSubR) NewStruct() *ticketSubR {
-	return &ticketSubR{}
+func (*ticketUsedR) NewStruct() *ticketUsedR {
+	return &ticketUsedR{}
 }
 
-func (r *ticketSubR) GetTicket() *Ticket {
+func (r *ticketUsedR) GetTicket() *Ticket {
 	if r == nil {
 		return nil
 	}
 	return r.Ticket
 }
 
-func (r *ticketSubR) GetUsedByUser() *User {
+func (r *ticketUsedR) GetUsedByUser() *User {
 	if r == nil {
 		return nil
 	}
 	return r.UsedByUser
 }
 
-// ticketSubL is where Load methods for each relationship are stored.
-type ticketSubL struct{}
+// ticketUsedL is where Load methods for each relationship are stored.
+type ticketUsedL struct{}
 
 var (
-	ticketSubAllColumns            = []string{"ticket_id", "used_by", "used_date"}
-	ticketSubColumnsWithoutDefault = []string{"ticket_id", "used_by"}
-	ticketSubColumnsWithDefault    = []string{"used_date"}
-	ticketSubPrimaryKeyColumns     = []string{"ticket_id", "used_by"}
-	ticketSubGeneratedColumns      = []string{}
+	ticketUsedAllColumns            = []string{"ticket_id", "used_by", "used_date"}
+	ticketUsedColumnsWithoutDefault = []string{"ticket_id", "used_by"}
+	ticketUsedColumnsWithDefault    = []string{"used_date"}
+	ticketUsedPrimaryKeyColumns     = []string{"ticket_id", "used_by"}
+	ticketUsedGeneratedColumns      = []string{}
 )
 
 type (
-	// TicketSubSlice is an alias for a slice of pointers to TicketSub.
-	// This should almost always be used instead of []TicketSub.
-	TicketSubSlice []*TicketSub
-	// TicketSubHook is the signature for custom TicketSub hook methods
-	TicketSubHook func(context.Context, boil.ContextExecutor, *TicketSub) error
+	// TicketUsedSlice is an alias for a slice of pointers to TicketUsed.
+	// This should almost always be used instead of []TicketUsed.
+	TicketUsedSlice []*TicketUsed
+	// TicketUsedHook is the signature for custom TicketUsed hook methods
+	TicketUsedHook func(context.Context, boil.ContextExecutor, *TicketUsed) error
 
-	ticketSubQuery struct {
+	ticketUsedQuery struct {
 		*queries.Query
 	}
 )
 
 // Cache for insert, update and upsert
 var (
-	ticketSubType                 = reflect.TypeOf(&TicketSub{})
-	ticketSubMapping              = queries.MakeStructMapping(ticketSubType)
-	ticketSubPrimaryKeyMapping, _ = queries.BindMapping(ticketSubType, ticketSubMapping, ticketSubPrimaryKeyColumns)
-	ticketSubInsertCacheMut       sync.RWMutex
-	ticketSubInsertCache          = make(map[string]insertCache)
-	ticketSubUpdateCacheMut       sync.RWMutex
-	ticketSubUpdateCache          = make(map[string]updateCache)
-	ticketSubUpsertCacheMut       sync.RWMutex
-	ticketSubUpsertCache          = make(map[string]insertCache)
+	ticketUsedType                 = reflect.TypeOf(&TicketUsed{})
+	ticketUsedMapping              = queries.MakeStructMapping(ticketUsedType)
+	ticketUsedPrimaryKeyMapping, _ = queries.BindMapping(ticketUsedType, ticketUsedMapping, ticketUsedPrimaryKeyColumns)
+	ticketUsedInsertCacheMut       sync.RWMutex
+	ticketUsedInsertCache          = make(map[string]insertCache)
+	ticketUsedUpdateCacheMut       sync.RWMutex
+	ticketUsedUpdateCache          = make(map[string]updateCache)
+	ticketUsedUpsertCacheMut       sync.RWMutex
+	ticketUsedUpsertCache          = make(map[string]insertCache)
 )
 
 var (
@@ -141,36 +141,36 @@ var (
 	_ = qmhelper.Where
 )
 
-var ticketSubAfterSelectMu sync.Mutex
-var ticketSubAfterSelectHooks []TicketSubHook
+var ticketUsedAfterSelectMu sync.Mutex
+var ticketUsedAfterSelectHooks []TicketUsedHook
 
-var ticketSubBeforeInsertMu sync.Mutex
-var ticketSubBeforeInsertHooks []TicketSubHook
-var ticketSubAfterInsertMu sync.Mutex
-var ticketSubAfterInsertHooks []TicketSubHook
+var ticketUsedBeforeInsertMu sync.Mutex
+var ticketUsedBeforeInsertHooks []TicketUsedHook
+var ticketUsedAfterInsertMu sync.Mutex
+var ticketUsedAfterInsertHooks []TicketUsedHook
 
-var ticketSubBeforeUpdateMu sync.Mutex
-var ticketSubBeforeUpdateHooks []TicketSubHook
-var ticketSubAfterUpdateMu sync.Mutex
-var ticketSubAfterUpdateHooks []TicketSubHook
+var ticketUsedBeforeUpdateMu sync.Mutex
+var ticketUsedBeforeUpdateHooks []TicketUsedHook
+var ticketUsedAfterUpdateMu sync.Mutex
+var ticketUsedAfterUpdateHooks []TicketUsedHook
 
-var ticketSubBeforeDeleteMu sync.Mutex
-var ticketSubBeforeDeleteHooks []TicketSubHook
-var ticketSubAfterDeleteMu sync.Mutex
-var ticketSubAfterDeleteHooks []TicketSubHook
+var ticketUsedBeforeDeleteMu sync.Mutex
+var ticketUsedBeforeDeleteHooks []TicketUsedHook
+var ticketUsedAfterDeleteMu sync.Mutex
+var ticketUsedAfterDeleteHooks []TicketUsedHook
 
-var ticketSubBeforeUpsertMu sync.Mutex
-var ticketSubBeforeUpsertHooks []TicketSubHook
-var ticketSubAfterUpsertMu sync.Mutex
-var ticketSubAfterUpsertHooks []TicketSubHook
+var ticketUsedBeforeUpsertMu sync.Mutex
+var ticketUsedBeforeUpsertHooks []TicketUsedHook
+var ticketUsedAfterUpsertMu sync.Mutex
+var ticketUsedAfterUpsertHooks []TicketUsedHook
 
 // doAfterSelectHooks executes all "after Select" hooks.
-func (o *TicketSub) doAfterSelectHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *TicketUsed) doAfterSelectHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range ticketSubAfterSelectHooks {
+	for _, hook := range ticketUsedAfterSelectHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -180,12 +180,12 @@ func (o *TicketSub) doAfterSelectHooks(ctx context.Context, exec boil.ContextExe
 }
 
 // doBeforeInsertHooks executes all "before insert" hooks.
-func (o *TicketSub) doBeforeInsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *TicketUsed) doBeforeInsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range ticketSubBeforeInsertHooks {
+	for _, hook := range ticketUsedBeforeInsertHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -195,12 +195,12 @@ func (o *TicketSub) doBeforeInsertHooks(ctx context.Context, exec boil.ContextEx
 }
 
 // doAfterInsertHooks executes all "after Insert" hooks.
-func (o *TicketSub) doAfterInsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *TicketUsed) doAfterInsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range ticketSubAfterInsertHooks {
+	for _, hook := range ticketUsedAfterInsertHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -210,12 +210,12 @@ func (o *TicketSub) doAfterInsertHooks(ctx context.Context, exec boil.ContextExe
 }
 
 // doBeforeUpdateHooks executes all "before Update" hooks.
-func (o *TicketSub) doBeforeUpdateHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *TicketUsed) doBeforeUpdateHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range ticketSubBeforeUpdateHooks {
+	for _, hook := range ticketUsedBeforeUpdateHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -225,12 +225,12 @@ func (o *TicketSub) doBeforeUpdateHooks(ctx context.Context, exec boil.ContextEx
 }
 
 // doAfterUpdateHooks executes all "after Update" hooks.
-func (o *TicketSub) doAfterUpdateHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *TicketUsed) doAfterUpdateHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range ticketSubAfterUpdateHooks {
+	for _, hook := range ticketUsedAfterUpdateHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -240,12 +240,12 @@ func (o *TicketSub) doAfterUpdateHooks(ctx context.Context, exec boil.ContextExe
 }
 
 // doBeforeDeleteHooks executes all "before Delete" hooks.
-func (o *TicketSub) doBeforeDeleteHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *TicketUsed) doBeforeDeleteHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range ticketSubBeforeDeleteHooks {
+	for _, hook := range ticketUsedBeforeDeleteHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -255,12 +255,12 @@ func (o *TicketSub) doBeforeDeleteHooks(ctx context.Context, exec boil.ContextEx
 }
 
 // doAfterDeleteHooks executes all "after Delete" hooks.
-func (o *TicketSub) doAfterDeleteHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *TicketUsed) doAfterDeleteHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range ticketSubAfterDeleteHooks {
+	for _, hook := range ticketUsedAfterDeleteHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -270,12 +270,12 @@ func (o *TicketSub) doAfterDeleteHooks(ctx context.Context, exec boil.ContextExe
 }
 
 // doBeforeUpsertHooks executes all "before Upsert" hooks.
-func (o *TicketSub) doBeforeUpsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *TicketUsed) doBeforeUpsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range ticketSubBeforeUpsertHooks {
+	for _, hook := range ticketUsedBeforeUpsertHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -285,12 +285,12 @@ func (o *TicketSub) doBeforeUpsertHooks(ctx context.Context, exec boil.ContextEx
 }
 
 // doAfterUpsertHooks executes all "after Upsert" hooks.
-func (o *TicketSub) doAfterUpsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
+func (o *TicketUsed) doAfterUpsertHooks(ctx context.Context, exec boil.ContextExecutor) (err error) {
 	if boil.HooksAreSkipped(ctx) {
 		return nil
 	}
 
-	for _, hook := range ticketSubAfterUpsertHooks {
+	for _, hook := range ticketUsedAfterUpsertHooks {
 		if err := hook(ctx, exec, o); err != nil {
 			return err
 		}
@@ -299,51 +299,51 @@ func (o *TicketSub) doAfterUpsertHooks(ctx context.Context, exec boil.ContextExe
 	return nil
 }
 
-// AddTicketSubHook registers your hook function for all future operations.
-func AddTicketSubHook(hookPoint boil.HookPoint, ticketSubHook TicketSubHook) {
+// AddTicketUsedHook registers your hook function for all future operations.
+func AddTicketUsedHook(hookPoint boil.HookPoint, ticketUsedHook TicketUsedHook) {
 	switch hookPoint {
 	case boil.AfterSelectHook:
-		ticketSubAfterSelectMu.Lock()
-		ticketSubAfterSelectHooks = append(ticketSubAfterSelectHooks, ticketSubHook)
-		ticketSubAfterSelectMu.Unlock()
+		ticketUsedAfterSelectMu.Lock()
+		ticketUsedAfterSelectHooks = append(ticketUsedAfterSelectHooks, ticketUsedHook)
+		ticketUsedAfterSelectMu.Unlock()
 	case boil.BeforeInsertHook:
-		ticketSubBeforeInsertMu.Lock()
-		ticketSubBeforeInsertHooks = append(ticketSubBeforeInsertHooks, ticketSubHook)
-		ticketSubBeforeInsertMu.Unlock()
+		ticketUsedBeforeInsertMu.Lock()
+		ticketUsedBeforeInsertHooks = append(ticketUsedBeforeInsertHooks, ticketUsedHook)
+		ticketUsedBeforeInsertMu.Unlock()
 	case boil.AfterInsertHook:
-		ticketSubAfterInsertMu.Lock()
-		ticketSubAfterInsertHooks = append(ticketSubAfterInsertHooks, ticketSubHook)
-		ticketSubAfterInsertMu.Unlock()
+		ticketUsedAfterInsertMu.Lock()
+		ticketUsedAfterInsertHooks = append(ticketUsedAfterInsertHooks, ticketUsedHook)
+		ticketUsedAfterInsertMu.Unlock()
 	case boil.BeforeUpdateHook:
-		ticketSubBeforeUpdateMu.Lock()
-		ticketSubBeforeUpdateHooks = append(ticketSubBeforeUpdateHooks, ticketSubHook)
-		ticketSubBeforeUpdateMu.Unlock()
+		ticketUsedBeforeUpdateMu.Lock()
+		ticketUsedBeforeUpdateHooks = append(ticketUsedBeforeUpdateHooks, ticketUsedHook)
+		ticketUsedBeforeUpdateMu.Unlock()
 	case boil.AfterUpdateHook:
-		ticketSubAfterUpdateMu.Lock()
-		ticketSubAfterUpdateHooks = append(ticketSubAfterUpdateHooks, ticketSubHook)
-		ticketSubAfterUpdateMu.Unlock()
+		ticketUsedAfterUpdateMu.Lock()
+		ticketUsedAfterUpdateHooks = append(ticketUsedAfterUpdateHooks, ticketUsedHook)
+		ticketUsedAfterUpdateMu.Unlock()
 	case boil.BeforeDeleteHook:
-		ticketSubBeforeDeleteMu.Lock()
-		ticketSubBeforeDeleteHooks = append(ticketSubBeforeDeleteHooks, ticketSubHook)
-		ticketSubBeforeDeleteMu.Unlock()
+		ticketUsedBeforeDeleteMu.Lock()
+		ticketUsedBeforeDeleteHooks = append(ticketUsedBeforeDeleteHooks, ticketUsedHook)
+		ticketUsedBeforeDeleteMu.Unlock()
 	case boil.AfterDeleteHook:
-		ticketSubAfterDeleteMu.Lock()
-		ticketSubAfterDeleteHooks = append(ticketSubAfterDeleteHooks, ticketSubHook)
-		ticketSubAfterDeleteMu.Unlock()
+		ticketUsedAfterDeleteMu.Lock()
+		ticketUsedAfterDeleteHooks = append(ticketUsedAfterDeleteHooks, ticketUsedHook)
+		ticketUsedAfterDeleteMu.Unlock()
 	case boil.BeforeUpsertHook:
-		ticketSubBeforeUpsertMu.Lock()
-		ticketSubBeforeUpsertHooks = append(ticketSubBeforeUpsertHooks, ticketSubHook)
-		ticketSubBeforeUpsertMu.Unlock()
+		ticketUsedBeforeUpsertMu.Lock()
+		ticketUsedBeforeUpsertHooks = append(ticketUsedBeforeUpsertHooks, ticketUsedHook)
+		ticketUsedBeforeUpsertMu.Unlock()
 	case boil.AfterUpsertHook:
-		ticketSubAfterUpsertMu.Lock()
-		ticketSubAfterUpsertHooks = append(ticketSubAfterUpsertHooks, ticketSubHook)
-		ticketSubAfterUpsertMu.Unlock()
+		ticketUsedAfterUpsertMu.Lock()
+		ticketUsedAfterUpsertHooks = append(ticketUsedAfterUpsertHooks, ticketUsedHook)
+		ticketUsedAfterUpsertMu.Unlock()
 	}
 }
 
-// One returns a single ticketSub record from the query.
-func (q ticketSubQuery) One(ctx context.Context, exec boil.ContextExecutor) (*TicketSub, error) {
-	o := &TicketSub{}
+// One returns a single ticketUsed record from the query.
+func (q ticketUsedQuery) One(ctx context.Context, exec boil.ContextExecutor) (*TicketUsed, error) {
+	o := &TicketUsed{}
 
 	queries.SetLimit(q.Query, 1)
 
@@ -352,7 +352,7 @@ func (q ticketSubQuery) One(ctx context.Context, exec boil.ContextExecutor) (*Ti
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, sql.ErrNoRows
 		}
-		return nil, errors.Wrap(err, "models: failed to execute a one query for ticket_sub")
+		return nil, errors.Wrap(err, "models: failed to execute a one query for ticket_used")
 	}
 
 	if err := o.doAfterSelectHooks(ctx, exec); err != nil {
@@ -362,16 +362,16 @@ func (q ticketSubQuery) One(ctx context.Context, exec boil.ContextExecutor) (*Ti
 	return o, nil
 }
 
-// All returns all TicketSub records from the query.
-func (q ticketSubQuery) All(ctx context.Context, exec boil.ContextExecutor) (TicketSubSlice, error) {
-	var o []*TicketSub
+// All returns all TicketUsed records from the query.
+func (q ticketUsedQuery) All(ctx context.Context, exec boil.ContextExecutor) (TicketUsedSlice, error) {
+	var o []*TicketUsed
 
 	err := q.Bind(ctx, exec, &o)
 	if err != nil {
-		return nil, errors.Wrap(err, "models: failed to assign all query results to TicketSub slice")
+		return nil, errors.Wrap(err, "models: failed to assign all query results to TicketUsed slice")
 	}
 
-	if len(ticketSubAfterSelectHooks) != 0 {
+	if len(ticketUsedAfterSelectHooks) != 0 {
 		for _, obj := range o {
 			if err := obj.doAfterSelectHooks(ctx, exec); err != nil {
 				return o, err
@@ -382,8 +382,8 @@ func (q ticketSubQuery) All(ctx context.Context, exec boil.ContextExecutor) (Tic
 	return o, nil
 }
 
-// Count returns the count of all TicketSub records in the query.
-func (q ticketSubQuery) Count(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
+// Count returns the count of all TicketUsed records in the query.
+func (q ticketUsedQuery) Count(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
 	var count int64
 
 	queries.SetSelect(q.Query, nil)
@@ -391,14 +391,14 @@ func (q ticketSubQuery) Count(ctx context.Context, exec boil.ContextExecutor) (i
 
 	err := q.Query.QueryRowContext(ctx, exec).Scan(&count)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: failed to count ticket_sub rows")
+		return 0, errors.Wrap(err, "models: failed to count ticket_used rows")
 	}
 
 	return count, nil
 }
 
 // Exists checks if the row exists in the table.
-func (q ticketSubQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, error) {
+func (q ticketUsedQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, error) {
 	var count int64
 
 	queries.SetSelect(q.Query, nil)
@@ -407,14 +407,14 @@ func (q ticketSubQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (
 
 	err := q.Query.QueryRowContext(ctx, exec).Scan(&count)
 	if err != nil {
-		return false, errors.Wrap(err, "models: failed to check if ticket_sub exists")
+		return false, errors.Wrap(err, "models: failed to check if ticket_used exists")
 	}
 
 	return count > 0, nil
 }
 
 // Ticket pointed to by the foreign key.
-func (o *TicketSub) Ticket(mods ...qm.QueryMod) ticketQuery {
+func (o *TicketUsed) Ticket(mods ...qm.QueryMod) ticketQuery {
 	queryMods := []qm.QueryMod{
 		qm.Where("`ticket_id` = ?", o.TicketID),
 	}
@@ -425,7 +425,7 @@ func (o *TicketSub) Ticket(mods ...qm.QueryMod) ticketQuery {
 }
 
 // UsedByUser pointed to by the foreign key.
-func (o *TicketSub) UsedByUser(mods ...qm.QueryMod) userQuery {
+func (o *TicketUsed) UsedByUser(mods ...qm.QueryMod) userQuery {
 	queryMods := []qm.QueryMod{
 		qm.Where("`user_id` = ?", o.UsedBy),
 	}
@@ -437,28 +437,28 @@ func (o *TicketSub) UsedByUser(mods ...qm.QueryMod) userQuery {
 
 // LoadTicket allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
-func (ticketSubL) LoadTicket(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTicketSub interface{}, mods queries.Applicator) error {
-	var slice []*TicketSub
-	var object *TicketSub
+func (ticketUsedL) LoadTicket(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTicketUsed interface{}, mods queries.Applicator) error {
+	var slice []*TicketUsed
+	var object *TicketUsed
 
 	if singular {
 		var ok bool
-		object, ok = maybeTicketSub.(*TicketSub)
+		object, ok = maybeTicketUsed.(*TicketUsed)
 		if !ok {
-			object = new(TicketSub)
-			ok = queries.SetFromEmbeddedStruct(&object, &maybeTicketSub)
+			object = new(TicketUsed)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeTicketUsed)
 			if !ok {
-				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeTicketSub))
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeTicketUsed))
 			}
 		}
 	} else {
-		s, ok := maybeTicketSub.(*[]*TicketSub)
+		s, ok := maybeTicketUsed.(*[]*TicketUsed)
 		if ok {
 			slice = *s
 		} else {
-			ok = queries.SetFromEmbeddedStruct(&slice, maybeTicketSub)
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeTicketUsed)
 			if !ok {
-				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeTicketSub))
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeTicketUsed))
 			}
 		}
 	}
@@ -466,14 +466,14 @@ func (ticketSubL) LoadTicket(ctx context.Context, e boil.ContextExecutor, singul
 	args := make(map[interface{}]struct{})
 	if singular {
 		if object.R == nil {
-			object.R = &ticketSubR{}
+			object.R = &ticketUsedR{}
 		}
 		args[object.TicketID] = struct{}{}
 
 	} else {
 		for _, obj := range slice {
 			if obj.R == nil {
-				obj.R = &ticketSubR{}
+				obj.R = &ticketUsedR{}
 			}
 
 			args[obj.TicketID] = struct{}{}
@@ -535,7 +535,7 @@ func (ticketSubL) LoadTicket(ctx context.Context, e boil.ContextExecutor, singul
 		if foreign.R == nil {
 			foreign.R = &ticketR{}
 		}
-		foreign.R.TicketSubs = append(foreign.R.TicketSubs, object)
+		foreign.R.TicketUseds = append(foreign.R.TicketUseds, object)
 		return nil
 	}
 
@@ -546,7 +546,7 @@ func (ticketSubL) LoadTicket(ctx context.Context, e boil.ContextExecutor, singul
 				if foreign.R == nil {
 					foreign.R = &ticketR{}
 				}
-				foreign.R.TicketSubs = append(foreign.R.TicketSubs, local)
+				foreign.R.TicketUseds = append(foreign.R.TicketUseds, local)
 				break
 			}
 		}
@@ -557,28 +557,28 @@ func (ticketSubL) LoadTicket(ctx context.Context, e boil.ContextExecutor, singul
 
 // LoadUsedByUser allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
-func (ticketSubL) LoadUsedByUser(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTicketSub interface{}, mods queries.Applicator) error {
-	var slice []*TicketSub
-	var object *TicketSub
+func (ticketUsedL) LoadUsedByUser(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTicketUsed interface{}, mods queries.Applicator) error {
+	var slice []*TicketUsed
+	var object *TicketUsed
 
 	if singular {
 		var ok bool
-		object, ok = maybeTicketSub.(*TicketSub)
+		object, ok = maybeTicketUsed.(*TicketUsed)
 		if !ok {
-			object = new(TicketSub)
-			ok = queries.SetFromEmbeddedStruct(&object, &maybeTicketSub)
+			object = new(TicketUsed)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeTicketUsed)
 			if !ok {
-				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeTicketSub))
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeTicketUsed))
 			}
 		}
 	} else {
-		s, ok := maybeTicketSub.(*[]*TicketSub)
+		s, ok := maybeTicketUsed.(*[]*TicketUsed)
 		if ok {
 			slice = *s
 		} else {
-			ok = queries.SetFromEmbeddedStruct(&slice, maybeTicketSub)
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeTicketUsed)
 			if !ok {
-				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeTicketSub))
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeTicketUsed))
 			}
 		}
 	}
@@ -586,14 +586,14 @@ func (ticketSubL) LoadUsedByUser(ctx context.Context, e boil.ContextExecutor, si
 	args := make(map[interface{}]struct{})
 	if singular {
 		if object.R == nil {
-			object.R = &ticketSubR{}
+			object.R = &ticketUsedR{}
 		}
 		args[object.UsedBy] = struct{}{}
 
 	} else {
 		for _, obj := range slice {
 			if obj.R == nil {
-				obj.R = &ticketSubR{}
+				obj.R = &ticketUsedR{}
 			}
 
 			args[obj.UsedBy] = struct{}{}
@@ -655,7 +655,7 @@ func (ticketSubL) LoadUsedByUser(ctx context.Context, e boil.ContextExecutor, si
 		if foreign.R == nil {
 			foreign.R = &userR{}
 		}
-		foreign.R.UsedByTicketSubs = append(foreign.R.UsedByTicketSubs, object)
+		foreign.R.UsedByTicketUseds = append(foreign.R.UsedByTicketUseds, object)
 		return nil
 	}
 
@@ -666,7 +666,7 @@ func (ticketSubL) LoadUsedByUser(ctx context.Context, e boil.ContextExecutor, si
 				if foreign.R == nil {
 					foreign.R = &userR{}
 				}
-				foreign.R.UsedByTicketSubs = append(foreign.R.UsedByTicketSubs, local)
+				foreign.R.UsedByTicketUseds = append(foreign.R.UsedByTicketUseds, local)
 				break
 			}
 		}
@@ -675,10 +675,10 @@ func (ticketSubL) LoadUsedByUser(ctx context.Context, e boil.ContextExecutor, si
 	return nil
 }
 
-// SetTicket of the ticketSub to the related item.
+// SetTicket of the ticketUsed to the related item.
 // Sets o.R.Ticket to related.
-// Adds o to related.R.TicketSubs.
-func (o *TicketSub) SetTicket(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Ticket) error {
+// Adds o to related.R.TicketUseds.
+func (o *TicketUsed) SetTicket(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Ticket) error {
 	var err error
 	if insert {
 		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
@@ -687,9 +687,9 @@ func (o *TicketSub) SetTicket(ctx context.Context, exec boil.ContextExecutor, in
 	}
 
 	updateQuery := fmt.Sprintf(
-		"UPDATE `ticket_sub` SET %s WHERE %s",
+		"UPDATE `ticket_used` SET %s WHERE %s",
 		strmangle.SetParamNames("`", "`", 0, []string{"ticket_id"}),
-		strmangle.WhereClause("`", "`", 0, ticketSubPrimaryKeyColumns),
+		strmangle.WhereClause("`", "`", 0, ticketUsedPrimaryKeyColumns),
 	)
 	values := []interface{}{related.TicketID, o.TicketID, o.UsedBy}
 
@@ -704,7 +704,7 @@ func (o *TicketSub) SetTicket(ctx context.Context, exec boil.ContextExecutor, in
 
 	o.TicketID = related.TicketID
 	if o.R == nil {
-		o.R = &ticketSubR{
+		o.R = &ticketUsedR{
 			Ticket: related,
 		}
 	} else {
@@ -713,19 +713,19 @@ func (o *TicketSub) SetTicket(ctx context.Context, exec boil.ContextExecutor, in
 
 	if related.R == nil {
 		related.R = &ticketR{
-			TicketSubs: TicketSubSlice{o},
+			TicketUseds: TicketUsedSlice{o},
 		}
 	} else {
-		related.R.TicketSubs = append(related.R.TicketSubs, o)
+		related.R.TicketUseds = append(related.R.TicketUseds, o)
 	}
 
 	return nil
 }
 
-// SetUsedByUser of the ticketSub to the related item.
+// SetUsedByUser of the ticketUsed to the related item.
 // Sets o.R.UsedByUser to related.
-// Adds o to related.R.UsedByTicketSubs.
-func (o *TicketSub) SetUsedByUser(ctx context.Context, exec boil.ContextExecutor, insert bool, related *User) error {
+// Adds o to related.R.UsedByTicketUseds.
+func (o *TicketUsed) SetUsedByUser(ctx context.Context, exec boil.ContextExecutor, insert bool, related *User) error {
 	var err error
 	if insert {
 		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
@@ -734,9 +734,9 @@ func (o *TicketSub) SetUsedByUser(ctx context.Context, exec boil.ContextExecutor
 	}
 
 	updateQuery := fmt.Sprintf(
-		"UPDATE `ticket_sub` SET %s WHERE %s",
+		"UPDATE `ticket_used` SET %s WHERE %s",
 		strmangle.SetParamNames("`", "`", 0, []string{"used_by"}),
-		strmangle.WhereClause("`", "`", 0, ticketSubPrimaryKeyColumns),
+		strmangle.WhereClause("`", "`", 0, ticketUsedPrimaryKeyColumns),
 	)
 	values := []interface{}{related.UserID, o.TicketID, o.UsedBy}
 
@@ -751,7 +751,7 @@ func (o *TicketSub) SetUsedByUser(ctx context.Context, exec boil.ContextExecutor
 
 	o.UsedBy = related.UserID
 	if o.R == nil {
-		o.R = &ticketSubR{
+		o.R = &ticketUsedR{
 			UsedByUser: related,
 		}
 	} else {
@@ -760,61 +760,61 @@ func (o *TicketSub) SetUsedByUser(ctx context.Context, exec boil.ContextExecutor
 
 	if related.R == nil {
 		related.R = &userR{
-			UsedByTicketSubs: TicketSubSlice{o},
+			UsedByTicketUseds: TicketUsedSlice{o},
 		}
 	} else {
-		related.R.UsedByTicketSubs = append(related.R.UsedByTicketSubs, o)
+		related.R.UsedByTicketUseds = append(related.R.UsedByTicketUseds, o)
 	}
 
 	return nil
 }
 
-// TicketSubs retrieves all the records using an executor.
-func TicketSubs(mods ...qm.QueryMod) ticketSubQuery {
-	mods = append(mods, qm.From("`ticket_sub`"))
+// TicketUseds retrieves all the records using an executor.
+func TicketUseds(mods ...qm.QueryMod) ticketUsedQuery {
+	mods = append(mods, qm.From("`ticket_used`"))
 	q := NewQuery(mods...)
 	if len(queries.GetSelect(q)) == 0 {
-		queries.SetSelect(q, []string{"`ticket_sub`.*"})
+		queries.SetSelect(q, []string{"`ticket_used`.*"})
 	}
 
-	return ticketSubQuery{q}
+	return ticketUsedQuery{q}
 }
 
-// FindTicketSub retrieves a single record by ID with an executor.
+// FindTicketUsed retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindTicketSub(ctx context.Context, exec boil.ContextExecutor, ticketID int, usedBy int, selectCols ...string) (*TicketSub, error) {
-	ticketSubObj := &TicketSub{}
+func FindTicketUsed(ctx context.Context, exec boil.ContextExecutor, ticketID int, usedBy int, selectCols ...string) (*TicketUsed, error) {
+	ticketUsedObj := &TicketUsed{}
 
 	sel := "*"
 	if len(selectCols) > 0 {
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from `ticket_sub` where `ticket_id`=? AND `used_by`=?", sel,
+		"select %s from `ticket_used` where `ticket_id`=? AND `used_by`=?", sel,
 	)
 
 	q := queries.Raw(query, ticketID, usedBy)
 
-	err := q.Bind(ctx, exec, ticketSubObj)
+	err := q.Bind(ctx, exec, ticketUsedObj)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, sql.ErrNoRows
 		}
-		return nil, errors.Wrap(err, "models: unable to select from ticket_sub")
+		return nil, errors.Wrap(err, "models: unable to select from ticket_used")
 	}
 
-	if err = ticketSubObj.doAfterSelectHooks(ctx, exec); err != nil {
-		return ticketSubObj, err
+	if err = ticketUsedObj.doAfterSelectHooks(ctx, exec); err != nil {
+		return ticketUsedObj, err
 	}
 
-	return ticketSubObj, nil
+	return ticketUsedObj, nil
 }
 
 // Insert a single record using an executor.
 // See boil.Columns.InsertColumnSet documentation to understand column list inference for inserts.
-func (o *TicketSub) Insert(ctx context.Context, exec boil.ContextExecutor, columns boil.Columns) error {
+func (o *TicketUsed) Insert(ctx context.Context, exec boil.ContextExecutor, columns boil.Columns) error {
 	if o == nil {
-		return errors.New("models: no ticket_sub provided for insertion")
+		return errors.New("models: no ticket_used provided for insertion")
 	}
 
 	var err error
@@ -823,39 +823,39 @@ func (o *TicketSub) Insert(ctx context.Context, exec boil.ContextExecutor, colum
 		return err
 	}
 
-	nzDefaults := queries.NonZeroDefaultSet(ticketSubColumnsWithDefault, o)
+	nzDefaults := queries.NonZeroDefaultSet(ticketUsedColumnsWithDefault, o)
 
 	key := makeCacheKey(columns, nzDefaults)
-	ticketSubInsertCacheMut.RLock()
-	cache, cached := ticketSubInsertCache[key]
-	ticketSubInsertCacheMut.RUnlock()
+	ticketUsedInsertCacheMut.RLock()
+	cache, cached := ticketUsedInsertCache[key]
+	ticketUsedInsertCacheMut.RUnlock()
 
 	if !cached {
 		wl, returnColumns := columns.InsertColumnSet(
-			ticketSubAllColumns,
-			ticketSubColumnsWithDefault,
-			ticketSubColumnsWithoutDefault,
+			ticketUsedAllColumns,
+			ticketUsedColumnsWithDefault,
+			ticketUsedColumnsWithoutDefault,
 			nzDefaults,
 		)
 
-		cache.valueMapping, err = queries.BindMapping(ticketSubType, ticketSubMapping, wl)
+		cache.valueMapping, err = queries.BindMapping(ticketUsedType, ticketUsedMapping, wl)
 		if err != nil {
 			return err
 		}
-		cache.retMapping, err = queries.BindMapping(ticketSubType, ticketSubMapping, returnColumns)
+		cache.retMapping, err = queries.BindMapping(ticketUsedType, ticketUsedMapping, returnColumns)
 		if err != nil {
 			return err
 		}
 		if len(wl) != 0 {
-			cache.query = fmt.Sprintf("INSERT INTO `ticket_sub` (`%s`) %%sVALUES (%s)%%s", strings.Join(wl, "`,`"), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
+			cache.query = fmt.Sprintf("INSERT INTO `ticket_used` (`%s`) %%sVALUES (%s)%%s", strings.Join(wl, "`,`"), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
 		} else {
-			cache.query = "INSERT INTO `ticket_sub` () VALUES ()%s%s"
+			cache.query = "INSERT INTO `ticket_used` () VALUES ()%s%s"
 		}
 
 		var queryOutput, queryReturning string
 
 		if len(cache.retMapping) != 0 {
-			cache.retQuery = fmt.Sprintf("SELECT `%s` FROM `ticket_sub` WHERE %s", strings.Join(returnColumns, "`,`"), strmangle.WhereClause("`", "`", 0, ticketSubPrimaryKeyColumns))
+			cache.retQuery = fmt.Sprintf("SELECT `%s` FROM `ticket_used` WHERE %s", strings.Join(returnColumns, "`,`"), strmangle.WhereClause("`", "`", 0, ticketUsedPrimaryKeyColumns))
 		}
 
 		cache.query = fmt.Sprintf(cache.query, queryOutput, queryReturning)
@@ -872,7 +872,7 @@ func (o *TicketSub) Insert(ctx context.Context, exec boil.ContextExecutor, colum
 	_, err = exec.ExecContext(ctx, cache.query, vals...)
 
 	if err != nil {
-		return errors.Wrap(err, "models: unable to insert into ticket_sub")
+		return errors.Wrap(err, "models: unable to insert into ticket_used")
 	}
 
 	var identifierCols []interface{}
@@ -893,50 +893,50 @@ func (o *TicketSub) Insert(ctx context.Context, exec boil.ContextExecutor, colum
 	}
 	err = exec.QueryRowContext(ctx, cache.retQuery, identifierCols...).Scan(queries.PtrsFromMapping(value, cache.retMapping)...)
 	if err != nil {
-		return errors.Wrap(err, "models: unable to populate default values for ticket_sub")
+		return errors.Wrap(err, "models: unable to populate default values for ticket_used")
 	}
 
 CacheNoHooks:
 	if !cached {
-		ticketSubInsertCacheMut.Lock()
-		ticketSubInsertCache[key] = cache
-		ticketSubInsertCacheMut.Unlock()
+		ticketUsedInsertCacheMut.Lock()
+		ticketUsedInsertCache[key] = cache
+		ticketUsedInsertCacheMut.Unlock()
 	}
 
 	return o.doAfterInsertHooks(ctx, exec)
 }
 
-// Update uses an executor to update the TicketSub.
+// Update uses an executor to update the TicketUsed.
 // See boil.Columns.UpdateColumnSet documentation to understand column list inference for updates.
 // Update does not automatically update the record in case of default values. Use .Reload() to refresh the records.
-func (o *TicketSub) Update(ctx context.Context, exec boil.ContextExecutor, columns boil.Columns) (int64, error) {
+func (o *TicketUsed) Update(ctx context.Context, exec boil.ContextExecutor, columns boil.Columns) (int64, error) {
 	var err error
 	if err = o.doBeforeUpdateHooks(ctx, exec); err != nil {
 		return 0, err
 	}
 	key := makeCacheKey(columns, nil)
-	ticketSubUpdateCacheMut.RLock()
-	cache, cached := ticketSubUpdateCache[key]
-	ticketSubUpdateCacheMut.RUnlock()
+	ticketUsedUpdateCacheMut.RLock()
+	cache, cached := ticketUsedUpdateCache[key]
+	ticketUsedUpdateCacheMut.RUnlock()
 
 	if !cached {
 		wl := columns.UpdateColumnSet(
-			ticketSubAllColumns,
-			ticketSubPrimaryKeyColumns,
+			ticketUsedAllColumns,
+			ticketUsedPrimaryKeyColumns,
 		)
 
 		if !columns.IsWhitelist() {
 			wl = strmangle.SetComplement(wl, []string{"created_at"})
 		}
 		if len(wl) == 0 {
-			return 0, errors.New("models: unable to update ticket_sub, could not build whitelist")
+			return 0, errors.New("models: unable to update ticket_used, could not build whitelist")
 		}
 
-		cache.query = fmt.Sprintf("UPDATE `ticket_sub` SET %s WHERE %s",
+		cache.query = fmt.Sprintf("UPDATE `ticket_used` SET %s WHERE %s",
 			strmangle.SetParamNames("`", "`", 0, wl),
-			strmangle.WhereClause("`", "`", 0, ticketSubPrimaryKeyColumns),
+			strmangle.WhereClause("`", "`", 0, ticketUsedPrimaryKeyColumns),
 		)
-		cache.valueMapping, err = queries.BindMapping(ticketSubType, ticketSubMapping, append(wl, ticketSubPrimaryKeyColumns...))
+		cache.valueMapping, err = queries.BindMapping(ticketUsedType, ticketUsedMapping, append(wl, ticketUsedPrimaryKeyColumns...))
 		if err != nil {
 			return 0, err
 		}
@@ -952,42 +952,42 @@ func (o *TicketSub) Update(ctx context.Context, exec boil.ContextExecutor, colum
 	var result sql.Result
 	result, err = exec.ExecContext(ctx, cache.query, values...)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to update ticket_sub row")
+		return 0, errors.Wrap(err, "models: unable to update ticket_used row")
 	}
 
 	rowsAff, err := result.RowsAffected()
 	if err != nil {
-		return 0, errors.Wrap(err, "models: failed to get rows affected by update for ticket_sub")
+		return 0, errors.Wrap(err, "models: failed to get rows affected by update for ticket_used")
 	}
 
 	if !cached {
-		ticketSubUpdateCacheMut.Lock()
-		ticketSubUpdateCache[key] = cache
-		ticketSubUpdateCacheMut.Unlock()
+		ticketUsedUpdateCacheMut.Lock()
+		ticketUsedUpdateCache[key] = cache
+		ticketUsedUpdateCacheMut.Unlock()
 	}
 
 	return rowsAff, o.doAfterUpdateHooks(ctx, exec)
 }
 
 // UpdateAll updates all rows with the specified column values.
-func (q ticketSubQuery) UpdateAll(ctx context.Context, exec boil.ContextExecutor, cols M) (int64, error) {
+func (q ticketUsedQuery) UpdateAll(ctx context.Context, exec boil.ContextExecutor, cols M) (int64, error) {
 	queries.SetUpdate(q.Query, cols)
 
 	result, err := q.Query.ExecContext(ctx, exec)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to update all for ticket_sub")
+		return 0, errors.Wrap(err, "models: unable to update all for ticket_used")
 	}
 
 	rowsAff, err := result.RowsAffected()
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to retrieve rows affected for ticket_sub")
+		return 0, errors.Wrap(err, "models: unable to retrieve rows affected for ticket_used")
 	}
 
 	return rowsAff, nil
 }
 
 // UpdateAll updates all rows with the specified column values, using an executor.
-func (o TicketSubSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, cols M) (int64, error) {
+func (o TicketUsedSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, cols M) (int64, error) {
 	ln := int64(len(o))
 	if ln == 0 {
 		return 0, nil
@@ -1009,13 +1009,13 @@ func (o TicketSubSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor
 
 	// Append all of the primary key values for each column
 	for _, obj := range o {
-		pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), ticketSubPrimaryKeyMapping)
+		pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), ticketUsedPrimaryKeyMapping)
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := fmt.Sprintf("UPDATE `ticket_sub` SET %s WHERE %s",
+	sql := fmt.Sprintf("UPDATE `ticket_used` SET %s WHERE %s",
 		strmangle.SetParamNames("`", "`", 0, colNames),
-		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 0, ticketSubPrimaryKeyColumns, len(o)))
+		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 0, ticketUsedPrimaryKeyColumns, len(o)))
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1024,31 +1024,31 @@ func (o TicketSubSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor
 	}
 	result, err := exec.ExecContext(ctx, sql, args...)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to update all in ticketSub slice")
+		return 0, errors.Wrap(err, "models: unable to update all in ticketUsed slice")
 	}
 
 	rowsAff, err := result.RowsAffected()
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to retrieve rows affected all in update all ticketSub")
+		return 0, errors.Wrap(err, "models: unable to retrieve rows affected all in update all ticketUsed")
 	}
 	return rowsAff, nil
 }
 
-var mySQLTicketSubUniqueColumns = []string{}
+var mySQLTicketUsedUniqueColumns = []string{}
 
 // Upsert attempts an insert using an executor, and does an update or ignore on conflict.
 // See boil.Columns documentation for how to properly use updateColumns and insertColumns.
-func (o *TicketSub) Upsert(ctx context.Context, exec boil.ContextExecutor, updateColumns, insertColumns boil.Columns) error {
+func (o *TicketUsed) Upsert(ctx context.Context, exec boil.ContextExecutor, updateColumns, insertColumns boil.Columns) error {
 	if o == nil {
-		return errors.New("models: no ticket_sub provided for upsert")
+		return errors.New("models: no ticket_used provided for upsert")
 	}
 
 	if err := o.doBeforeUpsertHooks(ctx, exec); err != nil {
 		return err
 	}
 
-	nzDefaults := queries.NonZeroDefaultSet(ticketSubColumnsWithDefault, o)
-	nzUniques := queries.NonZeroDefaultSet(mySQLTicketSubUniqueColumns, o)
+	nzDefaults := queries.NonZeroDefaultSet(ticketUsedColumnsWithDefault, o)
+	nzUniques := queries.NonZeroDefaultSet(mySQLTicketUsedUniqueColumns, o)
 
 	if len(nzUniques) == 0 {
 		return errors.New("cannot upsert with a table that cannot conflict on a unique column")
@@ -1076,44 +1076,44 @@ func (o *TicketSub) Upsert(ctx context.Context, exec boil.ContextExecutor, updat
 	key := buf.String()
 	strmangle.PutBuffer(buf)
 
-	ticketSubUpsertCacheMut.RLock()
-	cache, cached := ticketSubUpsertCache[key]
-	ticketSubUpsertCacheMut.RUnlock()
+	ticketUsedUpsertCacheMut.RLock()
+	cache, cached := ticketUsedUpsertCache[key]
+	ticketUsedUpsertCacheMut.RUnlock()
 
 	var err error
 
 	if !cached {
 		insert, _ := insertColumns.InsertColumnSet(
-			ticketSubAllColumns,
-			ticketSubColumnsWithDefault,
-			ticketSubColumnsWithoutDefault,
+			ticketUsedAllColumns,
+			ticketUsedColumnsWithDefault,
+			ticketUsedColumnsWithoutDefault,
 			nzDefaults,
 		)
 
 		update := updateColumns.UpdateColumnSet(
-			ticketSubAllColumns,
-			ticketSubPrimaryKeyColumns,
+			ticketUsedAllColumns,
+			ticketUsedPrimaryKeyColumns,
 		)
 
 		if !updateColumns.IsNone() && len(update) == 0 {
-			return errors.New("models: unable to upsert ticket_sub, could not build update column list")
+			return errors.New("models: unable to upsert ticket_used, could not build update column list")
 		}
 
-		ret := strmangle.SetComplement(ticketSubAllColumns, strmangle.SetIntersect(insert, update))
+		ret := strmangle.SetComplement(ticketUsedAllColumns, strmangle.SetIntersect(insert, update))
 
-		cache.query = buildUpsertQueryMySQL(dialect, "`ticket_sub`", update, insert)
+		cache.query = buildUpsertQueryMySQL(dialect, "`ticket_used`", update, insert)
 		cache.retQuery = fmt.Sprintf(
-			"SELECT %s FROM `ticket_sub` WHERE %s",
+			"SELECT %s FROM `ticket_used` WHERE %s",
 			strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, ret), ","),
 			strmangle.WhereClause("`", "`", 0, nzUniques),
 		)
 
-		cache.valueMapping, err = queries.BindMapping(ticketSubType, ticketSubMapping, insert)
+		cache.valueMapping, err = queries.BindMapping(ticketUsedType, ticketUsedMapping, insert)
 		if err != nil {
 			return err
 		}
 		if len(ret) != 0 {
-			cache.retMapping, err = queries.BindMapping(ticketSubType, ticketSubMapping, ret)
+			cache.retMapping, err = queries.BindMapping(ticketUsedType, ticketUsedMapping, ret)
 			if err != nil {
 				return err
 			}
@@ -1135,7 +1135,7 @@ func (o *TicketSub) Upsert(ctx context.Context, exec boil.ContextExecutor, updat
 	_, err = exec.ExecContext(ctx, cache.query, vals...)
 
 	if err != nil {
-		return errors.Wrap(err, "models: unable to upsert for ticket_sub")
+		return errors.Wrap(err, "models: unable to upsert for ticket_used")
 	}
 
 	var uniqueMap []uint64
@@ -1145,9 +1145,9 @@ func (o *TicketSub) Upsert(ctx context.Context, exec boil.ContextExecutor, updat
 		goto CacheNoHooks
 	}
 
-	uniqueMap, err = queries.BindMapping(ticketSubType, ticketSubMapping, nzUniques)
+	uniqueMap, err = queries.BindMapping(ticketUsedType, ticketUsedMapping, nzUniques)
 	if err != nil {
-		return errors.Wrap(err, "models: unable to retrieve unique values for ticket_sub")
+		return errors.Wrap(err, "models: unable to retrieve unique values for ticket_used")
 	}
 	nzUniqueCols = queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), uniqueMap)
 
@@ -1158,32 +1158,32 @@ func (o *TicketSub) Upsert(ctx context.Context, exec boil.ContextExecutor, updat
 	}
 	err = exec.QueryRowContext(ctx, cache.retQuery, nzUniqueCols...).Scan(returns...)
 	if err != nil {
-		return errors.Wrap(err, "models: unable to populate default values for ticket_sub")
+		return errors.Wrap(err, "models: unable to populate default values for ticket_used")
 	}
 
 CacheNoHooks:
 	if !cached {
-		ticketSubUpsertCacheMut.Lock()
-		ticketSubUpsertCache[key] = cache
-		ticketSubUpsertCacheMut.Unlock()
+		ticketUsedUpsertCacheMut.Lock()
+		ticketUsedUpsertCache[key] = cache
+		ticketUsedUpsertCacheMut.Unlock()
 	}
 
 	return o.doAfterUpsertHooks(ctx, exec)
 }
 
-// Delete deletes a single TicketSub record with an executor.
+// Delete deletes a single TicketUsed record with an executor.
 // Delete will match against the primary key column to find the record to delete.
-func (o *TicketSub) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
+func (o *TicketUsed) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
 	if o == nil {
-		return 0, errors.New("models: no TicketSub provided for delete")
+		return 0, errors.New("models: no TicketUsed provided for delete")
 	}
 
 	if err := o.doBeforeDeleteHooks(ctx, exec); err != nil {
 		return 0, err
 	}
 
-	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), ticketSubPrimaryKeyMapping)
-	sql := "DELETE FROM `ticket_sub` WHERE `ticket_id`=? AND `used_by`=?"
+	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), ticketUsedPrimaryKeyMapping)
+	sql := "DELETE FROM `ticket_used` WHERE `ticket_id`=? AND `used_by`=?"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1192,12 +1192,12 @@ func (o *TicketSub) Delete(ctx context.Context, exec boil.ContextExecutor) (int6
 	}
 	result, err := exec.ExecContext(ctx, sql, args...)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to delete from ticket_sub")
+		return 0, errors.Wrap(err, "models: unable to delete from ticket_used")
 	}
 
 	rowsAff, err := result.RowsAffected()
 	if err != nil {
-		return 0, errors.Wrap(err, "models: failed to get rows affected by delete for ticket_sub")
+		return 0, errors.Wrap(err, "models: failed to get rows affected by delete for ticket_used")
 	}
 
 	if err := o.doAfterDeleteHooks(ctx, exec); err != nil {
@@ -1208,33 +1208,33 @@ func (o *TicketSub) Delete(ctx context.Context, exec boil.ContextExecutor) (int6
 }
 
 // DeleteAll deletes all matching rows.
-func (q ticketSubQuery) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
+func (q ticketUsedQuery) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
 	if q.Query == nil {
-		return 0, errors.New("models: no ticketSubQuery provided for delete all")
+		return 0, errors.New("models: no ticketUsedQuery provided for delete all")
 	}
 
 	queries.SetDelete(q.Query)
 
 	result, err := q.Query.ExecContext(ctx, exec)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to delete all from ticket_sub")
+		return 0, errors.Wrap(err, "models: unable to delete all from ticket_used")
 	}
 
 	rowsAff, err := result.RowsAffected()
 	if err != nil {
-		return 0, errors.Wrap(err, "models: failed to get rows affected by deleteall for ticket_sub")
+		return 0, errors.Wrap(err, "models: failed to get rows affected by deleteall for ticket_used")
 	}
 
 	return rowsAff, nil
 }
 
 // DeleteAll deletes all rows in the slice, using an executor.
-func (o TicketSubSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
+func (o TicketUsedSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (int64, error) {
 	if len(o) == 0 {
 		return 0, nil
 	}
 
-	if len(ticketSubBeforeDeleteHooks) != 0 {
+	if len(ticketUsedBeforeDeleteHooks) != 0 {
 		for _, obj := range o {
 			if err := obj.doBeforeDeleteHooks(ctx, exec); err != nil {
 				return 0, err
@@ -1244,12 +1244,12 @@ func (o TicketSubSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor
 
 	var args []interface{}
 	for _, obj := range o {
-		pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), ticketSubPrimaryKeyMapping)
+		pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), ticketUsedPrimaryKeyMapping)
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "DELETE FROM `ticket_sub` WHERE " +
-		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 0, ticketSubPrimaryKeyColumns, len(o))
+	sql := "DELETE FROM `ticket_used` WHERE " +
+		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 0, ticketUsedPrimaryKeyColumns, len(o))
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1258,15 +1258,15 @@ func (o TicketSubSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor
 	}
 	result, err := exec.ExecContext(ctx, sql, args...)
 	if err != nil {
-		return 0, errors.Wrap(err, "models: unable to delete all from ticketSub slice")
+		return 0, errors.Wrap(err, "models: unable to delete all from ticketUsed slice")
 	}
 
 	rowsAff, err := result.RowsAffected()
 	if err != nil {
-		return 0, errors.Wrap(err, "models: failed to get rows affected by deleteall for ticket_sub")
+		return 0, errors.Wrap(err, "models: failed to get rows affected by deleteall for ticket_used")
 	}
 
-	if len(ticketSubAfterDeleteHooks) != 0 {
+	if len(ticketUsedAfterDeleteHooks) != 0 {
 		for _, obj := range o {
 			if err := obj.doAfterDeleteHooks(ctx, exec); err != nil {
 				return 0, err
@@ -1279,8 +1279,8 @@ func (o TicketSubSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor
 
 // Reload refetches the object from the database
 // using the primary keys with an executor.
-func (o *TicketSub) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindTicketSub(ctx, exec, o.TicketID, o.UsedBy)
+func (o *TicketUsed) Reload(ctx context.Context, exec boil.ContextExecutor) error {
+	ret, err := FindTicketUsed(ctx, exec, o.TicketID, o.UsedBy)
 	if err != nil {
 		return err
 	}
@@ -1291,26 +1291,26 @@ func (o *TicketSub) Reload(ctx context.Context, exec boil.ContextExecutor) error
 
 // ReloadAll refetches every row with matching primary key column values
 // and overwrites the original object slice with the newly updated slice.
-func (o *TicketSubSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) error {
+func (o *TicketUsedSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) error {
 	if o == nil || len(*o) == 0 {
 		return nil
 	}
 
-	slice := TicketSubSlice{}
+	slice := TicketUsedSlice{}
 	var args []interface{}
 	for _, obj := range *o {
-		pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), ticketSubPrimaryKeyMapping)
+		pkeyArgs := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(obj)), ticketUsedPrimaryKeyMapping)
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "SELECT `ticket_sub`.* FROM `ticket_sub` WHERE " +
-		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 0, ticketSubPrimaryKeyColumns, len(*o))
+	sql := "SELECT `ticket_used`.* FROM `ticket_used` WHERE " +
+		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 0, ticketUsedPrimaryKeyColumns, len(*o))
 
 	q := queries.Raw(sql, args...)
 
 	err := q.Bind(ctx, exec, &slice)
 	if err != nil {
-		return errors.Wrap(err, "models: unable to reload all in TicketSubSlice")
+		return errors.Wrap(err, "models: unable to reload all in TicketUsedSlice")
 	}
 
 	*o = slice
@@ -1318,10 +1318,10 @@ func (o *TicketSubSlice) ReloadAll(ctx context.Context, exec boil.ContextExecuto
 	return nil
 }
 
-// TicketSubExists checks if the TicketSub row exists.
-func TicketSubExists(ctx context.Context, exec boil.ContextExecutor, ticketID int, usedBy int) (bool, error) {
+// TicketUsedExists checks if the TicketUsed row exists.
+func TicketUsedExists(ctx context.Context, exec boil.ContextExecutor, ticketID int, usedBy int) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from `ticket_sub` where `ticket_id`=? AND `used_by`=? limit 1)"
+	sql := "select exists(select 1 from `ticket_used` where `ticket_id`=? AND `used_by`=? limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1332,13 +1332,13 @@ func TicketSubExists(ctx context.Context, exec boil.ContextExecutor, ticketID in
 
 	err := row.Scan(&exists)
 	if err != nil {
-		return false, errors.Wrap(err, "models: unable to check if ticket_sub exists")
+		return false, errors.Wrap(err, "models: unable to check if ticket_used exists")
 	}
 
 	return exists, nil
 }
 
-// Exists checks if the TicketSub row exists.
-func (o *TicketSub) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, error) {
-	return TicketSubExists(ctx, exec, o.TicketID, o.UsedBy)
+// Exists checks if the TicketUsed row exists.
+func (o *TicketUsed) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, error) {
+	return TicketUsedExists(ctx, exec, o.TicketID, o.UsedBy)
 }

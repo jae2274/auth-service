@@ -21,24 +21,24 @@ var (
 	_ = queries.Equal
 )
 
-func testTicketSubs(t *testing.T) {
+func testTicketUseds(t *testing.T) {
 	t.Parallel()
 
-	query := TicketSubs()
+	query := TicketUseds()
 
 	if query.Query == nil {
 		t.Error("expected a query, got nothing")
 	}
 }
 
-func testTicketSubsDelete(t *testing.T) {
+func testTicketUsedsDelete(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -54,7 +54,7 @@ func testTicketSubsDelete(t *testing.T) {
 		t.Error("should only have deleted one row, but affected:", rowsAff)
 	}
 
-	count, err := TicketSubs().Count(ctx, tx)
+	count, err := TicketUseds().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -64,14 +64,14 @@ func testTicketSubsDelete(t *testing.T) {
 	}
 }
 
-func testTicketSubsQueryDeleteAll(t *testing.T) {
+func testTicketUsedsQueryDeleteAll(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -81,13 +81,13 @@ func testTicketSubsQueryDeleteAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	if rowsAff, err := TicketSubs().DeleteAll(ctx, tx); err != nil {
+	if rowsAff, err := TicketUseds().DeleteAll(ctx, tx); err != nil {
 		t.Error(err)
 	} else if rowsAff != 1 {
 		t.Error("should only have deleted one row, but affected:", rowsAff)
 	}
 
-	count, err := TicketSubs().Count(ctx, tx)
+	count, err := TicketUseds().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -97,14 +97,14 @@ func testTicketSubsQueryDeleteAll(t *testing.T) {
 	}
 }
 
-func testTicketSubsSliceDeleteAll(t *testing.T) {
+func testTicketUsedsSliceDeleteAll(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -114,7 +114,7 @@ func testTicketSubsSliceDeleteAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	slice := TicketSubSlice{o}
+	slice := TicketUsedSlice{o}
 
 	if rowsAff, err := slice.DeleteAll(ctx, tx); err != nil {
 		t.Error(err)
@@ -122,7 +122,7 @@ func testTicketSubsSliceDeleteAll(t *testing.T) {
 		t.Error("should only have deleted one row, but affected:", rowsAff)
 	}
 
-	count, err := TicketSubs().Count(ctx, tx)
+	count, err := TicketUseds().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -132,14 +132,14 @@ func testTicketSubsSliceDeleteAll(t *testing.T) {
 	}
 }
 
-func testTicketSubsExists(t *testing.T) {
+func testTicketUsedsExists(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -149,23 +149,23 @@ func testTicketSubsExists(t *testing.T) {
 		t.Error(err)
 	}
 
-	e, err := TicketSubExists(ctx, tx, o.TicketID, o.UsedBy)
+	e, err := TicketUsedExists(ctx, tx, o.TicketID, o.UsedBy)
 	if err != nil {
-		t.Errorf("Unable to check if TicketSub exists: %s", err)
+		t.Errorf("Unable to check if TicketUsed exists: %s", err)
 	}
 	if !e {
-		t.Errorf("Expected TicketSubExists to return true, but got false.")
+		t.Errorf("Expected TicketUsedExists to return true, but got false.")
 	}
 }
 
-func testTicketSubsFind(t *testing.T) {
+func testTicketUsedsFind(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -175,24 +175,24 @@ func testTicketSubsFind(t *testing.T) {
 		t.Error(err)
 	}
 
-	ticketSubFound, err := FindTicketSub(ctx, tx, o.TicketID, o.UsedBy)
+	ticketUsedFound, err := FindTicketUsed(ctx, tx, o.TicketID, o.UsedBy)
 	if err != nil {
 		t.Error(err)
 	}
 
-	if ticketSubFound == nil {
+	if ticketUsedFound == nil {
 		t.Error("want a record, got nil")
 	}
 }
 
-func testTicketSubsBind(t *testing.T) {
+func testTicketUsedsBind(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -202,19 +202,19 @@ func testTicketSubsBind(t *testing.T) {
 		t.Error(err)
 	}
 
-	if err = TicketSubs().Bind(ctx, tx, o); err != nil {
+	if err = TicketUseds().Bind(ctx, tx, o); err != nil {
 		t.Error(err)
 	}
 }
 
-func testTicketSubsOne(t *testing.T) {
+func testTicketUsedsOne(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -224,38 +224,38 @@ func testTicketSubsOne(t *testing.T) {
 		t.Error(err)
 	}
 
-	if x, err := TicketSubs().One(ctx, tx); err != nil {
+	if x, err := TicketUseds().One(ctx, tx); err != nil {
 		t.Error(err)
 	} else if x == nil {
 		t.Error("expected to get a non nil record")
 	}
 }
 
-func testTicketSubsAll(t *testing.T) {
+func testTicketUsedsAll(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	ticketSubOne := &TicketSub{}
-	ticketSubTwo := &TicketSub{}
-	if err = randomize.Struct(seed, ticketSubOne, ticketSubDBTypes, false, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	ticketUsedOne := &TicketUsed{}
+	ticketUsedTwo := &TicketUsed{}
+	if err = randomize.Struct(seed, ticketUsedOne, ticketUsedDBTypes, false, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
-	if err = randomize.Struct(seed, ticketSubTwo, ticketSubDBTypes, false, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	if err = randomize.Struct(seed, ticketUsedTwo, ticketUsedDBTypes, false, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
-	if err = ticketSubOne.Insert(ctx, tx, boil.Infer()); err != nil {
+	if err = ticketUsedOne.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Error(err)
 	}
-	if err = ticketSubTwo.Insert(ctx, tx, boil.Infer()); err != nil {
+	if err = ticketUsedTwo.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Error(err)
 	}
 
-	slice, err := TicketSubs().All(ctx, tx)
+	slice, err := TicketUseds().All(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -265,31 +265,31 @@ func testTicketSubsAll(t *testing.T) {
 	}
 }
 
-func testTicketSubsCount(t *testing.T) {
+func testTicketUsedsCount(t *testing.T) {
 	t.Parallel()
 
 	var err error
 	seed := randomize.NewSeed()
-	ticketSubOne := &TicketSub{}
-	ticketSubTwo := &TicketSub{}
-	if err = randomize.Struct(seed, ticketSubOne, ticketSubDBTypes, false, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	ticketUsedOne := &TicketUsed{}
+	ticketUsedTwo := &TicketUsed{}
+	if err = randomize.Struct(seed, ticketUsedOne, ticketUsedDBTypes, false, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
-	if err = randomize.Struct(seed, ticketSubTwo, ticketSubDBTypes, false, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	if err = randomize.Struct(seed, ticketUsedTwo, ticketUsedDBTypes, false, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
-	if err = ticketSubOne.Insert(ctx, tx, boil.Infer()); err != nil {
+	if err = ticketUsedOne.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Error(err)
 	}
-	if err = ticketSubTwo.Insert(ctx, tx, boil.Infer()); err != nil {
+	if err = ticketUsedTwo.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Error(err)
 	}
 
-	count, err := TicketSubs().Count(ctx, tx)
+	count, err := TicketUseds().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -299,155 +299,155 @@ func testTicketSubsCount(t *testing.T) {
 	}
 }
 
-func ticketSubBeforeInsertHook(ctx context.Context, e boil.ContextExecutor, o *TicketSub) error {
-	*o = TicketSub{}
+func ticketUsedBeforeInsertHook(ctx context.Context, e boil.ContextExecutor, o *TicketUsed) error {
+	*o = TicketUsed{}
 	return nil
 }
 
-func ticketSubAfterInsertHook(ctx context.Context, e boil.ContextExecutor, o *TicketSub) error {
-	*o = TicketSub{}
+func ticketUsedAfterInsertHook(ctx context.Context, e boil.ContextExecutor, o *TicketUsed) error {
+	*o = TicketUsed{}
 	return nil
 }
 
-func ticketSubAfterSelectHook(ctx context.Context, e boil.ContextExecutor, o *TicketSub) error {
-	*o = TicketSub{}
+func ticketUsedAfterSelectHook(ctx context.Context, e boil.ContextExecutor, o *TicketUsed) error {
+	*o = TicketUsed{}
 	return nil
 }
 
-func ticketSubBeforeUpdateHook(ctx context.Context, e boil.ContextExecutor, o *TicketSub) error {
-	*o = TicketSub{}
+func ticketUsedBeforeUpdateHook(ctx context.Context, e boil.ContextExecutor, o *TicketUsed) error {
+	*o = TicketUsed{}
 	return nil
 }
 
-func ticketSubAfterUpdateHook(ctx context.Context, e boil.ContextExecutor, o *TicketSub) error {
-	*o = TicketSub{}
+func ticketUsedAfterUpdateHook(ctx context.Context, e boil.ContextExecutor, o *TicketUsed) error {
+	*o = TicketUsed{}
 	return nil
 }
 
-func ticketSubBeforeDeleteHook(ctx context.Context, e boil.ContextExecutor, o *TicketSub) error {
-	*o = TicketSub{}
+func ticketUsedBeforeDeleteHook(ctx context.Context, e boil.ContextExecutor, o *TicketUsed) error {
+	*o = TicketUsed{}
 	return nil
 }
 
-func ticketSubAfterDeleteHook(ctx context.Context, e boil.ContextExecutor, o *TicketSub) error {
-	*o = TicketSub{}
+func ticketUsedAfterDeleteHook(ctx context.Context, e boil.ContextExecutor, o *TicketUsed) error {
+	*o = TicketUsed{}
 	return nil
 }
 
-func ticketSubBeforeUpsertHook(ctx context.Context, e boil.ContextExecutor, o *TicketSub) error {
-	*o = TicketSub{}
+func ticketUsedBeforeUpsertHook(ctx context.Context, e boil.ContextExecutor, o *TicketUsed) error {
+	*o = TicketUsed{}
 	return nil
 }
 
-func ticketSubAfterUpsertHook(ctx context.Context, e boil.ContextExecutor, o *TicketSub) error {
-	*o = TicketSub{}
+func ticketUsedAfterUpsertHook(ctx context.Context, e boil.ContextExecutor, o *TicketUsed) error {
+	*o = TicketUsed{}
 	return nil
 }
 
-func testTicketSubsHooks(t *testing.T) {
+func testTicketUsedsHooks(t *testing.T) {
 	t.Parallel()
 
 	var err error
 
 	ctx := context.Background()
-	empty := &TicketSub{}
-	o := &TicketSub{}
+	empty := &TicketUsed{}
+	o := &TicketUsed{}
 
 	seed := randomize.NewSeed()
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, false); err != nil {
-		t.Errorf("Unable to randomize TicketSub object: %s", err)
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, false); err != nil {
+		t.Errorf("Unable to randomize TicketUsed object: %s", err)
 	}
 
-	AddTicketSubHook(boil.BeforeInsertHook, ticketSubBeforeInsertHook)
+	AddTicketUsedHook(boil.BeforeInsertHook, ticketUsedBeforeInsertHook)
 	if err = o.doBeforeInsertHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doBeforeInsertHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected BeforeInsertHook function to empty object, but got: %#v", o)
 	}
-	ticketSubBeforeInsertHooks = []TicketSubHook{}
+	ticketUsedBeforeInsertHooks = []TicketUsedHook{}
 
-	AddTicketSubHook(boil.AfterInsertHook, ticketSubAfterInsertHook)
+	AddTicketUsedHook(boil.AfterInsertHook, ticketUsedAfterInsertHook)
 	if err = o.doAfterInsertHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doAfterInsertHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected AfterInsertHook function to empty object, but got: %#v", o)
 	}
-	ticketSubAfterInsertHooks = []TicketSubHook{}
+	ticketUsedAfterInsertHooks = []TicketUsedHook{}
 
-	AddTicketSubHook(boil.AfterSelectHook, ticketSubAfterSelectHook)
+	AddTicketUsedHook(boil.AfterSelectHook, ticketUsedAfterSelectHook)
 	if err = o.doAfterSelectHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doAfterSelectHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected AfterSelectHook function to empty object, but got: %#v", o)
 	}
-	ticketSubAfterSelectHooks = []TicketSubHook{}
+	ticketUsedAfterSelectHooks = []TicketUsedHook{}
 
-	AddTicketSubHook(boil.BeforeUpdateHook, ticketSubBeforeUpdateHook)
+	AddTicketUsedHook(boil.BeforeUpdateHook, ticketUsedBeforeUpdateHook)
 	if err = o.doBeforeUpdateHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doBeforeUpdateHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected BeforeUpdateHook function to empty object, but got: %#v", o)
 	}
-	ticketSubBeforeUpdateHooks = []TicketSubHook{}
+	ticketUsedBeforeUpdateHooks = []TicketUsedHook{}
 
-	AddTicketSubHook(boil.AfterUpdateHook, ticketSubAfterUpdateHook)
+	AddTicketUsedHook(boil.AfterUpdateHook, ticketUsedAfterUpdateHook)
 	if err = o.doAfterUpdateHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doAfterUpdateHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected AfterUpdateHook function to empty object, but got: %#v", o)
 	}
-	ticketSubAfterUpdateHooks = []TicketSubHook{}
+	ticketUsedAfterUpdateHooks = []TicketUsedHook{}
 
-	AddTicketSubHook(boil.BeforeDeleteHook, ticketSubBeforeDeleteHook)
+	AddTicketUsedHook(boil.BeforeDeleteHook, ticketUsedBeforeDeleteHook)
 	if err = o.doBeforeDeleteHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doBeforeDeleteHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected BeforeDeleteHook function to empty object, but got: %#v", o)
 	}
-	ticketSubBeforeDeleteHooks = []TicketSubHook{}
+	ticketUsedBeforeDeleteHooks = []TicketUsedHook{}
 
-	AddTicketSubHook(boil.AfterDeleteHook, ticketSubAfterDeleteHook)
+	AddTicketUsedHook(boil.AfterDeleteHook, ticketUsedAfterDeleteHook)
 	if err = o.doAfterDeleteHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doAfterDeleteHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected AfterDeleteHook function to empty object, but got: %#v", o)
 	}
-	ticketSubAfterDeleteHooks = []TicketSubHook{}
+	ticketUsedAfterDeleteHooks = []TicketUsedHook{}
 
-	AddTicketSubHook(boil.BeforeUpsertHook, ticketSubBeforeUpsertHook)
+	AddTicketUsedHook(boil.BeforeUpsertHook, ticketUsedBeforeUpsertHook)
 	if err = o.doBeforeUpsertHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doBeforeUpsertHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected BeforeUpsertHook function to empty object, but got: %#v", o)
 	}
-	ticketSubBeforeUpsertHooks = []TicketSubHook{}
+	ticketUsedBeforeUpsertHooks = []TicketUsedHook{}
 
-	AddTicketSubHook(boil.AfterUpsertHook, ticketSubAfterUpsertHook)
+	AddTicketUsedHook(boil.AfterUpsertHook, ticketUsedAfterUpsertHook)
 	if err = o.doAfterUpsertHooks(ctx, nil); err != nil {
 		t.Errorf("Unable to execute doAfterUpsertHooks: %s", err)
 	}
 	if !reflect.DeepEqual(o, empty) {
 		t.Errorf("Expected AfterUpsertHook function to empty object, but got: %#v", o)
 	}
-	ticketSubAfterUpsertHooks = []TicketSubHook{}
+	ticketUsedAfterUpsertHooks = []TicketUsedHook{}
 }
 
-func testTicketSubsInsert(t *testing.T) {
+func testTicketUsedsInsert(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -457,7 +457,7 @@ func testTicketSubsInsert(t *testing.T) {
 		t.Error(err)
 	}
 
-	count, err := TicketSubs().Count(ctx, tx)
+	count, err := TicketUseds().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -467,24 +467,24 @@ func testTicketSubsInsert(t *testing.T) {
 	}
 }
 
-func testTicketSubsInsertWhitelist(t *testing.T) {
+func testTicketUsedsInsertWhitelist(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
-	if err = o.Insert(ctx, tx, boil.Whitelist(ticketSubColumnsWithoutDefault...)); err != nil {
+	if err = o.Insert(ctx, tx, boil.Whitelist(ticketUsedColumnsWithoutDefault...)); err != nil {
 		t.Error(err)
 	}
 
-	count, err := TicketSubs().Count(ctx, tx)
+	count, err := TicketUseds().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -494,17 +494,17 @@ func testTicketSubsInsertWhitelist(t *testing.T) {
 	}
 }
 
-func testTicketSubToOneTicketUsingTicket(t *testing.T) {
+func testTicketUsedToOneTicketUsingTicket(t *testing.T) {
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
 
-	var local TicketSub
+	var local TicketUsed
 	var foreign Ticket
 
 	seed := randomize.NewSeed()
-	if err := randomize.Struct(seed, &local, ticketSubDBTypes, false, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	if err := randomize.Struct(seed, &local, ticketUsedDBTypes, false, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 	if err := randomize.Struct(seed, &foreign, ticketDBTypes, false, ticketColumnsWithDefault...); err != nil {
 		t.Errorf("Unable to randomize Ticket struct: %s", err)
@@ -534,8 +534,8 @@ func testTicketSubToOneTicketUsingTicket(t *testing.T) {
 		return nil
 	})
 
-	slice := TicketSubSlice{&local}
-	if err = local.L.LoadTicket(ctx, tx, false, (*[]*TicketSub)(&slice), nil); err != nil {
+	slice := TicketUsedSlice{&local}
+	if err = local.L.LoadTicket(ctx, tx, false, (*[]*TicketUsed)(&slice), nil); err != nil {
 		t.Fatal(err)
 	}
 	if local.R.Ticket == nil {
@@ -555,17 +555,17 @@ func testTicketSubToOneTicketUsingTicket(t *testing.T) {
 	}
 }
 
-func testTicketSubToOneUserUsingUsedByUser(t *testing.T) {
+func testTicketUsedToOneUserUsingUsedByUser(t *testing.T) {
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
 
-	var local TicketSub
+	var local TicketUsed
 	var foreign User
 
 	seed := randomize.NewSeed()
-	if err := randomize.Struct(seed, &local, ticketSubDBTypes, false, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	if err := randomize.Struct(seed, &local, ticketUsedDBTypes, false, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 	if err := randomize.Struct(seed, &foreign, userDBTypes, false, userColumnsWithDefault...); err != nil {
 		t.Errorf("Unable to randomize User struct: %s", err)
@@ -595,8 +595,8 @@ func testTicketSubToOneUserUsingUsedByUser(t *testing.T) {
 		return nil
 	})
 
-	slice := TicketSubSlice{&local}
-	if err = local.L.LoadUsedByUser(ctx, tx, false, (*[]*TicketSub)(&slice), nil); err != nil {
+	slice := TicketUsedSlice{&local}
+	if err = local.L.LoadUsedByUser(ctx, tx, false, (*[]*TicketUsed)(&slice), nil); err != nil {
 		t.Fatal(err)
 	}
 	if local.R.UsedByUser == nil {
@@ -616,18 +616,18 @@ func testTicketSubToOneUserUsingUsedByUser(t *testing.T) {
 	}
 }
 
-func testTicketSubToOneSetOpTicketUsingTicket(t *testing.T) {
+func testTicketUsedToOneSetOpTicketUsingTicket(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
 
-	var a TicketSub
+	var a TicketUsed
 	var b, c Ticket
 
 	seed := randomize.NewSeed()
-	if err = randomize.Struct(seed, &a, ticketSubDBTypes, false, strmangle.SetComplement(ticketSubPrimaryKeyColumns, ticketSubColumnsWithoutDefault)...); err != nil {
+	if err = randomize.Struct(seed, &a, ticketUsedDBTypes, false, strmangle.SetComplement(ticketUsedPrimaryKeyColumns, ticketUsedColumnsWithoutDefault)...); err != nil {
 		t.Fatal(err)
 	}
 	if err = randomize.Struct(seed, &b, ticketDBTypes, false, strmangle.SetComplement(ticketPrimaryKeyColumns, ticketColumnsWithoutDefault)...); err != nil {
@@ -654,14 +654,14 @@ func testTicketSubToOneSetOpTicketUsingTicket(t *testing.T) {
 			t.Error("relationship struct not set to correct value")
 		}
 
-		if x.R.TicketSubs[0] != &a {
+		if x.R.TicketUseds[0] != &a {
 			t.Error("failed to append to foreign relationship struct")
 		}
 		if a.TicketID != x.TicketID {
 			t.Error("foreign key was wrong value", a.TicketID)
 		}
 
-		if exists, err := TicketSubExists(ctx, tx, a.TicketID, a.UsedBy); err != nil {
+		if exists, err := TicketUsedExists(ctx, tx, a.TicketID, a.UsedBy); err != nil {
 			t.Fatal(err)
 		} else if !exists {
 			t.Error("want 'a' to exist")
@@ -669,18 +669,18 @@ func testTicketSubToOneSetOpTicketUsingTicket(t *testing.T) {
 
 	}
 }
-func testTicketSubToOneSetOpUserUsingUsedByUser(t *testing.T) {
+func testTicketUsedToOneSetOpUserUsingUsedByUser(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
 
-	var a TicketSub
+	var a TicketUsed
 	var b, c User
 
 	seed := randomize.NewSeed()
-	if err = randomize.Struct(seed, &a, ticketSubDBTypes, false, strmangle.SetComplement(ticketSubPrimaryKeyColumns, ticketSubColumnsWithoutDefault)...); err != nil {
+	if err = randomize.Struct(seed, &a, ticketUsedDBTypes, false, strmangle.SetComplement(ticketUsedPrimaryKeyColumns, ticketUsedColumnsWithoutDefault)...); err != nil {
 		t.Fatal(err)
 	}
 	if err = randomize.Struct(seed, &b, userDBTypes, false, strmangle.SetComplement(userPrimaryKeyColumns, userColumnsWithoutDefault)...); err != nil {
@@ -707,14 +707,14 @@ func testTicketSubToOneSetOpUserUsingUsedByUser(t *testing.T) {
 			t.Error("relationship struct not set to correct value")
 		}
 
-		if x.R.UsedByTicketSubs[0] != &a {
+		if x.R.UsedByTicketUseds[0] != &a {
 			t.Error("failed to append to foreign relationship struct")
 		}
 		if a.UsedBy != x.UserID {
 			t.Error("foreign key was wrong value", a.UsedBy)
 		}
 
-		if exists, err := TicketSubExists(ctx, tx, a.TicketID, a.UsedBy); err != nil {
+		if exists, err := TicketUsedExists(ctx, tx, a.TicketID, a.UsedBy); err != nil {
 			t.Fatal(err)
 		} else if !exists {
 			t.Error("want 'a' to exist")
@@ -723,14 +723,14 @@ func testTicketSubToOneSetOpUserUsingUsedByUser(t *testing.T) {
 	}
 }
 
-func testTicketSubsReload(t *testing.T) {
+func testTicketUsedsReload(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -745,14 +745,14 @@ func testTicketSubsReload(t *testing.T) {
 	}
 }
 
-func testTicketSubsReloadAll(t *testing.T) {
+func testTicketUsedsReloadAll(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -762,21 +762,21 @@ func testTicketSubsReloadAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	slice := TicketSubSlice{o}
+	slice := TicketUsedSlice{o}
 
 	if err = slice.ReloadAll(ctx, tx); err != nil {
 		t.Error(err)
 	}
 }
 
-func testTicketSubsSelect(t *testing.T) {
+func testTicketUsedsSelect(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -786,7 +786,7 @@ func testTicketSubsSelect(t *testing.T) {
 		t.Error(err)
 	}
 
-	slice, err := TicketSubs().All(ctx, tx)
+	slice, err := TicketUseds().All(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -797,25 +797,25 @@ func testTicketSubsSelect(t *testing.T) {
 }
 
 var (
-	ticketSubDBTypes = map[string]string{`TicketID`: `int`, `UsedBy`: `int`, `UsedDate`: `datetime`}
-	_                = bytes.MinRead
+	ticketUsedDBTypes = map[string]string{`TicketID`: `int`, `UsedBy`: `int`, `UsedDate`: `datetime`}
+	_                 = bytes.MinRead
 )
 
-func testTicketSubsUpdate(t *testing.T) {
+func testTicketUsedsUpdate(t *testing.T) {
 	t.Parallel()
 
-	if 0 == len(ticketSubPrimaryKeyColumns) {
+	if 0 == len(ticketUsedPrimaryKeyColumns) {
 		t.Skip("Skipping table with no primary key columns")
 	}
-	if len(ticketSubAllColumns) == len(ticketSubPrimaryKeyColumns) {
+	if len(ticketUsedAllColumns) == len(ticketUsedPrimaryKeyColumns) {
 		t.Skip("Skipping table with only primary key columns")
 	}
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -825,7 +825,7 @@ func testTicketSubsUpdate(t *testing.T) {
 		t.Error(err)
 	}
 
-	count, err := TicketSubs().Count(ctx, tx)
+	count, err := TicketUseds().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -834,8 +834,8 @@ func testTicketSubsUpdate(t *testing.T) {
 		t.Error("want one record, got:", count)
 	}
 
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubPrimaryKeyColumns...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedPrimaryKeyColumns...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	if rowsAff, err := o.Update(ctx, tx, boil.Infer()); err != nil {
@@ -845,18 +845,18 @@ func testTicketSubsUpdate(t *testing.T) {
 	}
 }
 
-func testTicketSubsSliceUpdateAll(t *testing.T) {
+func testTicketUsedsSliceUpdateAll(t *testing.T) {
 	t.Parallel()
 
-	if len(ticketSubAllColumns) == len(ticketSubPrimaryKeyColumns) {
+	if len(ticketUsedAllColumns) == len(ticketUsedPrimaryKeyColumns) {
 		t.Skip("Skipping table with only primary key columns")
 	}
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &TicketSub{}
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := &TicketUsed{}
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -866,7 +866,7 @@ func testTicketSubsSliceUpdateAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	count, err := TicketSubs().Count(ctx, tx)
+	count, err := TicketUseds().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -875,18 +875,18 @@ func testTicketSubsSliceUpdateAll(t *testing.T) {
 		t.Error("want one record, got:", count)
 	}
 
-	if err = randomize.Struct(seed, o, ticketSubDBTypes, true, ticketSubPrimaryKeyColumns...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	if err = randomize.Struct(seed, o, ticketUsedDBTypes, true, ticketUsedPrimaryKeyColumns...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	// Remove Primary keys and unique columns from what we plan to update
 	var fields []string
-	if strmangle.StringSliceMatch(ticketSubAllColumns, ticketSubPrimaryKeyColumns) {
-		fields = ticketSubAllColumns
+	if strmangle.StringSliceMatch(ticketUsedAllColumns, ticketUsedPrimaryKeyColumns) {
+		fields = ticketUsedAllColumns
 	} else {
 		fields = strmangle.SetComplement(
-			ticketSubAllColumns,
-			ticketSubPrimaryKeyColumns,
+			ticketUsedAllColumns,
+			ticketUsedPrimaryKeyColumns,
 		)
 	}
 
@@ -904,7 +904,7 @@ func testTicketSubsSliceUpdateAll(t *testing.T) {
 		}
 	}
 
-	slice := TicketSubSlice{o}
+	slice := TicketUsedSlice{o}
 	if rowsAff, err := slice.UpdateAll(ctx, tx, updateMap); err != nil {
 		t.Error(err)
 	} else if rowsAff != 1 {
@@ -912,32 +912,32 @@ func testTicketSubsSliceUpdateAll(t *testing.T) {
 	}
 }
 
-func testTicketSubsUpsert(t *testing.T) {
+func testTicketUsedsUpsert(t *testing.T) {
 	t.Parallel()
 
-	if len(ticketSubAllColumns) == len(ticketSubPrimaryKeyColumns) {
+	if len(ticketUsedAllColumns) == len(ticketUsedPrimaryKeyColumns) {
 		t.Skip("Skipping table with only primary key columns")
 	}
-	if len(mySQLTicketSubUniqueColumns) == 0 {
+	if len(mySQLTicketUsedUniqueColumns) == 0 {
 		t.Skip("Skipping table with no unique columns to conflict on")
 	}
 
 	seed := randomize.NewSeed()
 	var err error
 	// Attempt the INSERT side of an UPSERT
-	o := TicketSub{}
-	if err = randomize.Struct(seed, &o, ticketSubDBTypes, false); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	o := TicketUsed{}
+	if err = randomize.Struct(seed, &o, ticketUsedDBTypes, false); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
 	if err = o.Upsert(ctx, tx, boil.Infer(), boil.Infer()); err != nil {
-		t.Errorf("Unable to upsert TicketSub: %s", err)
+		t.Errorf("Unable to upsert TicketUsed: %s", err)
 	}
 
-	count, err := TicketSubs().Count(ctx, tx)
+	count, err := TicketUseds().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -946,15 +946,15 @@ func testTicketSubsUpsert(t *testing.T) {
 	}
 
 	// Attempt the UPDATE side of an UPSERT
-	if err = randomize.Struct(seed, &o, ticketSubDBTypes, false, ticketSubPrimaryKeyColumns...); err != nil {
-		t.Errorf("Unable to randomize TicketSub struct: %s", err)
+	if err = randomize.Struct(seed, &o, ticketUsedDBTypes, false, ticketUsedPrimaryKeyColumns...); err != nil {
+		t.Errorf("Unable to randomize TicketUsed struct: %s", err)
 	}
 
 	if err = o.Upsert(ctx, tx, boil.Infer(), boil.Infer()); err != nil {
-		t.Errorf("Unable to upsert TicketSub: %s", err)
+		t.Errorf("Unable to upsert TicketUsed: %s", err)
 	}
 
-	count, err = TicketSubs().Count(ctx, tx)
+	count, err = TicketUseds().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}

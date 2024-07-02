@@ -572,14 +572,14 @@ func testTicketToManyTicketAuthorities(t *testing.T) {
 	}
 }
 
-func testTicketToManyTicketSubs(t *testing.T) {
+func testTicketToManyTicketUseds(t *testing.T) {
 	var err error
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
 
 	var a Ticket
-	var b, c TicketSub
+	var b, c TicketUsed
 
 	seed := randomize.NewSeed()
 	if err = randomize.Struct(seed, &a, ticketDBTypes, true, ticketColumnsWithDefault...); err != nil {
@@ -590,10 +590,10 @@ func testTicketToManyTicketSubs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = randomize.Struct(seed, &b, ticketSubDBTypes, false, ticketSubColumnsWithDefault...); err != nil {
+	if err = randomize.Struct(seed, &b, ticketUsedDBTypes, false, ticketUsedColumnsWithDefault...); err != nil {
 		t.Fatal(err)
 	}
-	if err = randomize.Struct(seed, &c, ticketSubDBTypes, false, ticketSubColumnsWithDefault...); err != nil {
+	if err = randomize.Struct(seed, &c, ticketUsedDBTypes, false, ticketUsedColumnsWithDefault...); err != nil {
 		t.Fatal(err)
 	}
 
@@ -607,7 +607,7 @@ func testTicketToManyTicketSubs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	check, err := a.TicketSubs().All(ctx, tx)
+	check, err := a.TicketUseds().All(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -630,18 +630,18 @@ func testTicketToManyTicketSubs(t *testing.T) {
 	}
 
 	slice := TicketSlice{&a}
-	if err = a.L.LoadTicketSubs(ctx, tx, false, (*[]*Ticket)(&slice), nil); err != nil {
+	if err = a.L.LoadTicketUseds(ctx, tx, false, (*[]*Ticket)(&slice), nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(a.R.TicketSubs); got != 2 {
+	if got := len(a.R.TicketUseds); got != 2 {
 		t.Error("number of eager loaded records wrong, got:", got)
 	}
 
-	a.R.TicketSubs = nil
-	if err = a.L.LoadTicketSubs(ctx, tx, true, &a, nil); err != nil {
+	a.R.TicketUseds = nil
+	if err = a.L.LoadTicketUseds(ctx, tx, true, &a, nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(a.R.TicketSubs); got != 2 {
+	if got := len(a.R.TicketUseds); got != 2 {
 		t.Error("number of eager loaded records wrong, got:", got)
 	}
 
@@ -725,7 +725,7 @@ func testTicketToManyAddOpTicketAuthorities(t *testing.T) {
 		}
 	}
 }
-func testTicketToManyAddOpTicketSubs(t *testing.T) {
+func testTicketToManyAddOpTicketUseds(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
@@ -733,15 +733,15 @@ func testTicketToManyAddOpTicketSubs(t *testing.T) {
 	defer func() { _ = tx.Rollback() }()
 
 	var a Ticket
-	var b, c, d, e TicketSub
+	var b, c, d, e TicketUsed
 
 	seed := randomize.NewSeed()
 	if err = randomize.Struct(seed, &a, ticketDBTypes, false, strmangle.SetComplement(ticketPrimaryKeyColumns, ticketColumnsWithoutDefault)...); err != nil {
 		t.Fatal(err)
 	}
-	foreigners := []*TicketSub{&b, &c, &d, &e}
+	foreigners := []*TicketUsed{&b, &c, &d, &e}
 	for _, x := range foreigners {
-		if err = randomize.Struct(seed, x, ticketSubDBTypes, false, strmangle.SetComplement(ticketSubPrimaryKeyColumns, ticketSubColumnsWithoutDefault)...); err != nil {
+		if err = randomize.Struct(seed, x, ticketUsedDBTypes, false, strmangle.SetComplement(ticketUsedPrimaryKeyColumns, ticketUsedColumnsWithoutDefault)...); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -756,13 +756,13 @@ func testTicketToManyAddOpTicketSubs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	foreignersSplitByInsertion := [][]*TicketSub{
+	foreignersSplitByInsertion := [][]*TicketUsed{
 		{&b, &c},
 		{&d, &e},
 	}
 
 	for i, x := range foreignersSplitByInsertion {
-		err = a.AddTicketSubs(ctx, tx, i != 0, x...)
+		err = a.AddTicketUseds(ctx, tx, i != 0, x...)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -784,14 +784,14 @@ func testTicketToManyAddOpTicketSubs(t *testing.T) {
 			t.Error("relationship was not added properly to the foreign slice")
 		}
 
-		if a.R.TicketSubs[i*2] != first {
+		if a.R.TicketUseds[i*2] != first {
 			t.Error("relationship struct slice not set to correct value")
 		}
-		if a.R.TicketSubs[i*2+1] != second {
+		if a.R.TicketUseds[i*2+1] != second {
 			t.Error("relationship struct slice not set to correct value")
 		}
 
-		count, err := a.TicketSubs().Count(ctx, tx)
+		count, err := a.TicketUseds().Count(ctx, tx)
 		if err != nil {
 			t.Fatal(err)
 		}
