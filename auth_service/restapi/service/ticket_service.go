@@ -46,7 +46,8 @@ func convertToDtoTicket(ticket *models.Ticket, usedCount int64) *dto.Ticket {
 		TicketName:        ticket.TicketName,
 		TicketAuthorities: ticketAuthorities,
 		CreateUnixMilli:   ticket.CreateDate.UnixMilli(),
-		IsUsed:            int64(ticket.UseableCount) <= usedCount,
+		UseableCount:      ticket.UseableCount,
+		UsedCount:         int(usedCount),
 	}
 }
 
@@ -170,13 +171,10 @@ func GetAllTickets(ctx context.Context, exec boil.ContextExecutor) ([]*dto.Ticke
 	dtoTickets := make([]*dto.TicketDetail, 0, len(tickets))
 	for _, ticket := range tickets {
 		usedCount := len(ticket.R.TicketSubs)
-		var userinfo *dto.UsedInfo
-		if usedCount > 0 {
-			userinfo = convertUsedInfo(ticket.R.TicketSubs[0])
-		}
+
 		dtoTickets = append(dtoTickets, &dto.TicketDetail{
 			Ticket:    *convertToDtoTicket(ticket, int64(usedCount)),
-			UsedInfo:  userinfo, //TODO: list로 변경
+			UsedInfos: convertUsedInfos(ticket.R.TicketSubs),
 			CreatedBy: ticket.CreatedBy,
 		})
 	}
@@ -184,11 +182,15 @@ func GetAllTickets(ctx context.Context, exec boil.ContextExecutor) ([]*dto.Ticke
 	return dtoTickets, nil
 }
 
-func convertUsedInfo(ticketSub *models.TicketSub) *dto.UsedInfo {
-	return &dto.UsedInfo{
-		UsedBy:        ticketSub.UsedBy,
-		UsedUserName:  ticketSub.R.UsedByUser.Name,
-		UsedUnixMilli: ptr.P(ticketSub.UsedDate.UnixMilli()),
+func convertUsedInfos(ticketSub []*models.TicketSub) []*dto.UsedInfo {
+	usedInfos := make([]*dto.UsedInfo, 0, len(ticketSub))
+	for _, ticketSub := range ticketSub {
+		usedInfos = append(usedInfos, &dto.UsedInfo{
+			UsedBy:        ticketSub.UsedBy,
+			UsedUserName:  ticketSub.R.UsedByUser.Name,
+			UsedUnixMilli: ticketSub.UsedDate.UnixMilli(),
+		})
 	}
 
+	return usedInfos
 }

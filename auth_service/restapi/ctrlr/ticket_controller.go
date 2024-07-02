@@ -96,7 +96,7 @@ func (c *TicketController) useTicket(ctx context.Context, tx *sql.Tx, userId int
 	if !isExisted {
 		res.TicketStatus = dto.NOT_EXISTED
 		return res, nil
-	} else if ticket.IsUsed {
+	} else if ticket.UseableCount <= ticket.UsedCount {
 		res.TicketStatus = dto.ALREADY_USED
 		return res, nil
 	}

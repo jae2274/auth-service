@@ -64,7 +64,8 @@ func TestTicketService(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, isExisted)
 		require.Equal(t, ticketId, res.TicketId)
-		require.False(t, res.IsUsed)
+		require.Equal(t, res.UseableCount, 1)
+		require.Equal(t, res.UsedCount, 0)
 		require.Equal(t, ticketName, res.TicketName)
 		require.Len(t, res.TicketAuthorities, len(ticketAuthorities))
 
@@ -100,7 +101,8 @@ func TestTicketService(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, isExisted)
 		require.Equal(t, ticketId, res.TicketId)
-		require.False(t, res.IsUsed)
+		require.Equal(t, res.UseableCount, 1)
+		require.Equal(t, res.UsedCount, 0)
 		require.Equal(t, ticketName, res.TicketName)
 		require.Len(t, res.TicketAuthorities, len(ticketAuthorities))
 
@@ -274,6 +276,12 @@ func TestTicketService(t *testing.T) {
 		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, users[2].UserID)
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, 0)
+
+		ticket, isExisted, err := service.GetTicketInfo(ctx, db, ticketId)
+		require.NoError(t, err)
+		require.True(t, isExisted)
+		require.Equal(t, ticket.UseableCount, 2)
+		require.Equal(t, ticket.UsedCount, 2)
 	})
 
 	t.Run("same ticket cannot be used by same user", func(t *testing.T) {
@@ -340,7 +348,9 @@ func TestTicketService(t *testing.T) {
 		res, isExisted, err := service.GetTicketInfo(ctx, db, ticketId)
 		require.NoError(t, err)
 		require.True(t, isExisted)
-		require.True(t, res.IsUsed)
+
+		require.Equal(t, res.UseableCount, 1)
+		require.Equal(t, res.UsedCount, 1)
 	})
 
 	t.Run("return empty tickets if no ticket existed", func(t *testing.T) {
@@ -378,23 +388,28 @@ func TestTicketService(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, tickets, len(userAuthorityReqs))
 
-		require.Equal(t, "ticket0", tickets[0].TicketName)
-		require.True(t, tickets[0].IsUsed)
-		require.Equal(t, user.UserID, (*tickets[0].UsedInfo).UsedBy)
-		require.Equal(t, userinfo.Username, (*tickets[0].UsedInfo).UsedUserName)
-		require.WithinDuration(t, time.Now().UTC(), time.UnixMilli(*tickets[0].UsedInfo.UsedUnixMilli).UTC(), time.Second)
-		require.Equal(t, userAuthorityReqs[0][0].AuthorityCode, tickets[0].TicketAuthorities[0].AuthorityCode)
-		require.Equal(t, authorities[0].AuthorityName, tickets[0].TicketAuthorities[0].AuthorityName)
-		require.Equal(t, authorities[0].Summary, tickets[0].TicketAuthorities[0].Summary)
-		require.Nil(t, tickets[0].TicketAuthorities[0].ExpiryDurationMS)
-		require.Equal(t, tickets[0].CreatedBy, admin.UserID)
+		ticket0 := tickets[0]
+		require.Equal(t, "ticket0", ticket0.TicketName)
+		require.Equal(t, ticket0.UseableCount, 1)
+		require.Equal(t, ticket0.UsedCount, 1)
+		require.Len(t, ticket0.UsedInfos, 1)
+		require.Equal(t, user.UserID, ticket0.UsedInfos[0].UsedBy)
+		require.Equal(t, userinfo.Username, ticket0.UsedInfos[0].UsedUserName)
+		require.WithinDuration(t, time.Now().UTC(), time.UnixMilli(ticket0.UsedInfos[0].UsedUnixMilli).UTC(), time.Second)
+		require.Equal(t, userAuthorityReqs[0][0].AuthorityCode, ticket0.TicketAuthorities[0].AuthorityCode)
+		require.Equal(t, authorities[0].AuthorityName, ticket0.TicketAuthorities[0].AuthorityName)
+		require.Equal(t, authorities[0].Summary, ticket0.TicketAuthorities[0].Summary)
+		require.Nil(t, ticket0.TicketAuthorities[0].ExpiryDurationMS)
+		require.Equal(t, ticket0.CreatedBy, admin.UserID)
 
-		require.Equal(t, "ticket1", tickets[1].TicketName)
-		require.False(t, tickets[1].IsUsed)
-		require.Nil(t, tickets[1].UsedInfo)
-		require.Equal(t, userAuthorityReqs[1][0].AuthorityCode, tickets[1].TicketAuthorities[0].AuthorityCode)
-		require.Equal(t, authorities[1].AuthorityName, tickets[1].TicketAuthorities[0].AuthorityName)
-		require.Equal(t, authorities[1].Summary, tickets[1].TicketAuthorities[0].Summary)
-		require.Equal(t, int64(2*time.Hour/time.Millisecond), *tickets[1].TicketAuthorities[0].ExpiryDurationMS)
+		ticket1 := tickets[1]
+		require.Equal(t, "ticket1", ticket1.TicketName)
+		require.Equal(t, ticket1.UseableCount, 1)
+		require.Equal(t, ticket1.UsedCount, 0)
+		require.Len(t, ticket1.UsedInfos, 0)
+		require.Equal(t, userAuthorityReqs[1][0].AuthorityCode, ticket1.TicketAuthorities[0].AuthorityCode)
+		require.Equal(t, authorities[1].AuthorityName, ticket1.TicketAuthorities[0].AuthorityName)
+		require.Equal(t, authorities[1].Summary, ticket1.TicketAuthorities[0].Summary)
+		require.Equal(t, int64(2*time.Hour/time.Millisecond), *ticket1.TicketAuthorities[0].ExpiryDurationMS)
 	})
 }
