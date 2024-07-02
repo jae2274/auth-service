@@ -83,6 +83,9 @@ func getTicket(ctx context.Context, exec boil.ContextExecutor, ticketId string) 
 }
 
 func CreateTicket(ctx context.Context, tx *sql.Tx, createdByUser int, ticketName string, authorities []*dto.UserAuthorityReq, useableCount int) (*models.Ticket, error) {
+	if useableCount <= 0 {
+		return nil, terr.New("useableCount must be greater than 0")
+	}
 	err := attachAuthorityIds(ctx, tx, authorities)
 	if err != nil {
 		return nil, err
