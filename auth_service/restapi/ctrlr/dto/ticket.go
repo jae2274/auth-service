@@ -1,6 +1,7 @@
 package dto
 
 type CreateTicketRequest struct {
+	UseableCount      int                 `json:"useableCount"`
 	TicketName        string              `json:"ticketName"`
 	TicketAuthorities []*UserAuthorityReq `json:"ticketAuthorities"`
 }

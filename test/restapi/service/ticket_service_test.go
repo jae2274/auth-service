@@ -42,7 +42,7 @@ func TestTicketService(t *testing.T) {
 		ctx := context.Background()
 		admin := signUpAdminUser(t, ctx, db)
 
-		_, err := createTicketWithTx(ctx, db, admin.UserID, "ticketName", []*dto.UserAuthorityReq{{AuthorityCode: "notExistedAuthority"}})
+		_, err := createTicketWithTx(ctx, db, admin.UserID, "ticketName", []*dto.UserAuthorityReq{{AuthorityCode: "notExistedAuthority"}}, 1)
 		require.Error(t, err)
 	})
 
@@ -56,7 +56,7 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
-		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities)
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities, 1)
 		require.NoError(t, err)
 		require.NotEmpty(t, ticketId)
 
@@ -92,7 +92,7 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
-		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities)
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities, 1)
 		require.NoError(t, err)
 		require.NotEmpty(t, ticketId)
 
@@ -127,11 +127,11 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
-		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities)
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities, 1)
 		require.NoError(t, err)
 		require.NotEmpty(t, ticketId)
 
-		_, err = createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities)
+		_, err = createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities, 1)
 		require.Error(t, err)
 	})
 
@@ -165,7 +165,7 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
-		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs)
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 1)
 		require.NoError(t, err)
 
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
@@ -196,7 +196,7 @@ func TestTicketService(t *testing.T) {
 		}
 
 		ticketName := "ticketName"
-		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs)
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 1)
 		require.NoError(t, err)
 
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
@@ -218,6 +218,106 @@ func TestTicketService(t *testing.T) {
 		}
 	})
 
+	anotherUser1 := &ooauth.UserInfo{
+		AuthorizedBy: domain.GOOGLE,
+		AuthorizedID: "anotherUser1",
+		Email:        "anotherUser1@email.com",
+		Username:     "anotherUser1",
+	}
+
+	anotherUser2 := &ooauth.UserInfo{
+		AuthorizedBy: domain.GOOGLE,
+		AuthorizedID: "anotherUser2",
+		Email:        "anotherUser2@email.com",
+		Username:     "anotherUser2",
+	}
+
+	t.Run("can use ticket many times as useableCount", func(t *testing.T) {
+		db := tinit.DB(t)
+
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+		admin := signUpAdminUser(t, ctx, db)
+
+		userAuthorityReqs := []*dto.UserAuthorityReq{
+			{AuthorityCode: authorities[0].AuthorityCode},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
+		}
+
+		ticketName := "ticketName"
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 2) // 사용가능 횟수 2회
+		require.NoError(t, err)
+
+		users := make([]*models.User, 0, 3)
+		for _, targetUser := range []*ooauth.UserInfo{userinfo, anotherUser1, anotherUser2} {
+			user, err := signUp(ctx, db, targetUser, []*dto.UserAgreementReq{})
+			require.NoError(t, err)
+			users = append(users, user)
+		}
+
+		for _, targetUser := range users[:2] {
+			now := time.Now()
+			err := useTicket(ctx, db, targetUser.UserID, ticketId)
+			require.NoError(t, err)
+
+			userAuthorities, err := service.FindValidUserAuthorities(ctx, db, targetUser.UserID)
+			require.NoError(t, err)
+			require.Len(t, userAuthorities, len(userAuthorityReqs))
+
+			for i, userAuthority := range userAuthorities {
+				requireEqualUserRole(t, targetUser.UserID, now, userAuthorityReqs[i], userAuthority)
+			}
+		}
+
+		err = useTicket(ctx, db, users[2].UserID, ticketId) //사용가능 횟수 초과
+		require.Error(t, err)
+
+		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, users[2].UserID)
+		require.NoError(t, err)
+		require.Len(t, userAuthorities, 0)
+	})
+
+	t.Run("same ticket cannot be used by same user", func(t *testing.T) {
+		db := tinit.DB(t)
+
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+		admin := signUpAdminUser(t, ctx, db)
+
+		userAuthorityReqs := []*dto.UserAuthorityReq{
+			{AuthorityCode: authorities[0].AuthorityCode},
+			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
+		}
+
+		ticketName := "ticketName"
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 2)
+		require.NoError(t, err)
+
+		user, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		now := time.Now()
+		err = useTicket(ctx, db, user.UserID, ticketId)
+		require.NoError(t, err)
+
+		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, user.UserID)
+		require.NoError(t, err)
+		require.Len(t, userAuthorities, len(userAuthorityReqs))
+
+		for i, userAuthority := range userAuthorities {
+			requireEqualUserRole(t, user.UserID, now, userAuthorityReqs[i], userAuthority)
+		}
+
+		err = useTicket(ctx, db, user.UserID, ticketId) // 이미 사용한 티켓
+		require.Error(t, err)
+
+		userAuthorities, err = service.FindValidUserAuthorities(ctx, db, user.UserID)
+		require.NoError(t, err)
+		require.Len(t, userAuthorities, len(userAuthorityReqs))
+
+		for i, userAuthority := range userAuthorities {
+			requireEqualUserRole(t, user.UserID, now, userAuthorityReqs[i], userAuthority)
+		}
+	})
+
 	t.Run("return isUsed true after ticket is used", func(t *testing.T) {
 		db := tinit.DB(t)
 		ctx, _, _, authorities := initAgreementFunc(t, db)
@@ -228,7 +328,7 @@ func TestTicketService(t *testing.T) {
 		}
 
 		ticketName := "ticketName"
-		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs)
+		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 1)
 		require.NoError(t, err)
 
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
@@ -263,7 +363,7 @@ func TestTicketService(t *testing.T) {
 
 		ticketIds := make([]string, 0, len(userAuthorityReqs))
 		for i, userAuthorityReq := range userAuthorityReqs {
-			ticketId, err := createTicketWithTx(ctx, db, admin.UserID, "ticket"+strconv.Itoa(i), userAuthorityReq)
+			ticketId, err := createTicketWithTx(ctx, db, admin.UserID, "ticket"+strconv.Itoa(i), userAuthorityReq, 1)
 			require.NoError(t, err)
 
 			ticketIds = append(ticketIds, ticketId)

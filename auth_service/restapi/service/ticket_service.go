@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jae2274/auth-service/auth_service/models"
@@ -27,12 +26,16 @@ func GetTicketInfo(ctx context.Context, exec boil.ContextExecutor, ticketId stri
 	// if err != nil {
 	// 	return nil, false, terr.Wrap(err)
 	// }
+	count, err := models.TicketSubs(models.TicketSubWhere.TicketID.EQ(ticket.TicketID)).Count(ctx, exec)
+	if err != nil {
+		return nil, false, terr.Wrap(err)
+	}
 
-	return convertToDtoTicket(ticket), true, nil
+	return convertToDtoTicket(ticket, count), true, nil
 }
 
 // func convert
-func convertToDtoTicket(ticket *models.Ticket) *dto.Ticket {
+func convertToDtoTicket(ticket *models.Ticket, usedCount int64) *dto.Ticket {
 	ticketAuthorities := make([]*dto.TicketAuthority, 0, len(ticket.R.TicketAuthorities))
 	for _, mTicketAuthority := range ticket.R.TicketAuthorities {
 		ticketAuthorities = append(ticketAuthorities, convertToDtoTicketAuthority(mTicketAuthority))
@@ -43,7 +46,7 @@ func convertToDtoTicket(ticket *models.Ticket) *dto.Ticket {
 		TicketName:        ticket.TicketName,
 		TicketAuthorities: ticketAuthorities,
 		CreateUnixMilli:   ticket.CreateDate.UnixMilli(),
-		IsUsed:            ticket.UsedBy.Valid && ticket.UsedDate.Valid,
+		IsUsed:            int64(ticket.UseableCount) <= usedCount,
 	}
 }
 
@@ -77,13 +80,13 @@ func getTicket(ctx context.Context, exec boil.ContextExecutor, ticketId string) 
 	return ticket, true, nil
 }
 
-func CreateTicket(ctx context.Context, tx *sql.Tx, createdByUser int, ticketName string, authorities []*dto.UserAuthorityReq) (string, error) {
+func CreateTicket(ctx context.Context, tx *sql.Tx, createdByUser int, ticketName string, authorities []*dto.UserAuthorityReq, useableCount int) (string, error) {
 	err := attachAuthorityIds(ctx, tx, authorities)
 	if err != nil {
 		return "", err
 	}
 
-	ticket := &models.Ticket{UUID: uuid.New().String(), TicketName: ticketName, CreatedBy: createdByUser}
+	ticket := &models.Ticket{UUID: uuid.New().String(), TicketName: ticketName, CreatedBy: createdByUser, UseableCount: useableCount}
 
 	if err := ticket.Insert(ctx, tx, boil.Infer()); err != nil {
 		return "", terr.Wrap(err)
@@ -110,14 +113,28 @@ func CreateTicket(ctx context.Context, tx *sql.Tx, createdByUser int, ticketName
 }
 
 func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) error {
-	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId), models.TicketWhere.UsedBy.IsNull(), qm.Load(models.TicketRels.TicketAuthorities)).One(ctx, tx)
+	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId), qm.Load(models.TicketRels.TicketAuthorities), qm.For("update")).One(ctx, tx)
 	if err != nil {
 		return terr.Wrap(err)
 	}
 
-	ticket.UsedBy = null.IntFrom(userId)
-	ticket.UsedDate = null.TimeFrom(time.Now())
-	ticket.Update(ctx, tx, boil.Infer())
+	usedCount, err := models.TicketSubs(models.TicketSubWhere.TicketID.EQ(ticket.TicketID)).Count(ctx, tx)
+	if err != nil {
+		return terr.Wrap(err)
+	}
+
+	if usedCount >= int64(ticket.UseableCount) {
+		return terr.New("no more useable ticket")
+	}
+
+	ticketSub := &models.TicketSub{
+		TicketID: ticket.TicketID,
+		UsedBy:   userId,
+	}
+	err = ticketSub.Insert(ctx, tx, boil.Infer())
+	if err != nil {
+		return terr.Wrap(err)
+	}
 
 	dUserAuthorities := make([]*dto.UserAuthorityReq, 0, len(ticket.R.TicketAuthorities))
 	for _, ticketAuthority := range ticket.R.TicketAuthorities {
@@ -144,7 +161,7 @@ func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) err
 func GetAllTickets(ctx context.Context, exec boil.ContextExecutor) ([]*dto.TicketDetail, error) {
 	tickets, err := models.Tickets(
 		qm.Load(models.TicketRels.TicketAuthorities+"."+models.TicketAuthorityRels.Authority),
-		qm.Load(models.TicketRels.UsedByUser),
+		qm.Load(models.TicketRels.TicketSubs+"."+models.TicketSubRels.UsedByUser),
 	).All(ctx, exec)
 	if err != nil {
 		return nil, terr.Wrap(err)
@@ -152,9 +169,14 @@ func GetAllTickets(ctx context.Context, exec boil.ContextExecutor) ([]*dto.Ticke
 
 	dtoTickets := make([]*dto.TicketDetail, 0, len(tickets))
 	for _, ticket := range tickets {
+		usedCount := len(ticket.R.TicketSubs)
+		var userinfo *dto.UsedInfo
+		if usedCount > 0 {
+			userinfo = convertUsedInfo(ticket.R.TicketSubs[0])
+		}
 		dtoTickets = append(dtoTickets, &dto.TicketDetail{
-			Ticket:    *convertToDtoTicket(ticket),
-			UsedInfo:  convertUsedInfo(ticket),
+			Ticket:    *convertToDtoTicket(ticket, int64(usedCount)),
+			UsedInfo:  userinfo, //TODO: list로 변경
 			CreatedBy: ticket.CreatedBy,
 		})
 	}
@@ -162,14 +184,11 @@ func GetAllTickets(ctx context.Context, exec boil.ContextExecutor) ([]*dto.Ticke
 	return dtoTickets, nil
 }
 
-func convertUsedInfo(ticket *models.Ticket) *dto.UsedInfo {
-	if ticket.UsedBy.Valid && ticket.UsedDate.Valid {
-		return &dto.UsedInfo{
-			UsedBy:        ticket.UsedBy.Int,
-			UsedUserName:  ticket.R.UsedByUser.Name,
-			UsedUnixMilli: ptr.P(ticket.UsedDate.Time.UnixMilli()),
-		}
+func convertUsedInfo(ticketSub *models.TicketSub) *dto.UsedInfo {
+	return &dto.UsedInfo{
+		UsedBy:        ticketSub.UsedBy,
+		UsedUserName:  ticketSub.R.UsedByUser.Name,
+		UsedUnixMilli: ptr.P(ticketSub.UsedDate.UnixMilli()),
 	}
 
-	return nil
 }

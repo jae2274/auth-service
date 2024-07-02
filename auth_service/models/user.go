@@ -87,12 +87,12 @@ var UserWhere = struct {
 // UserRels is where relationship names are stored.
 var UserRels = struct {
 	CreatedByTickets string
-	UsedByTickets    string
+	UsedByTicketSubs string
 	UserAgreements   string
 	UserAuthorities  string
 }{
 	CreatedByTickets: "CreatedByTickets",
-	UsedByTickets:    "UsedByTickets",
+	UsedByTicketSubs: "UsedByTicketSubs",
 	UserAgreements:   "UserAgreements",
 	UserAuthorities:  "UserAuthorities",
 }
@@ -100,7 +100,7 @@ var UserRels = struct {
 // userR is where relationships are stored.
 type userR struct {
 	CreatedByTickets TicketSlice        `boil:"CreatedByTickets" json:"CreatedByTickets" toml:"CreatedByTickets" yaml:"CreatedByTickets"`
-	UsedByTickets    TicketSlice        `boil:"UsedByTickets" json:"UsedByTickets" toml:"UsedByTickets" yaml:"UsedByTickets"`
+	UsedByTicketSubs TicketSubSlice     `boil:"UsedByTicketSubs" json:"UsedByTicketSubs" toml:"UsedByTicketSubs" yaml:"UsedByTicketSubs"`
 	UserAgreements   UserAgreementSlice `boil:"UserAgreements" json:"UserAgreements" toml:"UserAgreements" yaml:"UserAgreements"`
 	UserAuthorities  UserAuthoritySlice `boil:"UserAuthorities" json:"UserAuthorities" toml:"UserAuthorities" yaml:"UserAuthorities"`
 }
@@ -117,11 +117,11 @@ func (r *userR) GetCreatedByTickets() TicketSlice {
 	return r.CreatedByTickets
 }
 
-func (r *userR) GetUsedByTickets() TicketSlice {
+func (r *userR) GetUsedByTicketSubs() TicketSubSlice {
 	if r == nil {
 		return nil
 	}
-	return r.UsedByTickets
+	return r.UsedByTicketSubs
 }
 
 func (r *userR) GetUserAgreements() UserAgreementSlice {
@@ -468,18 +468,18 @@ func (o *User) CreatedByTickets(mods ...qm.QueryMod) ticketQuery {
 	return Tickets(queryMods...)
 }
 
-// UsedByTickets retrieves all the ticket's Tickets with an executor via used_by column.
-func (o *User) UsedByTickets(mods ...qm.QueryMod) ticketQuery {
+// UsedByTicketSubs retrieves all the ticket_sub's TicketSubs with an executor via used_by column.
+func (o *User) UsedByTicketSubs(mods ...qm.QueryMod) ticketSubQuery {
 	var queryMods []qm.QueryMod
 	if len(mods) != 0 {
 		queryMods = append(queryMods, mods...)
 	}
 
 	queryMods = append(queryMods,
-		qm.Where("`ticket`.`used_by`=?", o.UserID),
+		qm.Where("`ticket_sub`.`used_by`=?", o.UserID),
 	)
 
-	return Tickets(queryMods...)
+	return TicketSubs(queryMods...)
 }
 
 // UserAgreements retrieves all the user_agreement's UserAgreements with an executor.
@@ -623,9 +623,9 @@ func (userL) LoadCreatedByTickets(ctx context.Context, e boil.ContextExecutor, s
 	return nil
 }
 
-// LoadUsedByTickets allows an eager lookup of values, cached into the
+// LoadUsedByTicketSubs allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
-func (userL) LoadUsedByTickets(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
+func (userL) LoadUsedByTicketSubs(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
 	var slice []*User
 	var object *User
 
@@ -678,8 +678,8 @@ func (userL) LoadUsedByTickets(ctx context.Context, e boil.ContextExecutor, sing
 	}
 
 	query := NewQuery(
-		qm.From(`ticket`),
-		qm.WhereIn(`ticket.used_by in ?`, argsSlice...),
+		qm.From(`ticket_sub`),
+		qm.WhereIn(`ticket_sub.used_by in ?`, argsSlice...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -687,22 +687,22 @@ func (userL) LoadUsedByTickets(ctx context.Context, e boil.ContextExecutor, sing
 
 	results, err := query.QueryContext(ctx, e)
 	if err != nil {
-		return errors.Wrap(err, "failed to eager load ticket")
+		return errors.Wrap(err, "failed to eager load ticket_sub")
 	}
 
-	var resultSlice []*Ticket
+	var resultSlice []*TicketSub
 	if err = queries.Bind(results, &resultSlice); err != nil {
-		return errors.Wrap(err, "failed to bind eager loaded slice ticket")
+		return errors.Wrap(err, "failed to bind eager loaded slice ticket_sub")
 	}
 
 	if err = results.Close(); err != nil {
-		return errors.Wrap(err, "failed to close results in eager load on ticket")
+		return errors.Wrap(err, "failed to close results in eager load on ticket_sub")
 	}
 	if err = results.Err(); err != nil {
-		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for ticket")
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for ticket_sub")
 	}
 
-	if len(ticketAfterSelectHooks) != 0 {
+	if len(ticketSubAfterSelectHooks) != 0 {
 		for _, obj := range resultSlice {
 			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
 				return err
@@ -710,10 +710,10 @@ func (userL) LoadUsedByTickets(ctx context.Context, e boil.ContextExecutor, sing
 		}
 	}
 	if singular {
-		object.R.UsedByTickets = resultSlice
+		object.R.UsedByTicketSubs = resultSlice
 		for _, foreign := range resultSlice {
 			if foreign.R == nil {
-				foreign.R = &ticketR{}
+				foreign.R = &ticketSubR{}
 			}
 			foreign.R.UsedByUser = object
 		}
@@ -722,10 +722,10 @@ func (userL) LoadUsedByTickets(ctx context.Context, e boil.ContextExecutor, sing
 
 	for _, foreign := range resultSlice {
 		for _, local := range slice {
-			if queries.Equal(local.UserID, foreign.UsedBy) {
-				local.R.UsedByTickets = append(local.R.UsedByTickets, foreign)
+			if local.UserID == foreign.UsedBy {
+				local.R.UsedByTicketSubs = append(local.R.UsedByTicketSubs, foreign)
 				if foreign.R == nil {
-					foreign.R = &ticketR{}
+					foreign.R = &ticketSubR{}
 				}
 				foreign.R.UsedByUser = local
 				break
@@ -1015,25 +1015,25 @@ func (o *User) AddCreatedByTickets(ctx context.Context, exec boil.ContextExecuto
 	return nil
 }
 
-// AddUsedByTickets adds the given related objects to the existing relationships
+// AddUsedByTicketSubs adds the given related objects to the existing relationships
 // of the user, optionally inserting them as new records.
-// Appends related to o.R.UsedByTickets.
+// Appends related to o.R.UsedByTicketSubs.
 // Sets related.R.UsedByUser appropriately.
-func (o *User) AddUsedByTickets(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Ticket) error {
+func (o *User) AddUsedByTicketSubs(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*TicketSub) error {
 	var err error
 	for _, rel := range related {
 		if insert {
-			queries.Assign(&rel.UsedBy, o.UserID)
+			rel.UsedBy = o.UserID
 			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
 				return errors.Wrap(err, "failed to insert into foreign table")
 			}
 		} else {
 			updateQuery := fmt.Sprintf(
-				"UPDATE `ticket` SET %s WHERE %s",
+				"UPDATE `ticket_sub` SET %s WHERE %s",
 				strmangle.SetParamNames("`", "`", 0, []string{"used_by"}),
-				strmangle.WhereClause("`", "`", 0, ticketPrimaryKeyColumns),
+				strmangle.WhereClause("`", "`", 0, ticketSubPrimaryKeyColumns),
 			)
-			values := []interface{}{o.UserID, rel.TicketID}
+			values := []interface{}{o.UserID, rel.TicketID, rel.UsedBy}
 
 			if boil.IsDebug(ctx) {
 				writer := boil.DebugWriterFrom(ctx)
@@ -1044,101 +1044,27 @@ func (o *User) AddUsedByTickets(ctx context.Context, exec boil.ContextExecutor, 
 				return errors.Wrap(err, "failed to update foreign table")
 			}
 
-			queries.Assign(&rel.UsedBy, o.UserID)
+			rel.UsedBy = o.UserID
 		}
 	}
 
 	if o.R == nil {
 		o.R = &userR{
-			UsedByTickets: related,
+			UsedByTicketSubs: related,
 		}
 	} else {
-		o.R.UsedByTickets = append(o.R.UsedByTickets, related...)
+		o.R.UsedByTicketSubs = append(o.R.UsedByTicketSubs, related...)
 	}
 
 	for _, rel := range related {
 		if rel.R == nil {
-			rel.R = &ticketR{
+			rel.R = &ticketSubR{
 				UsedByUser: o,
 			}
 		} else {
 			rel.R.UsedByUser = o
 		}
 	}
-	return nil
-}
-
-// SetUsedByTickets removes all previously related items of the
-// user replacing them completely with the passed
-// in related items, optionally inserting them as new records.
-// Sets o.R.UsedByUser's UsedByTickets accordingly.
-// Replaces o.R.UsedByTickets with related.
-// Sets related.R.UsedByUser's UsedByTickets accordingly.
-func (o *User) SetUsedByTickets(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Ticket) error {
-	query := "update `ticket` set `used_by` = null where `used_by` = ?"
-	values := []interface{}{o.UserID}
-	if boil.IsDebug(ctx) {
-		writer := boil.DebugWriterFrom(ctx)
-		fmt.Fprintln(writer, query)
-		fmt.Fprintln(writer, values)
-	}
-	_, err := exec.ExecContext(ctx, query, values...)
-	if err != nil {
-		return errors.Wrap(err, "failed to remove relationships before set")
-	}
-
-	if o.R != nil {
-		for _, rel := range o.R.UsedByTickets {
-			queries.SetScanner(&rel.UsedBy, nil)
-			if rel.R == nil {
-				continue
-			}
-
-			rel.R.UsedByUser = nil
-		}
-		o.R.UsedByTickets = nil
-	}
-
-	return o.AddUsedByTickets(ctx, exec, insert, related...)
-}
-
-// RemoveUsedByTickets relationships from objects passed in.
-// Removes related items from R.UsedByTickets (uses pointer comparison, removal does not keep order)
-// Sets related.R.UsedByUser.
-func (o *User) RemoveUsedByTickets(ctx context.Context, exec boil.ContextExecutor, related ...*Ticket) error {
-	if len(related) == 0 {
-		return nil
-	}
-
-	var err error
-	for _, rel := range related {
-		queries.SetScanner(&rel.UsedBy, nil)
-		if rel.R != nil {
-			rel.R.UsedByUser = nil
-		}
-		if _, err = rel.Update(ctx, exec, boil.Whitelist("used_by")); err != nil {
-			return err
-		}
-	}
-	if o.R == nil {
-		return nil
-	}
-
-	for _, rel := range related {
-		for i, ri := range o.R.UsedByTickets {
-			if rel != ri {
-				continue
-			}
-
-			ln := len(o.R.UsedByTickets)
-			if ln > 1 && i < ln-1 {
-				o.R.UsedByTickets[i] = o.R.UsedByTickets[ln-1]
-			}
-			o.R.UsedByTickets = o.R.UsedByTickets[:ln-1]
-			break
-		}
-	}
-
 	return nil
 }
 

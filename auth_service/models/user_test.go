@@ -572,14 +572,14 @@ func testUserToManyCreatedByTickets(t *testing.T) {
 	}
 }
 
-func testUserToManyUsedByTickets(t *testing.T) {
+func testUserToManyUsedByTicketSubs(t *testing.T) {
 	var err error
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
 
 	var a User
-	var b, c Ticket
+	var b, c TicketSub
 
 	seed := randomize.NewSeed()
 	if err = randomize.Struct(seed, &a, userDBTypes, true, userColumnsWithDefault...); err != nil {
@@ -590,15 +590,16 @@ func testUserToManyUsedByTickets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = randomize.Struct(seed, &b, ticketDBTypes, false, ticketColumnsWithDefault...); err != nil {
+	if err = randomize.Struct(seed, &b, ticketSubDBTypes, false, ticketSubColumnsWithDefault...); err != nil {
 		t.Fatal(err)
 	}
-	if err = randomize.Struct(seed, &c, ticketDBTypes, false, ticketColumnsWithDefault...); err != nil {
+	if err = randomize.Struct(seed, &c, ticketSubDBTypes, false, ticketSubColumnsWithDefault...); err != nil {
 		t.Fatal(err)
 	}
 
-	queries.Assign(&b.UsedBy, a.UserID)
-	queries.Assign(&c.UsedBy, a.UserID)
+	b.UsedBy = a.UserID
+	c.UsedBy = a.UserID
+
 	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Fatal(err)
 	}
@@ -606,17 +607,17 @@ func testUserToManyUsedByTickets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	check, err := a.UsedByTickets().All(ctx, tx)
+	check, err := a.UsedByTicketSubs().All(ctx, tx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	bFound, cFound := false, false
 	for _, v := range check {
-		if queries.Equal(v.UsedBy, b.UsedBy) {
+		if v.UsedBy == b.UsedBy {
 			bFound = true
 		}
-		if queries.Equal(v.UsedBy, c.UsedBy) {
+		if v.UsedBy == c.UsedBy {
 			cFound = true
 		}
 	}
@@ -629,18 +630,18 @@ func testUserToManyUsedByTickets(t *testing.T) {
 	}
 
 	slice := UserSlice{&a}
-	if err = a.L.LoadUsedByTickets(ctx, tx, false, (*[]*User)(&slice), nil); err != nil {
+	if err = a.L.LoadUsedByTicketSubs(ctx, tx, false, (*[]*User)(&slice), nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(a.R.UsedByTickets); got != 2 {
+	if got := len(a.R.UsedByTicketSubs); got != 2 {
 		t.Error("number of eager loaded records wrong, got:", got)
 	}
 
-	a.R.UsedByTickets = nil
-	if err = a.L.LoadUsedByTickets(ctx, tx, true, &a, nil); err != nil {
+	a.R.UsedByTicketSubs = nil
+	if err = a.L.LoadUsedByTicketSubs(ctx, tx, true, &a, nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := len(a.R.UsedByTickets); got != 2 {
+	if got := len(a.R.UsedByTicketSubs); got != 2 {
 		t.Error("number of eager loaded records wrong, got:", got)
 	}
 
@@ -880,7 +881,7 @@ func testUserToManyAddOpCreatedByTickets(t *testing.T) {
 		}
 	}
 }
-func testUserToManyAddOpUsedByTickets(t *testing.T) {
+func testUserToManyAddOpUsedByTicketSubs(t *testing.T) {
 	var err error
 
 	ctx := context.Background()
@@ -888,15 +889,15 @@ func testUserToManyAddOpUsedByTickets(t *testing.T) {
 	defer func() { _ = tx.Rollback() }()
 
 	var a User
-	var b, c, d, e Ticket
+	var b, c, d, e TicketSub
 
 	seed := randomize.NewSeed()
 	if err = randomize.Struct(seed, &a, userDBTypes, false, strmangle.SetComplement(userPrimaryKeyColumns, userColumnsWithoutDefault)...); err != nil {
 		t.Fatal(err)
 	}
-	foreigners := []*Ticket{&b, &c, &d, &e}
+	foreigners := []*TicketSub{&b, &c, &d, &e}
 	for _, x := range foreigners {
-		if err = randomize.Struct(seed, x, ticketDBTypes, false, strmangle.SetComplement(ticketPrimaryKeyColumns, ticketColumnsWithoutDefault)...); err != nil {
+		if err = randomize.Struct(seed, x, ticketSubDBTypes, false, strmangle.SetComplement(ticketSubPrimaryKeyColumns, ticketSubColumnsWithoutDefault)...); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -911,13 +912,13 @@ func testUserToManyAddOpUsedByTickets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	foreignersSplitByInsertion := [][]*Ticket{
+	foreignersSplitByInsertion := [][]*TicketSub{
 		{&b, &c},
 		{&d, &e},
 	}
 
 	for i, x := range foreignersSplitByInsertion {
-		err = a.AddUsedByTickets(ctx, tx, i != 0, x...)
+		err = a.AddUsedByTicketSubs(ctx, tx, i != 0, x...)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -925,10 +926,10 @@ func testUserToManyAddOpUsedByTickets(t *testing.T) {
 		first := x[0]
 		second := x[1]
 
-		if !queries.Equal(a.UserID, first.UsedBy) {
+		if a.UserID != first.UsedBy {
 			t.Error("foreign key was wrong value", a.UserID, first.UsedBy)
 		}
-		if !queries.Equal(a.UserID, second.UsedBy) {
+		if a.UserID != second.UsedBy {
 			t.Error("foreign key was wrong value", a.UserID, second.UsedBy)
 		}
 
@@ -939,14 +940,14 @@ func testUserToManyAddOpUsedByTickets(t *testing.T) {
 			t.Error("relationship was not added properly to the foreign slice")
 		}
 
-		if a.R.UsedByTickets[i*2] != first {
+		if a.R.UsedByTicketSubs[i*2] != first {
 			t.Error("relationship struct slice not set to correct value")
 		}
-		if a.R.UsedByTickets[i*2+1] != second {
+		if a.R.UsedByTicketSubs[i*2+1] != second {
 			t.Error("relationship struct slice not set to correct value")
 		}
 
-		count, err := a.UsedByTickets().Count(ctx, tx)
+		count, err := a.UsedByTicketSubs().Count(ctx, tx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -955,182 +956,6 @@ func testUserToManyAddOpUsedByTickets(t *testing.T) {
 		}
 	}
 }
-
-func testUserToManySetOpUsedByTickets(t *testing.T) {
-	var err error
-
-	ctx := context.Background()
-	tx := MustTx(boil.BeginTx(ctx, nil))
-	defer func() { _ = tx.Rollback() }()
-
-	var a User
-	var b, c, d, e Ticket
-
-	seed := randomize.NewSeed()
-	if err = randomize.Struct(seed, &a, userDBTypes, false, strmangle.SetComplement(userPrimaryKeyColumns, userColumnsWithoutDefault)...); err != nil {
-		t.Fatal(err)
-	}
-	foreigners := []*Ticket{&b, &c, &d, &e}
-	for _, x := range foreigners {
-		if err = randomize.Struct(seed, x, ticketDBTypes, false, strmangle.SetComplement(ticketPrimaryKeyColumns, ticketColumnsWithoutDefault)...); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	if err = a.Insert(ctx, tx, boil.Infer()); err != nil {
-		t.Fatal(err)
-	}
-	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
-		t.Fatal(err)
-	}
-	if err = c.Insert(ctx, tx, boil.Infer()); err != nil {
-		t.Fatal(err)
-	}
-
-	err = a.SetUsedByTickets(ctx, tx, false, &b, &c)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	count, err := a.UsedByTickets().Count(ctx, tx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if count != 2 {
-		t.Error("count was wrong:", count)
-	}
-
-	err = a.SetUsedByTickets(ctx, tx, true, &d, &e)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	count, err = a.UsedByTickets().Count(ctx, tx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if count != 2 {
-		t.Error("count was wrong:", count)
-	}
-
-	if !queries.IsValuerNil(b.UsedBy) {
-		t.Error("want b's foreign key value to be nil")
-	}
-	if !queries.IsValuerNil(c.UsedBy) {
-		t.Error("want c's foreign key value to be nil")
-	}
-	if !queries.Equal(a.UserID, d.UsedBy) {
-		t.Error("foreign key was wrong value", a.UserID, d.UsedBy)
-	}
-	if !queries.Equal(a.UserID, e.UsedBy) {
-		t.Error("foreign key was wrong value", a.UserID, e.UsedBy)
-	}
-
-	if b.R.UsedByUser != nil {
-		t.Error("relationship was not removed properly from the foreign struct")
-	}
-	if c.R.UsedByUser != nil {
-		t.Error("relationship was not removed properly from the foreign struct")
-	}
-	if d.R.UsedByUser != &a {
-		t.Error("relationship was not added properly to the foreign struct")
-	}
-	if e.R.UsedByUser != &a {
-		t.Error("relationship was not added properly to the foreign struct")
-	}
-
-	if a.R.UsedByTickets[0] != &d {
-		t.Error("relationship struct slice not set to correct value")
-	}
-	if a.R.UsedByTickets[1] != &e {
-		t.Error("relationship struct slice not set to correct value")
-	}
-}
-
-func testUserToManyRemoveOpUsedByTickets(t *testing.T) {
-	var err error
-
-	ctx := context.Background()
-	tx := MustTx(boil.BeginTx(ctx, nil))
-	defer func() { _ = tx.Rollback() }()
-
-	var a User
-	var b, c, d, e Ticket
-
-	seed := randomize.NewSeed()
-	if err = randomize.Struct(seed, &a, userDBTypes, false, strmangle.SetComplement(userPrimaryKeyColumns, userColumnsWithoutDefault)...); err != nil {
-		t.Fatal(err)
-	}
-	foreigners := []*Ticket{&b, &c, &d, &e}
-	for _, x := range foreigners {
-		if err = randomize.Struct(seed, x, ticketDBTypes, false, strmangle.SetComplement(ticketPrimaryKeyColumns, ticketColumnsWithoutDefault)...); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	if err := a.Insert(ctx, tx, boil.Infer()); err != nil {
-		t.Fatal(err)
-	}
-
-	err = a.AddUsedByTickets(ctx, tx, true, foreigners...)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	count, err := a.UsedByTickets().Count(ctx, tx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if count != 4 {
-		t.Error("count was wrong:", count)
-	}
-
-	err = a.RemoveUsedByTickets(ctx, tx, foreigners[:2]...)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	count, err = a.UsedByTickets().Count(ctx, tx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if count != 2 {
-		t.Error("count was wrong:", count)
-	}
-
-	if !queries.IsValuerNil(b.UsedBy) {
-		t.Error("want b's foreign key value to be nil")
-	}
-	if !queries.IsValuerNil(c.UsedBy) {
-		t.Error("want c's foreign key value to be nil")
-	}
-
-	if b.R.UsedByUser != nil {
-		t.Error("relationship was not removed properly from the foreign struct")
-	}
-	if c.R.UsedByUser != nil {
-		t.Error("relationship was not removed properly from the foreign struct")
-	}
-	if d.R.UsedByUser != &a {
-		t.Error("relationship to a should have been preserved")
-	}
-	if e.R.UsedByUser != &a {
-		t.Error("relationship to a should have been preserved")
-	}
-
-	if len(a.R.UsedByTickets) != 2 {
-		t.Error("should have preserved two relationships")
-	}
-
-	// Removal doesn't do a stable deletion for performance so we have to flip the order
-	if a.R.UsedByTickets[1] != &d {
-		t.Error("relationship to d should have been preserved")
-	}
-	if a.R.UsedByTickets[0] != &e {
-		t.Error("relationship to e should have been preserved")
-	}
-}
-
 func testUserToManyAddOpUserAgreements(t *testing.T) {
 	var err error
 

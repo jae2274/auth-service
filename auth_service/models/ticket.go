@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -24,117 +23,50 @@ import (
 
 // Ticket is an object representing the database table.
 type Ticket struct {
-	TicketID   int       `boil:"ticket_id" json:"ticket_id" toml:"ticket_id" yaml:"ticket_id"`
-	UUID       string    `boil:"uuid" json:"uuid" toml:"uuid" yaml:"uuid"`
-	TicketName string    `boil:"ticket_name" json:"ticket_name" toml:"ticket_name" yaml:"ticket_name"`
-	UsedBy     null.Int  `boil:"used_by" json:"used_by,omitempty" toml:"used_by" yaml:"used_by,omitempty"`
-	UsedDate   null.Time `boil:"used_date" json:"used_date,omitempty" toml:"used_date" yaml:"used_date,omitempty"`
-	CreateDate time.Time `boil:"create_date" json:"create_date" toml:"create_date" yaml:"create_date"`
-	CreatedBy  int       `boil:"created_by" json:"created_by" toml:"created_by" yaml:"created_by"`
+	TicketID     int       `boil:"ticket_id" json:"ticket_id" toml:"ticket_id" yaml:"ticket_id"`
+	UUID         string    `boil:"uuid" json:"uuid" toml:"uuid" yaml:"uuid"`
+	TicketName   string    `boil:"ticket_name" json:"ticket_name" toml:"ticket_name" yaml:"ticket_name"`
+	UseableCount int       `boil:"useable_count" json:"useable_count" toml:"useable_count" yaml:"useable_count"`
+	CreateDate   time.Time `boil:"create_date" json:"create_date" toml:"create_date" yaml:"create_date"`
+	CreatedBy    int       `boil:"created_by" json:"created_by" toml:"created_by" yaml:"created_by"`
 
 	R *ticketR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L ticketL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var TicketColumns = struct {
-	TicketID   string
-	UUID       string
-	TicketName string
-	UsedBy     string
-	UsedDate   string
-	CreateDate string
-	CreatedBy  string
+	TicketID     string
+	UUID         string
+	TicketName   string
+	UseableCount string
+	CreateDate   string
+	CreatedBy    string
 }{
-	TicketID:   "ticket_id",
-	UUID:       "uuid",
-	TicketName: "ticket_name",
-	UsedBy:     "used_by",
-	UsedDate:   "used_date",
-	CreateDate: "create_date",
-	CreatedBy:  "created_by",
+	TicketID:     "ticket_id",
+	UUID:         "uuid",
+	TicketName:   "ticket_name",
+	UseableCount: "useable_count",
+	CreateDate:   "create_date",
+	CreatedBy:    "created_by",
 }
 
 var TicketTableColumns = struct {
-	TicketID   string
-	UUID       string
-	TicketName string
-	UsedBy     string
-	UsedDate   string
-	CreateDate string
-	CreatedBy  string
+	TicketID     string
+	UUID         string
+	TicketName   string
+	UseableCount string
+	CreateDate   string
+	CreatedBy    string
 }{
-	TicketID:   "ticket.ticket_id",
-	UUID:       "ticket.uuid",
-	TicketName: "ticket.ticket_name",
-	UsedBy:     "ticket.used_by",
-	UsedDate:   "ticket.used_date",
-	CreateDate: "ticket.create_date",
-	CreatedBy:  "ticket.created_by",
+	TicketID:     "ticket.ticket_id",
+	UUID:         "ticket.uuid",
+	TicketName:   "ticket.ticket_name",
+	UseableCount: "ticket.useable_count",
+	CreateDate:   "ticket.create_date",
+	CreatedBy:    "ticket.created_by",
 }
 
 // Generated where
-
-type whereHelpernull_Int struct{ field string }
-
-func (w whereHelpernull_Int) EQ(x null.Int) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, false, x)
-}
-func (w whereHelpernull_Int) NEQ(x null.Int) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, true, x)
-}
-func (w whereHelpernull_Int) LT(x null.Int) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpernull_Int) LTE(x null.Int) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpernull_Int) GT(x null.Int) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpernull_Int) GTE(x null.Int) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
-}
-func (w whereHelpernull_Int) IN(slice []int) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
-}
-func (w whereHelpernull_Int) NIN(slice []int) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
-}
-
-func (w whereHelpernull_Int) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
-func (w whereHelpernull_Int) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
-
-type whereHelpernull_Time struct{ field string }
-
-func (w whereHelpernull_Time) EQ(x null.Time) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, false, x)
-}
-func (w whereHelpernull_Time) NEQ(x null.Time) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, true, x)
-}
-func (w whereHelpernull_Time) LT(x null.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpernull_Time) LTE(x null.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpernull_Time) GT(x null.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpernull_Time) GTE(x null.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
-}
-
-func (w whereHelpernull_Time) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
-func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
 
 type whereHelpertime_Time struct{ field string }
 
@@ -158,39 +90,37 @@ func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
 }
 
 var TicketWhere = struct {
-	TicketID   whereHelperint
-	UUID       whereHelperstring
-	TicketName whereHelperstring
-	UsedBy     whereHelpernull_Int
-	UsedDate   whereHelpernull_Time
-	CreateDate whereHelpertime_Time
-	CreatedBy  whereHelperint
+	TicketID     whereHelperint
+	UUID         whereHelperstring
+	TicketName   whereHelperstring
+	UseableCount whereHelperint
+	CreateDate   whereHelpertime_Time
+	CreatedBy    whereHelperint
 }{
-	TicketID:   whereHelperint{field: "`ticket`.`ticket_id`"},
-	UUID:       whereHelperstring{field: "`ticket`.`uuid`"},
-	TicketName: whereHelperstring{field: "`ticket`.`ticket_name`"},
-	UsedBy:     whereHelpernull_Int{field: "`ticket`.`used_by`"},
-	UsedDate:   whereHelpernull_Time{field: "`ticket`.`used_date`"},
-	CreateDate: whereHelpertime_Time{field: "`ticket`.`create_date`"},
-	CreatedBy:  whereHelperint{field: "`ticket`.`created_by`"},
+	TicketID:     whereHelperint{field: "`ticket`.`ticket_id`"},
+	UUID:         whereHelperstring{field: "`ticket`.`uuid`"},
+	TicketName:   whereHelperstring{field: "`ticket`.`ticket_name`"},
+	UseableCount: whereHelperint{field: "`ticket`.`useable_count`"},
+	CreateDate:   whereHelpertime_Time{field: "`ticket`.`create_date`"},
+	CreatedBy:    whereHelperint{field: "`ticket`.`created_by`"},
 }
 
 // TicketRels is where relationship names are stored.
 var TicketRels = struct {
 	CreatedByUser     string
-	UsedByUser        string
 	TicketAuthorities string
+	TicketSubs        string
 }{
 	CreatedByUser:     "CreatedByUser",
-	UsedByUser:        "UsedByUser",
 	TicketAuthorities: "TicketAuthorities",
+	TicketSubs:        "TicketSubs",
 }
 
 // ticketR is where relationships are stored.
 type ticketR struct {
 	CreatedByUser     *User                `boil:"CreatedByUser" json:"CreatedByUser" toml:"CreatedByUser" yaml:"CreatedByUser"`
-	UsedByUser        *User                `boil:"UsedByUser" json:"UsedByUser" toml:"UsedByUser" yaml:"UsedByUser"`
 	TicketAuthorities TicketAuthoritySlice `boil:"TicketAuthorities" json:"TicketAuthorities" toml:"TicketAuthorities" yaml:"TicketAuthorities"`
+	TicketSubs        TicketSubSlice       `boil:"TicketSubs" json:"TicketSubs" toml:"TicketSubs" yaml:"TicketSubs"`
 }
 
 // NewStruct creates a new relationship struct
@@ -205,13 +135,6 @@ func (r *ticketR) GetCreatedByUser() *User {
 	return r.CreatedByUser
 }
 
-func (r *ticketR) GetUsedByUser() *User {
-	if r == nil {
-		return nil
-	}
-	return r.UsedByUser
-}
-
 func (r *ticketR) GetTicketAuthorities() TicketAuthoritySlice {
 	if r == nil {
 		return nil
@@ -219,12 +142,19 @@ func (r *ticketR) GetTicketAuthorities() TicketAuthoritySlice {
 	return r.TicketAuthorities
 }
 
+func (r *ticketR) GetTicketSubs() TicketSubSlice {
+	if r == nil {
+		return nil
+	}
+	return r.TicketSubs
+}
+
 // ticketL is where Load methods for each relationship are stored.
 type ticketL struct{}
 
 var (
-	ticketAllColumns            = []string{"ticket_id", "uuid", "ticket_name", "used_by", "used_date", "create_date", "created_by"}
-	ticketColumnsWithoutDefault = []string{"uuid", "ticket_name", "used_by", "used_date", "created_by"}
+	ticketAllColumns            = []string{"ticket_id", "uuid", "ticket_name", "useable_count", "create_date", "created_by"}
+	ticketColumnsWithoutDefault = []string{"uuid", "ticket_name", "useable_count", "created_by"}
 	ticketColumnsWithDefault    = []string{"ticket_id", "create_date"}
 	ticketPrimaryKeyColumns     = []string{"ticket_id"}
 	ticketGeneratedColumns      = []string{}
@@ -546,17 +476,6 @@ func (o *Ticket) CreatedByUser(mods ...qm.QueryMod) userQuery {
 	return Users(queryMods...)
 }
 
-// UsedByUser pointed to by the foreign key.
-func (o *Ticket) UsedByUser(mods ...qm.QueryMod) userQuery {
-	queryMods := []qm.QueryMod{
-		qm.Where("`user_id` = ?", o.UsedBy),
-	}
-
-	queryMods = append(queryMods, mods...)
-
-	return Users(queryMods...)
-}
-
 // TicketAuthorities retrieves all the ticket_authority's TicketAuthorities with an executor.
 func (o *Ticket) TicketAuthorities(mods ...qm.QueryMod) ticketAuthorityQuery {
 	var queryMods []qm.QueryMod
@@ -569,6 +488,20 @@ func (o *Ticket) TicketAuthorities(mods ...qm.QueryMod) ticketAuthorityQuery {
 	)
 
 	return TicketAuthorities(queryMods...)
+}
+
+// TicketSubs retrieves all the ticket_sub's TicketSubs with an executor.
+func (o *Ticket) TicketSubs(mods ...qm.QueryMod) ticketSubQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("`ticket_sub`.`ticket_id`=?", o.TicketID),
+	)
+
+	return TicketSubs(queryMods...)
 }
 
 // LoadCreatedByUser allows an eager lookup of values, cached into the
@@ -691,130 +624,6 @@ func (ticketL) LoadCreatedByUser(ctx context.Context, e boil.ContextExecutor, si
 	return nil
 }
 
-// LoadUsedByUser allows an eager lookup of values, cached into the
-// loaded structs of the objects. This is for an N-1 relationship.
-func (ticketL) LoadUsedByUser(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTicket interface{}, mods queries.Applicator) error {
-	var slice []*Ticket
-	var object *Ticket
-
-	if singular {
-		var ok bool
-		object, ok = maybeTicket.(*Ticket)
-		if !ok {
-			object = new(Ticket)
-			ok = queries.SetFromEmbeddedStruct(&object, &maybeTicket)
-			if !ok {
-				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeTicket))
-			}
-		}
-	} else {
-		s, ok := maybeTicket.(*[]*Ticket)
-		if ok {
-			slice = *s
-		} else {
-			ok = queries.SetFromEmbeddedStruct(&slice, maybeTicket)
-			if !ok {
-				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeTicket))
-			}
-		}
-	}
-
-	args := make(map[interface{}]struct{})
-	if singular {
-		if object.R == nil {
-			object.R = &ticketR{}
-		}
-		if !queries.IsNil(object.UsedBy) {
-			args[object.UsedBy] = struct{}{}
-		}
-
-	} else {
-		for _, obj := range slice {
-			if obj.R == nil {
-				obj.R = &ticketR{}
-			}
-
-			if !queries.IsNil(obj.UsedBy) {
-				args[obj.UsedBy] = struct{}{}
-			}
-
-		}
-	}
-
-	if len(args) == 0 {
-		return nil
-	}
-
-	argsSlice := make([]interface{}, len(args))
-	i := 0
-	for arg := range args {
-		argsSlice[i] = arg
-		i++
-	}
-
-	query := NewQuery(
-		qm.From(`user`),
-		qm.WhereIn(`user.user_id in ?`, argsSlice...),
-	)
-	if mods != nil {
-		mods.Apply(query)
-	}
-
-	results, err := query.QueryContext(ctx, e)
-	if err != nil {
-		return errors.Wrap(err, "failed to eager load User")
-	}
-
-	var resultSlice []*User
-	if err = queries.Bind(results, &resultSlice); err != nil {
-		return errors.Wrap(err, "failed to bind eager loaded slice User")
-	}
-
-	if err = results.Close(); err != nil {
-		return errors.Wrap(err, "failed to close results of eager load for user")
-	}
-	if err = results.Err(); err != nil {
-		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for user")
-	}
-
-	if len(userAfterSelectHooks) != 0 {
-		for _, obj := range resultSlice {
-			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
-				return err
-			}
-		}
-	}
-
-	if len(resultSlice) == 0 {
-		return nil
-	}
-
-	if singular {
-		foreign := resultSlice[0]
-		object.R.UsedByUser = foreign
-		if foreign.R == nil {
-			foreign.R = &userR{}
-		}
-		foreign.R.UsedByTickets = append(foreign.R.UsedByTickets, object)
-		return nil
-	}
-
-	for _, local := range slice {
-		for _, foreign := range resultSlice {
-			if queries.Equal(local.UsedBy, foreign.UserID) {
-				local.R.UsedByUser = foreign
-				if foreign.R == nil {
-					foreign.R = &userR{}
-				}
-				foreign.R.UsedByTickets = append(foreign.R.UsedByTickets, local)
-				break
-			}
-		}
-	}
-
-	return nil
-}
-
 // LoadTicketAuthorities allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
 func (ticketL) LoadTicketAuthorities(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTicket interface{}, mods queries.Applicator) error {
@@ -928,6 +737,119 @@ func (ticketL) LoadTicketAuthorities(ctx context.Context, e boil.ContextExecutor
 	return nil
 }
 
+// LoadTicketSubs allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (ticketL) LoadTicketSubs(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTicket interface{}, mods queries.Applicator) error {
+	var slice []*Ticket
+	var object *Ticket
+
+	if singular {
+		var ok bool
+		object, ok = maybeTicket.(*Ticket)
+		if !ok {
+			object = new(Ticket)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeTicket)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeTicket))
+			}
+		}
+	} else {
+		s, ok := maybeTicket.(*[]*Ticket)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeTicket)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeTicket))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &ticketR{}
+		}
+		args[object.TicketID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &ticketR{}
+			}
+			args[obj.TicketID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`ticket_sub`),
+		qm.WhereIn(`ticket_sub.ticket_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load ticket_sub")
+	}
+
+	var resultSlice []*TicketSub
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice ticket_sub")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on ticket_sub")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for ticket_sub")
+	}
+
+	if len(ticketSubAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.TicketSubs = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &ticketSubR{}
+			}
+			foreign.R.Ticket = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.TicketID == foreign.TicketID {
+				local.R.TicketSubs = append(local.R.TicketSubs, foreign)
+				if foreign.R == nil {
+					foreign.R = &ticketSubR{}
+				}
+				foreign.R.Ticket = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetCreatedByUser of the ticket to the related item.
 // Sets o.R.CreatedByUser to related.
 // Adds o to related.R.CreatedByTickets.
@@ -975,86 +897,6 @@ func (o *Ticket) SetCreatedByUser(ctx context.Context, exec boil.ContextExecutor
 	return nil
 }
 
-// SetUsedByUser of the ticket to the related item.
-// Sets o.R.UsedByUser to related.
-// Adds o to related.R.UsedByTickets.
-func (o *Ticket) SetUsedByUser(ctx context.Context, exec boil.ContextExecutor, insert bool, related *User) error {
-	var err error
-	if insert {
-		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
-			return errors.Wrap(err, "failed to insert into foreign table")
-		}
-	}
-
-	updateQuery := fmt.Sprintf(
-		"UPDATE `ticket` SET %s WHERE %s",
-		strmangle.SetParamNames("`", "`", 0, []string{"used_by"}),
-		strmangle.WhereClause("`", "`", 0, ticketPrimaryKeyColumns),
-	)
-	values := []interface{}{related.UserID, o.TicketID}
-
-	if boil.IsDebug(ctx) {
-		writer := boil.DebugWriterFrom(ctx)
-		fmt.Fprintln(writer, updateQuery)
-		fmt.Fprintln(writer, values)
-	}
-	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
-		return errors.Wrap(err, "failed to update local table")
-	}
-
-	queries.Assign(&o.UsedBy, related.UserID)
-	if o.R == nil {
-		o.R = &ticketR{
-			UsedByUser: related,
-		}
-	} else {
-		o.R.UsedByUser = related
-	}
-
-	if related.R == nil {
-		related.R = &userR{
-			UsedByTickets: TicketSlice{o},
-		}
-	} else {
-		related.R.UsedByTickets = append(related.R.UsedByTickets, o)
-	}
-
-	return nil
-}
-
-// RemoveUsedByUser relationship.
-// Sets o.R.UsedByUser to nil.
-// Removes o from all passed in related items' relationships struct.
-func (o *Ticket) RemoveUsedByUser(ctx context.Context, exec boil.ContextExecutor, related *User) error {
-	var err error
-
-	queries.SetScanner(&o.UsedBy, nil)
-	if _, err = o.Update(ctx, exec, boil.Whitelist("used_by")); err != nil {
-		return errors.Wrap(err, "failed to update local table")
-	}
-
-	if o.R != nil {
-		o.R.UsedByUser = nil
-	}
-	if related == nil || related.R == nil {
-		return nil
-	}
-
-	for i, ri := range related.R.UsedByTickets {
-		if queries.Equal(o.UsedBy, ri.UsedBy) {
-			continue
-		}
-
-		ln := len(related.R.UsedByTickets)
-		if ln > 1 && i < ln-1 {
-			related.R.UsedByTickets[i] = related.R.UsedByTickets[ln-1]
-		}
-		related.R.UsedByTickets = related.R.UsedByTickets[:ln-1]
-		break
-	}
-	return nil
-}
-
 // AddTicketAuthorities adds the given related objects to the existing relationships
 // of the ticket, optionally inserting them as new records.
 // Appends related to o.R.TicketAuthorities.
@@ -1099,6 +941,59 @@ func (o *Ticket) AddTicketAuthorities(ctx context.Context, exec boil.ContextExec
 	for _, rel := range related {
 		if rel.R == nil {
 			rel.R = &ticketAuthorityR{
+				Ticket: o,
+			}
+		} else {
+			rel.R.Ticket = o
+		}
+	}
+	return nil
+}
+
+// AddTicketSubs adds the given related objects to the existing relationships
+// of the ticket, optionally inserting them as new records.
+// Appends related to o.R.TicketSubs.
+// Sets related.R.Ticket appropriately.
+func (o *Ticket) AddTicketSubs(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*TicketSub) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.TicketID = o.TicketID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE `ticket_sub` SET %s WHERE %s",
+				strmangle.SetParamNames("`", "`", 0, []string{"ticket_id"}),
+				strmangle.WhereClause("`", "`", 0, ticketSubPrimaryKeyColumns),
+			)
+			values := []interface{}{o.TicketID, rel.TicketID, rel.UsedBy}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.TicketID = o.TicketID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &ticketR{
+			TicketSubs: related,
+		}
+	} else {
+		o.R.TicketSubs = append(o.R.TicketSubs, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &ticketSubR{
 				Ticket: o,
 			}
 		} else {

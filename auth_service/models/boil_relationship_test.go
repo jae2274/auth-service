@@ -9,9 +9,10 @@ import "testing"
 // or deadlocks can occur.
 func TestToOne(t *testing.T) {
 	t.Run("TicketToUserUsingCreatedByUser", testTicketToOneUserUsingCreatedByUser)
-	t.Run("TicketToUserUsingUsedByUser", testTicketToOneUserUsingUsedByUser)
 	t.Run("TicketAuthorityToAuthorityUsingAuthority", testTicketAuthorityToOneAuthorityUsingAuthority)
 	t.Run("TicketAuthorityToTicketUsingTicket", testTicketAuthorityToOneTicketUsingTicket)
+	t.Run("TicketSubToTicketUsingTicket", testTicketSubToOneTicketUsingTicket)
+	t.Run("TicketSubToUserUsingUsedByUser", testTicketSubToOneUserUsingUsedByUser)
 	t.Run("UserAgreementToAgreementUsingAgreement", testUserAgreementToOneAgreementUsingAgreement)
 	t.Run("UserAgreementToUserUsingUser", testUserAgreementToOneUserUsingUser)
 	t.Run("UserAuthorityToAuthorityUsingAuthority", testUserAuthorityToOneAuthorityUsingAuthority)
@@ -29,8 +30,9 @@ func TestToMany(t *testing.T) {
 	t.Run("AuthorityToTicketAuthorities", testAuthorityToManyTicketAuthorities)
 	t.Run("AuthorityToUserAuthorities", testAuthorityToManyUserAuthorities)
 	t.Run("TicketToTicketAuthorities", testTicketToManyTicketAuthorities)
+	t.Run("TicketToTicketSubs", testTicketToManyTicketSubs)
 	t.Run("UserToCreatedByTickets", testUserToManyCreatedByTickets)
-	t.Run("UserToUsedByTickets", testUserToManyUsedByTickets)
+	t.Run("UserToUsedByTicketSubs", testUserToManyUsedByTicketSubs)
 	t.Run("UserToUserAgreements", testUserToManyUserAgreements)
 	t.Run("UserToUserAuthorities", testUserToManyUserAuthorities)
 }
@@ -39,9 +41,10 @@ func TestToMany(t *testing.T) {
 // or deadlocks can occur.
 func TestToOneSet(t *testing.T) {
 	t.Run("TicketToUserUsingCreatedByTickets", testTicketToOneSetOpUserUsingCreatedByUser)
-	t.Run("TicketToUserUsingUsedByTickets", testTicketToOneSetOpUserUsingUsedByUser)
 	t.Run("TicketAuthorityToAuthorityUsingTicketAuthorities", testTicketAuthorityToOneSetOpAuthorityUsingAuthority)
 	t.Run("TicketAuthorityToTicketUsingTicketAuthorities", testTicketAuthorityToOneSetOpTicketUsingTicket)
+	t.Run("TicketSubToTicketUsingTicketSubs", testTicketSubToOneSetOpTicketUsingTicket)
+	t.Run("TicketSubToUserUsingUsedByTicketSubs", testTicketSubToOneSetOpUserUsingUsedByUser)
 	t.Run("UserAgreementToAgreementUsingUserAgreements", testUserAgreementToOneSetOpAgreementUsingAgreement)
 	t.Run("UserAgreementToUserUsingUserAgreements", testUserAgreementToOneSetOpUserUsingUser)
 	t.Run("UserAuthorityToAuthorityUsingUserAuthorities", testUserAuthorityToOneSetOpAuthorityUsingAuthority)
@@ -50,9 +53,7 @@ func TestToOneSet(t *testing.T) {
 
 // TestToOneRemove tests cannot be run in parallel
 // or deadlocks can occur.
-func TestToOneRemove(t *testing.T) {
-	t.Run("TicketToUserUsingUsedByTickets", testTicketToOneRemoveOpUserUsingUsedByUser)
-}
+func TestToOneRemove(t *testing.T) {}
 
 // TestOneToOneSet tests cannot be run in parallel
 // or deadlocks can occur.
@@ -69,20 +70,17 @@ func TestToManyAdd(t *testing.T) {
 	t.Run("AuthorityToTicketAuthorities", testAuthorityToManyAddOpTicketAuthorities)
 	t.Run("AuthorityToUserAuthorities", testAuthorityToManyAddOpUserAuthorities)
 	t.Run("TicketToTicketAuthorities", testTicketToManyAddOpTicketAuthorities)
+	t.Run("TicketToTicketSubs", testTicketToManyAddOpTicketSubs)
 	t.Run("UserToCreatedByTickets", testUserToManyAddOpCreatedByTickets)
-	t.Run("UserToUsedByTickets", testUserToManyAddOpUsedByTickets)
+	t.Run("UserToUsedByTicketSubs", testUserToManyAddOpUsedByTicketSubs)
 	t.Run("UserToUserAgreements", testUserToManyAddOpUserAgreements)
 	t.Run("UserToUserAuthorities", testUserToManyAddOpUserAuthorities)
 }
 
 // TestToManySet tests cannot be run in parallel
 // or deadlocks can occur.
-func TestToManySet(t *testing.T) {
-	t.Run("UserToUsedByTickets", testUserToManySetOpUsedByTickets)
-}
+func TestToManySet(t *testing.T) {}
 
 // TestToManyRemove tests cannot be run in parallel
 // or deadlocks can occur.
-func TestToManyRemove(t *testing.T) {
-	t.Run("UserToUsedByTickets", testUserToManyRemoveOpUsedByTickets)
-}
+func TestToManyRemove(t *testing.T) {}

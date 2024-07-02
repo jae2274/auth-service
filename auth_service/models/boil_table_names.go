@@ -9,6 +9,7 @@ var TableNames = struct {
 	Authority       string
 	Ticket          string
 	TicketAuthority string
+	TicketSub       string
 	User            string
 	UserAgreement   string
 	UserAuthority   string
@@ -18,6 +19,7 @@ var TableNames = struct {
 	Authority:       "authority",
 	Ticket:          "ticket",
 	TicketAuthority: "ticket_authority",
+	TicketSub:       "ticket_sub",
 	User:            "user",
 	UserAgreement:   "user_agreement",
 	UserAuthority:   "user_authority",
