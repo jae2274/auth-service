@@ -49,6 +49,20 @@ func (c *TicketController) GetTicketInfo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	claims, isExisted := middleware.GetClaims(ctx)
+	if isExisted {
+		userId, err := strconv.Atoi(claims.UserId)
+		if errorHandler(ctx, w, err) {
+			return
+		}
+		isUsed, err := service.CheckUseTicket(ctx, c.db, userId, ticket.TicketIndexId)
+		if errorHandler(ctx, w, err) {
+			return
+		}
+
+		ticket.AlreadyUsed = isUsed
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(ticket)
 	if errorHandler(ctx, w, err) {

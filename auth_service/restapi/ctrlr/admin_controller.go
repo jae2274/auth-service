@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
+	"github.com/jae2274/auth-service/auth_service/models"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
 	"github.com/jae2274/auth-service/auth_service/restapi/middleware"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
@@ -136,14 +137,14 @@ func (a *AdminController) CreateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ticketId, err := mysqldb.WithTransaction(ctx, a.db, func(tx *sql.Tx) (string, error) {
+	createdTicket, err := mysqldb.WithTransaction(ctx, a.db, func(tx *sql.Tx) (*models.Ticket, error) {
 		return service.CreateTicket(ctx, tx, adminUserId, req.TicketName, req.TicketAuthorities, req.UseableCount)
 	})
 	if errorHandler(ctx, w, err) {
 		return
 	}
 
-	ticket, isExisted, err := service.GetTicketInfo(ctx, a.db, ticketId)
+	ticket, isExisted, err := service.GetTicketInfo(ctx, a.db, createdTicket.UUID)
 	if errorHandler(ctx, w, err) {
 		return
 	}

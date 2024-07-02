@@ -5,9 +5,7 @@ import (
 	"strconv"
 
 	"github.com/jae2274/auth-service/auth_service/common/vars"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-
-	// "github.com/volatiletech/sqlboiler/boil"
+	// "github.com/volatiletech/sqlboiler/v4/boil"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jae2274/goutils/terr"
@@ -21,6 +19,6 @@ func DB(dbVars *vars.DBVars) (*sql.DB, error) {
 		return nil, terr.Wrap(err)
 	}
 
-	boil.DebugMode = true
+	// boil.DebugMode = true
 	return db, nil
 }

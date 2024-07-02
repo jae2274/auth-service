@@ -7,12 +7,14 @@ type CreateTicketRequest struct {
 }
 
 type Ticket struct {
+	TicketIndexId     int                `json:"-"` // TicketIndexId is not used in the response
 	TicketId          string             `json:"ticketId"`
 	TicketName        string             `json:"ticketName"`
 	TicketAuthorities []*TicketAuthority `json:"ticketAuthorities"`
 	CreateUnixMilli   int64              `json:"createUnixMilli"`
 	UseableCount      int                `json:"useableCount"`
 	UsedCount         int                `json:"usedCount"`
+	AlreadyUsed       bool               `json:"alreadyUsed"`
 }
 
 type TicketDetail struct {

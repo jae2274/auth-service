@@ -22,16 +22,16 @@ func GetTicketInfo(ctx context.Context, exec boil.ContextExecutor, ticketId stri
 		return nil, false, nil
 	}
 
-	// mTicketAuthorities, err := models.TicketAuthorities(models.TicketAuthorityWhere.TicketID.EQ(ticket.TicketID), qm.Load(models.TicketAuthorityRels.Authority)).All(ctx, exec)
-	// if err != nil {
-	// 	return nil, false, terr.Wrap(err)
-	// }
 	count, err := models.TicketUseds(models.TicketUsedWhere.TicketID.EQ(ticket.TicketID)).Count(ctx, exec)
 	if err != nil {
 		return nil, false, terr.Wrap(err)
 	}
 
 	return convertToDtoTicket(ticket, count), true, nil
+}
+
+func CheckUseTicket(ctx context.Context, exec boil.ContextExecutor, userId, ticketId int) (bool, error) {
+	return models.TicketUseds(models.TicketUsedWhere.TicketID.EQ(ticketId), models.TicketUsedWhere.UsedBy.EQ(userId)).Exists(ctx, exec)
 }
 
 // func convert
@@ -42,6 +42,7 @@ func convertToDtoTicket(ticket *models.Ticket, usedCount int64) *dto.Ticket {
 	}
 
 	return &dto.Ticket{
+		TicketIndexId:     ticket.TicketID,
 		TicketId:          ticket.UUID,
 		TicketName:        ticket.TicketName,
 		TicketAuthorities: ticketAuthorities,
@@ -81,16 +82,16 @@ func getTicket(ctx context.Context, exec boil.ContextExecutor, ticketId string) 
 	return ticket, true, nil
 }
 
-func CreateTicket(ctx context.Context, tx *sql.Tx, createdByUser int, ticketName string, authorities []*dto.UserAuthorityReq, useableCount int) (string, error) {
+func CreateTicket(ctx context.Context, tx *sql.Tx, createdByUser int, ticketName string, authorities []*dto.UserAuthorityReq, useableCount int) (*models.Ticket, error) {
 	err := attachAuthorityIds(ctx, tx, authorities)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	ticket := &models.Ticket{UUID: uuid.New().String(), TicketName: ticketName, CreatedBy: createdByUser, UseableCount: useableCount}
 
 	if err := ticket.Insert(ctx, tx, boil.Infer()); err != nil {
-		return "", terr.Wrap(err)
+		return nil, terr.Wrap(err)
 	}
 
 	ticketAuthorities := make([]*models.TicketAuthority, len(authorities))
@@ -107,10 +108,10 @@ func CreateTicket(ctx context.Context, tx *sql.Tx, createdByUser int, ticketName
 	}
 
 	if err := ticket.AddTicketAuthorities(ctx, tx, true, ticketAuthorities...); err != nil {
-		return "", terr.Wrap(err)
+		return nil, terr.Wrap(err)
 	}
 
-	return ticket.UUID, nil
+	return ticket, nil
 }
 
 func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) error {

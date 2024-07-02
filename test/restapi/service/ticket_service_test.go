@@ -56,14 +56,13 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
-		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities, 1)
+		ticket, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities, 1)
 		require.NoError(t, err)
-		require.NotEmpty(t, ticketId)
 
-		res, isExisted, err := service.GetTicketInfo(ctx, db, ticketId)
+		res, isExisted, err := service.GetTicketInfo(ctx, db, ticket.UUID)
 		require.NoError(t, err)
 		require.True(t, isExisted)
-		require.Equal(t, ticketId, res.TicketId)
+		require.Equal(t, ticket.UUID, res.TicketId)
 		require.Equal(t, res.UseableCount, 1)
 		require.Equal(t, res.UsedCount, 0)
 		require.Equal(t, ticketName, res.TicketName)
@@ -93,14 +92,13 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
-		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities, 1)
+		ticket, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, ticketAuthorities, 1)
 		require.NoError(t, err)
-		require.NotEmpty(t, ticketId)
 
 		res, isExisted, err := service.GetTicketInfo(ctx, db, ticketName)
 		require.NoError(t, err)
 		require.True(t, isExisted)
-		require.Equal(t, ticketId, res.TicketId)
+		require.Equal(t, ticket.UUID, res.TicketId)
 		require.Equal(t, res.UseableCount, 1)
 		require.Equal(t, res.UsedCount, 0)
 		require.Equal(t, ticketName, res.TicketName)
@@ -167,13 +165,13 @@ func TestTicketService(t *testing.T) {
 			{AuthorityCode: authorities[0].AuthorityCode},
 			{AuthorityCode: authorities[1].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
 		}
-		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 1)
+		ticket, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 1)
 		require.NoError(t, err)
 
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = useTicket(ctx, db, targetUser.UserID, ticketId)
+		err = useTicket(ctx, db, targetUser.UserID, ticket.UUID)
 		require.NoError(t, err)
 
 		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, targetUser.UserID)
@@ -198,16 +196,16 @@ func TestTicketService(t *testing.T) {
 		}
 
 		ticketName := "ticketName"
-		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 1)
+		ticket, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 1)
 		require.NoError(t, err)
 
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = useTicket(ctx, db, targetUser.UserID, ticketId)
+		err = useTicket(ctx, db, targetUser.UserID, ticket.UUID)
 		require.NoError(t, err)
 
-		err = useTicket(ctx, db, targetUser.UserID, ticketId)
+		err = useTicket(ctx, db, targetUser.UserID, ticket.UUID)
 		require.Error(t, err)
 
 		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, targetUser.UserID)
@@ -246,7 +244,7 @@ func TestTicketService(t *testing.T) {
 		}
 
 		ticketName := "ticketName"
-		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 2) // 사용가능 횟수 2회
+		ticket, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 2) // 사용가능 횟수 2회
 		require.NoError(t, err)
 
 		users := make([]*models.User, 0, 3)
@@ -258,7 +256,7 @@ func TestTicketService(t *testing.T) {
 
 		for _, targetUser := range users[:2] {
 			now := time.Now()
-			err := useTicket(ctx, db, targetUser.UserID, ticketId)
+			err := useTicket(ctx, db, targetUser.UserID, ticket.UUID)
 			require.NoError(t, err)
 
 			userAuthorities, err := service.FindValidUserAuthorities(ctx, db, targetUser.UserID)
@@ -270,18 +268,18 @@ func TestTicketService(t *testing.T) {
 			}
 		}
 
-		err = useTicket(ctx, db, users[2].UserID, ticketId) //사용가능 횟수 초과
+		err = useTicket(ctx, db, users[2].UserID, ticket.UUID) //사용가능 횟수 초과
 		require.Error(t, err)
 
 		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, users[2].UserID)
 		require.NoError(t, err)
 		require.Len(t, userAuthorities, 0)
 
-		ticket, isExisted, err := service.GetTicketInfo(ctx, db, ticketId)
+		ticketInfo, isExisted, err := service.GetTicketInfo(ctx, db, ticket.UUID)
 		require.NoError(t, err)
 		require.True(t, isExisted)
-		require.Equal(t, ticket.UseableCount, 2)
-		require.Equal(t, ticket.UsedCount, 2)
+		require.Equal(t, ticketInfo.UseableCount, 2)
+		require.Equal(t, ticketInfo.UsedCount, 2)
 	})
 
 	t.Run("same ticket cannot be used by same user", func(t *testing.T) {
@@ -296,14 +294,14 @@ func TestTicketService(t *testing.T) {
 		}
 
 		ticketName := "ticketName"
-		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 2)
+		ticket, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 2)
 		require.NoError(t, err)
 
 		user, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
 		now := time.Now()
-		err = useTicket(ctx, db, user.UserID, ticketId)
+		err = useTicket(ctx, db, user.UserID, ticket.UUID)
 		require.NoError(t, err)
 
 		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, user.UserID)
@@ -314,7 +312,7 @@ func TestTicketService(t *testing.T) {
 			requireEqualUserRole(t, user.UserID, now, userAuthorityReqs[i], userAuthority)
 		}
 
-		err = useTicket(ctx, db, user.UserID, ticketId) // 이미 사용한 티켓
+		err = useTicket(ctx, db, user.UserID, ticket.UUID) // 이미 사용한 티켓
 		require.Error(t, err)
 
 		userAuthorities, err = service.FindValidUserAuthorities(ctx, db, user.UserID)
@@ -336,16 +334,16 @@ func TestTicketService(t *testing.T) {
 		}
 
 		ticketName := "ticketName"
-		ticketId, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 1)
+		ticket, err := createTicketWithTx(ctx, db, admin.UserID, ticketName, userAuthorityReqs, 1)
 		require.NoError(t, err)
 
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = useTicket(ctx, db, targetUser.UserID, ticketId)
+		err = useTicket(ctx, db, targetUser.UserID, ticket.UUID)
 		require.NoError(t, err)
 
-		res, isExisted, err := service.GetTicketInfo(ctx, db, ticketId)
+		res, isExisted, err := service.GetTicketInfo(ctx, db, ticket.UUID)
 		require.NoError(t, err)
 		require.True(t, isExisted)
 
@@ -373,10 +371,10 @@ func TestTicketService(t *testing.T) {
 
 		ticketIds := make([]string, 0, len(userAuthorityReqs))
 		for i, userAuthorityReq := range userAuthorityReqs {
-			ticketId, err := createTicketWithTx(ctx, db, admin.UserID, "ticket"+strconv.Itoa(i), userAuthorityReq, 1)
+			ticket, err := createTicketWithTx(ctx, db, admin.UserID, "ticket"+strconv.Itoa(i), userAuthorityReq, 1)
 			require.NoError(t, err)
 
-			ticketIds = append(ticketIds, ticketId)
+			ticketIds = append(ticketIds, ticket.UUID)
 		}
 
 		user, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
@@ -411,5 +409,36 @@ func TestTicketService(t *testing.T) {
 		require.Equal(t, authorities[1].AuthorityName, ticket1.TicketAuthorities[0].AuthorityName)
 		require.Equal(t, authorities[1].Summary, ticket1.TicketAuthorities[0].Summary)
 		require.Equal(t, int64(2*time.Hour/time.Millisecond), *ticket1.TicketAuthorities[0].ExpiryDurationMS)
+	})
+
+	t.Run("return isUsed false if ticket is not used", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+		user, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		ticket, err := createTicketWithTx(ctx, db, user.UserID, "ticketName", []*dto.UserAuthorityReq{{AuthorityCode: authorities[0].AuthorityCode}}, 1)
+		require.NoError(t, err)
+
+		isUsed, err := service.CheckUseTicket(ctx, db, user.UserID, ticket.TicketID)
+		require.NoError(t, err)
+		require.False(t, isUsed)
+	})
+
+	t.Run("return isUsed true if ticket is used", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+		user, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		ticket, err := createTicketWithTx(ctx, db, user.UserID, "ticketName", []*dto.UserAuthorityReq{{AuthorityCode: authorities[0].AuthorityCode}}, 1)
+		require.NoError(t, err)
+
+		err = useTicket(ctx, db, user.UserID, ticket.UUID)
+		require.NoError(t, err)
+
+		isUsed, err := service.CheckUseTicket(ctx, db, user.UserID, ticket.TicketID)
+		require.NoError(t, err)
+		require.True(t, isUsed)
 	})
 }
