@@ -119,6 +119,7 @@ type TicketStatus enum.Enum[TicketStatusValues]
 const (
 	NOT_EXISTED       = TicketStatus("not_existed")
 	ALREADY_USED      = TicketStatus("already_used")
+	NO_MORE_USEABLE   = TicketStatus("no_more_useable")
 	SUCCESSFULLY_USED = TicketStatus("successfully_used")
 )
 

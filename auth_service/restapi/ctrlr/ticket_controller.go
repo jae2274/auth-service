@@ -102,23 +102,19 @@ func (c *TicketController) UseTicket(w http.ResponseWriter, r *http.Request) {
 
 func (c *TicketController) useTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) (*dto.UseTicketResponse, error) {
 	res := &dto.UseTicketResponse{}
-	ticket, isExisted, err := service.GetTicketInfo(ctx, tx, ticketId)
-	if err != nil {
-		return nil, err
-	}
-
-	if !isExisted {
+	ticket, err := service.UseTicket(ctx, tx, userId, ticketId)
+	switch err {
+	case service.ErrTicketNotFound:
 		res.TicketStatus = dto.NOT_EXISTED
 		return res, nil
-	} else if ticket.UseableCount <= ticket.UsedCount {
+	case service.ErrNoMoreUseableTicket:
+		res.TicketStatus = dto.NO_MORE_USEABLE
+		return res, nil
+	case service.ErrAlreadyUsedTicket:
 		res.TicketStatus = dto.ALREADY_USED
 		return res, nil
 	}
 
-	err = service.UseTicket(ctx, tx, userId, ticketId)
-	if err != nil {
-		return nil, err
-	}
 	authorityIds := make([]int, len(ticket.TicketAuthorities))
 	for i, authority := range ticket.TicketAuthorities {
 		authorityIds[i] = authority.AuthorityId
@@ -143,6 +139,7 @@ func (c *TicketController) useTicket(ctx context.Context, tx *sql.Tx, userId int
 	if err != nil {
 		return nil, err
 	}
+
 	res.TicketStatus = dto.SUCCESSFULLY_USED
 	res.AccessToken = &tokens.AccessToken
 	res.Authorities = allAuthorityCodes

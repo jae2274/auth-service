@@ -150,8 +150,8 @@ func TestTicketService(t *testing.T) {
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = useTicket(ctx, db, targetUser.UserID, "notExistedTicketId")
-		require.Error(t, err)
+		_, err = useTicket(ctx, db, targetUser.UserID, "notExistedTicketId")
+		require.ErrorIs(t, err, service.ErrTicketNotFound)
 	})
 
 	t.Run("return authorities after use ticket that has authorities", func(t *testing.T) {
@@ -171,8 +171,11 @@ func TestTicketService(t *testing.T) {
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = useTicket(ctx, db, targetUser.UserID, ticket.UUID)
+		mTicket, err := useTicket(ctx, db, targetUser.UserID, ticket.UUID)
 		require.NoError(t, err)
+		for i, authority := range mTicket.TicketAuthorities {
+			require.Equal(t, userAuthorityReqs[i].AuthorityCode, authority.AuthorityCode)
+		}
 
 		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, targetUser.UserID)
 		require.NoError(t, err)
@@ -202,10 +205,10 @@ func TestTicketService(t *testing.T) {
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = useTicket(ctx, db, targetUser.UserID, ticket.UUID)
+		_, err = useTicket(ctx, db, targetUser.UserID, ticket.UUID)
 		require.NoError(t, err)
 
-		err = useTicket(ctx, db, targetUser.UserID, ticket.UUID)
+		_, err = useTicket(ctx, db, targetUser.UserID, ticket.UUID)
 		require.Error(t, err)
 
 		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, targetUser.UserID)
@@ -256,7 +259,7 @@ func TestTicketService(t *testing.T) {
 
 		for _, targetUser := range users[:2] {
 			now := time.Now()
-			err := useTicket(ctx, db, targetUser.UserID, ticket.UUID)
+			_, err := useTicket(ctx, db, targetUser.UserID, ticket.UUID)
 			require.NoError(t, err)
 
 			userAuthorities, err := service.FindValidUserAuthorities(ctx, db, targetUser.UserID)
@@ -268,8 +271,8 @@ func TestTicketService(t *testing.T) {
 			}
 		}
 
-		err = useTicket(ctx, db, users[2].UserID, ticket.UUID) //사용가능 횟수 초과
-		require.Error(t, err)
+		_, err = useTicket(ctx, db, users[2].UserID, ticket.UUID) //사용가능 횟수 초과
+		require.ErrorIs(t, err, service.ErrNoMoreUseableTicket)
 
 		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, users[2].UserID)
 		require.NoError(t, err)
@@ -301,7 +304,7 @@ func TestTicketService(t *testing.T) {
 		require.NoError(t, err)
 
 		now := time.Now()
-		err = useTicket(ctx, db, user.UserID, ticket.UUID)
+		_, err = useTicket(ctx, db, user.UserID, ticket.UUID)
 		require.NoError(t, err)
 
 		userAuthorities, err := service.FindValidUserAuthorities(ctx, db, user.UserID)
@@ -312,8 +315,8 @@ func TestTicketService(t *testing.T) {
 			requireEqualUserRole(t, user.UserID, now, userAuthorityReqs[i], userAuthority)
 		}
 
-		err = useTicket(ctx, db, user.UserID, ticket.UUID) // 이미 사용한 티켓
-		require.Error(t, err)
+		_, err = useTicket(ctx, db, user.UserID, ticket.UUID) // 이미 사용한 티켓
+		require.ErrorIs(t, err, service.ErrAlreadyUsedTicket)
 
 		userAuthorities, err = service.FindValidUserAuthorities(ctx, db, user.UserID)
 		require.NoError(t, err)
@@ -340,7 +343,7 @@ func TestTicketService(t *testing.T) {
 		targetUser, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
 
-		err = useTicket(ctx, db, targetUser.UserID, ticket.UUID)
+		_, err = useTicket(ctx, db, targetUser.UserID, ticket.UUID)
 		require.NoError(t, err)
 
 		res, isExisted, err := service.GetTicketInfo(ctx, db, ticket.UUID)
@@ -379,7 +382,7 @@ func TestTicketService(t *testing.T) {
 
 		user, err := signUp(ctx, db, userinfo, []*dto.UserAgreementReq{})
 		require.NoError(t, err)
-		err = useTicket(ctx, db, user.UserID, ticketIds[0])
+		_, err = useTicket(ctx, db, user.UserID, ticketIds[0])
 		require.NoError(t, err)
 
 		tickets, err := service.GetAllTickets(ctx, db)
@@ -434,7 +437,7 @@ func TestTicketService(t *testing.T) {
 		ticket, err := createTicketWithTx(ctx, db, user.UserID, "ticketName", []*dto.UserAuthorityReq{{AuthorityCode: authorities[0].AuthorityCode}}, 1)
 		require.NoError(t, err)
 
-		err = useTicket(ctx, db, user.UserID, ticket.UUID)
+		_, err = useTicket(ctx, db, user.UserID, ticket.UUID)
 		require.NoError(t, err)
 
 		isUsed, err := service.CheckUseTicket(ctx, db, user.UserID, ticket.TicketID)

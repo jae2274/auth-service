@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"database/sql"
+	"errors"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/jae2274/auth-service/auth_service/models"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
@@ -117,19 +119,27 @@ func CreateTicket(ctx context.Context, tx *sql.Tx, createdByUser int, ticketName
 	return ticket, nil
 }
 
-func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) error {
-	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId), qm.Load(models.TicketRels.TicketAuthorities), qm.For("update")).One(ctx, tx)
-	if err != nil {
-		return terr.Wrap(err)
+var ErrTicketNotFound = errors.New("ticket not found")
+var ErrNoMoreUseableTicket = errors.New("no more useable ticket")
+var ErrAlreadyUsedTicket = errors.New("already used ticket")
+
+func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) (*dto.Ticket, error) {
+	ticket, err := models.Tickets(models.TicketWhere.UUID.EQ(ticketId),
+		qm.Load(models.TicketRels.TicketAuthorities+"."+models.TicketAuthorityRels.Authority),
+		qm.For("update")).One(ctx, tx)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, terr.Wrap(err)
+	} else if err == sql.ErrNoRows {
+		return nil, ErrTicketNotFound
 	}
 
 	usedCount, err := models.TicketUseds(models.TicketUsedWhere.TicketID.EQ(ticket.TicketID)).Count(ctx, tx)
 	if err != nil {
-		return terr.Wrap(err)
+		return nil, terr.Wrap(err)
 	}
 
 	if usedCount >= int64(ticket.UseableCount) {
-		return terr.New("no more useable ticket")
+		return nil, ErrNoMoreUseableTicket
 	}
 
 	ticketSub := &models.TicketUsed{
@@ -138,7 +148,12 @@ func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) err
 	}
 	err = ticketSub.Insert(ctx, tx, boil.Infer())
 	if err != nil {
-		return terr.Wrap(err)
+		var mysqlErr *mysql.MySQLError
+		if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 { // duplicate key error
+			return nil, ErrAlreadyUsedTicket
+		}
+
+		return nil, terr.Wrap(err)
 	}
 
 	dUserAuthorities := make([]*dto.UserAuthorityReq, 0, len(ticket.R.TicketAuthorities))
@@ -157,10 +172,10 @@ func UseTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) err
 	err = addUserAuthorities(ctx, tx, userId, dUserAuthorities)
 
 	if err != nil {
-		return terr.Wrap(err)
+		return nil, terr.Wrap(err)
 	}
 
-	return nil
+	return convertToDtoTicket(ticket, usedCount), nil
 }
 
 func GetAllTickets(ctx context.Context, exec boil.ContextExecutor) ([]*dto.TicketDetail, error) {

@@ -262,6 +262,8 @@ func TestAdminController(t *testing.T) {
 
 	createTicketReq := `
 	{
+		"useableCount": 1,
+		"ticketName": "testTicket",
 		"ticketAuthorities": [
 			{
 				"authorityCode": "AUTHORITY_USER",
