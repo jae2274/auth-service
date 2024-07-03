@@ -1,6 +1,7 @@
 package ctrlr
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"net/http"
@@ -102,10 +103,35 @@ func (a *AdminController) RemoveAuthority(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func getAllTicket(ctx context.Context, db *sql.DB, byMe bool) ([]*dto.TicketDetail, error) {
+	if byMe {
+		claims, isExisted := middleware.GetClaims(ctx)
+		if !isExisted {
+			return nil, terr.New("no claims")
+		}
+		adminUserId, err := strconv.Atoi(claims.UserId)
+		if err != nil {
+			return nil, err
+		}
+
+		return service.GetAllTicketsByUserId(ctx, db, adminUserId)
+	}
+
+	return service.GetAllTickets(ctx, db)
+}
+
 func (a *AdminController) GetAllTickets(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	byMeStr := r.URL.Query().Get("by_me")
 
-	tickets, err := service.GetAllTickets(ctx, a.db)
+	var tickets []*dto.TicketDetail
+	var err error
+	if byMeStr == "true" {
+		tickets, err = getAllTicket(ctx, a.db, true)
+	} else {
+		tickets, err = getAllTicket(ctx, a.db, false)
+	}
+
 	if errorHandler(ctx, w, err) {
 		return
 	}

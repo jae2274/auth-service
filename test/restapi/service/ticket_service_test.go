@@ -444,4 +444,68 @@ func TestTicketService(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, isUsed)
 	})
+
+	t.Run("return all created tickets by specific user", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, _, _, authorities := initAgreementFunc(t, db)
+		admin1 := signUpAdminUser(t, ctx, db)
+
+		admin2, err := signUp(ctx, db, &ooauth.UserInfo{
+			AuthorizedBy: domain.GOOGLE,
+			AuthorizedID: "anotherAdmin",
+			Email:        "anotherAdmin@google.com",
+			Username:     "anotherAdmin",
+		}, []*dto.UserAgreementReq{})
+		require.NoError(t, err)
+
+		_, err = createTicketWithTx(ctx, db, admin1.UserID, "ticket1", []*dto.UserAuthorityReq{
+			{AuthorityCode: authorities[0].AuthorityCode, ExpiryDurationMS: ptr.P(int64(2 * time.Hour / time.Millisecond))},
+			{AuthorityCode: authorities[1].AuthorityCode},
+		}, 1)
+		require.NoError(t, err)
+
+		_, err = createTicketWithTx(ctx, db, admin1.UserID, "ticket2", []*dto.UserAuthorityReq{
+			{AuthorityCode: authorities[0].AuthorityCode},
+		}, 2)
+		require.NoError(t, err)
+
+		_, err = createTicketWithTx(ctx, db, admin2.UserID, "ticket3", []*dto.UserAuthorityReq{
+			{AuthorityCode: authorities[1].AuthorityCode},
+		}, 3)
+		require.NoError(t, err)
+
+		tickets, err := service.GetAllTicketsByUserId(ctx, db, admin1.UserID)
+		require.NoError(t, err)
+		require.Len(t, tickets, 2)
+
+		ticket1 := tickets[0]
+		require.Equal(t, "ticket1", ticket1.TicketName)
+		require.Equal(t, 1, ticket1.UseableCount)
+		require.Equal(t, 0, ticket1.UsedCount)
+		require.Len(t, ticket1.TicketAuthorities, 2)
+		require.Equal(t, authorities[0].AuthorityName, ticket1.TicketAuthorities[0].AuthorityName)
+		require.Equal(t, int64(2*time.Hour/time.Millisecond), *ticket1.TicketAuthorities[0].ExpiryDurationMS)
+		require.Equal(t, authorities[1].AuthorityName, ticket1.TicketAuthorities[1].AuthorityName)
+		require.Nil(t, ticket1.TicketAuthorities[1].ExpiryDurationMS)
+
+		ticket2 := tickets[1]
+		require.Equal(t, "ticket2", ticket2.TicketName)
+		require.Equal(t, 2, ticket2.UseableCount)
+		require.Equal(t, 0, ticket2.UsedCount)
+		require.Len(t, ticket2.TicketAuthorities, 1)
+		require.Equal(t, authorities[0].AuthorityName, ticket2.TicketAuthorities[0].AuthorityName)
+		require.Nil(t, ticket2.TicketAuthorities[0].ExpiryDurationMS)
+
+		tickets, err = service.GetAllTicketsByUserId(ctx, db, admin2.UserID)
+		require.NoError(t, err)
+		require.Len(t, tickets, 1)
+
+		ticket3 := tickets[0]
+		require.Equal(t, "ticket3", ticket3.TicketName)
+		require.Equal(t, 3, ticket3.UseableCount)
+		require.Equal(t, 0, ticket3.UsedCount)
+		require.Len(t, ticket3.TicketAuthorities, 1)
+		require.Equal(t, authorities[1].AuthorityName, ticket3.TicketAuthorities[0].AuthorityName)
+		require.Nil(t, ticket3.TicketAuthorities[0].ExpiryDurationMS)
+	})
 }

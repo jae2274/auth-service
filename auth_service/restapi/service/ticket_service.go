@@ -187,18 +187,21 @@ func GetAllTickets(ctx context.Context, exec boil.ContextExecutor) ([]*dto.Ticke
 		return nil, terr.Wrap(err)
 	}
 
-	dtoTickets := make([]*dto.TicketDetail, 0, len(tickets))
-	for _, ticket := range tickets {
-		usedCount := len(ticket.R.TicketUseds)
+	return convertToDtoTicketDetails(tickets), nil
+}
 
-		dtoTickets = append(dtoTickets, &dto.TicketDetail{
-			Ticket:    *convertToDtoTicket(ticket, int64(usedCount)),
-			UsedInfos: convertUsedInfos(ticket.R.TicketUseds),
-			CreatedBy: ticket.CreatedBy,
-		})
+func GetAllTicketsByUserId(ctx context.Context, exec boil.ContextExecutor, userId int) ([]*dto.TicketDetail, error) {
+
+	tickets, err := models.Tickets(
+		models.TicketWhere.CreatedBy.EQ(userId),
+		qm.Load(models.TicketRels.TicketAuthorities+"."+models.TicketAuthorityRels.Authority),
+		qm.Load(models.TicketRels.TicketUseds+"."+models.TicketUsedRels.UsedByUser),
+	).All(ctx, exec)
+	if err != nil {
+		return nil, terr.Wrap(err)
 	}
 
-	return dtoTickets, nil
+	return convertToDtoTicketDetails(tickets), nil
 }
 
 func convertUsedInfos(ticketUseds []*models.TicketUsed) []*dto.UsedInfo {
@@ -212,4 +215,20 @@ func convertUsedInfos(ticketUseds []*models.TicketUsed) []*dto.UsedInfo {
 	}
 
 	return usedInfos
+}
+
+func convertToDtoTicketDetails(tickets []*models.Ticket) []*dto.TicketDetail {
+	dtoTickets := make([]*dto.TicketDetail, 0, len(tickets))
+
+	for _, ticket := range tickets {
+		usedCount := len(ticket.R.TicketUseds)
+
+		dtoTickets = append(dtoTickets, &dto.TicketDetail{
+			Ticket:    *convertToDtoTicket(ticket, int64(usedCount)),
+			UsedInfos: convertUsedInfos(ticket.R.TicketUseds),
+			CreatedBy: ticket.CreatedBy,
+		})
+	}
+
+	return dtoTickets
 }
