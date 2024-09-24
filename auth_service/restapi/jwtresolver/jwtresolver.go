@@ -2,6 +2,7 @@ package jwtresolver
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"slices"
 	"strings"
@@ -104,9 +105,9 @@ func (j *JwtResolver) ParseToken(tokenString string) (*CustomClaims, bool, error
 	if errors.Is(err, jwt.ErrTokenExpired) || errors.Is(err, jwt.ErrTokenNotValidYet) {
 		return &CustomClaims{}, false, nil
 	} else if errors.Is(err, jwt.ErrTokenMalformed) {
-		return &CustomClaims{}, false, terr.New("invalid token. token is malformed")
+		return &CustomClaims{}, false, terr.Wrap(fmt.Errorf("%s %s", err.Error(), tokenString))
 	} else if err != nil {
-		return &CustomClaims{}, false, terr.Wrap(err)
+		return &CustomClaims{}, false, terr.Wrap(fmt.Errorf("%s %s", err.Error(), tokenString))
 	} else if jwtToken.Valid {
 		if claims, ok := jwtToken.Claims.(*CustomClaims); ok {
 			if err := validator.Validate(claims); err != nil {
