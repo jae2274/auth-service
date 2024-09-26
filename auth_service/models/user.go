@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
+	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -29,6 +30,8 @@ type User struct {
 	AuthorizedID string    `boil:"authorized_id" json:"authorized_id" toml:"authorized_id" yaml:"authorized_id"`
 	Email        string    `boil:"email" json:"email" toml:"email" yaml:"email"`
 	CreateDate   time.Time `boil:"create_date" json:"create_date" toml:"create_date" yaml:"create_date"`
+	DeleteDate   null.Time `boil:"delete_date" json:"delete_date,omitempty" toml:"delete_date" yaml:"delete_date,omitempty"`
+	Status       string    `boil:"status" json:"status" toml:"status" yaml:"status"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -41,6 +44,8 @@ var UserColumns = struct {
 	AuthorizedID string
 	Email        string
 	CreateDate   string
+	DeleteDate   string
+	Status       string
 }{
 	UserID:       "user_id",
 	Name:         "name",
@@ -48,6 +53,8 @@ var UserColumns = struct {
 	AuthorizedID: "authorized_id",
 	Email:        "email",
 	CreateDate:   "create_date",
+	DeleteDate:   "delete_date",
+	Status:       "status",
 }
 
 var UserTableColumns = struct {
@@ -57,6 +64,8 @@ var UserTableColumns = struct {
 	AuthorizedID string
 	Email        string
 	CreateDate   string
+	DeleteDate   string
+	Status       string
 }{
 	UserID:       "user.user_id",
 	Name:         "user.name",
@@ -64,9 +73,35 @@ var UserTableColumns = struct {
 	AuthorizedID: "user.authorized_id",
 	Email:        "user.email",
 	CreateDate:   "user.create_date",
+	DeleteDate:   "user.delete_date",
+	Status:       "user.status",
 }
 
 // Generated where
+
+type whereHelpernull_Time struct{ field string }
+
+func (w whereHelpernull_Time) EQ(x null.Time) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, false, x)
+}
+func (w whereHelpernull_Time) NEQ(x null.Time) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, true, x)
+}
+func (w whereHelpernull_Time) LT(x null.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpernull_Time) LTE(x null.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpernull_Time) GT(x null.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpernull_Time) GTE(x null.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
+func (w whereHelpernull_Time) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
+func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
 
 var UserWhere = struct {
 	UserID       whereHelperint
@@ -75,6 +110,8 @@ var UserWhere = struct {
 	AuthorizedID whereHelperstring
 	Email        whereHelperstring
 	CreateDate   whereHelpertime_Time
+	DeleteDate   whereHelpernull_Time
+	Status       whereHelperstring
 }{
 	UserID:       whereHelperint{field: "`user`.`user_id`"},
 	Name:         whereHelperstring{field: "`user`.`name`"},
@@ -82,6 +119,8 @@ var UserWhere = struct {
 	AuthorizedID: whereHelperstring{field: "`user`.`authorized_id`"},
 	Email:        whereHelperstring{field: "`user`.`email`"},
 	CreateDate:   whereHelpertime_Time{field: "`user`.`create_date`"},
+	DeleteDate:   whereHelpernull_Time{field: "`user`.`delete_date`"},
+	Status:       whereHelperstring{field: "`user`.`status`"},
 }
 
 // UserRels is where relationship names are stored.
@@ -142,9 +181,9 @@ func (r *userR) GetUserAuthorities() UserAuthoritySlice {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"user_id", "name", "authorized_by", "authorized_id", "email", "create_date"}
-	userColumnsWithoutDefault = []string{"name", "authorized_by", "authorized_id", "email"}
-	userColumnsWithDefault    = []string{"user_id", "create_date"}
+	userAllColumns            = []string{"user_id", "name", "authorized_by", "authorized_id", "email", "create_date", "delete_date", "status"}
+	userColumnsWithoutDefault = []string{"name", "authorized_by", "authorized_id", "email", "delete_date"}
+	userColumnsWithDefault    = []string{"user_id", "create_date", "status"}
 	userPrimaryKeyColumns     = []string{"user_id"}
 	userGeneratedColumns      = []string{}
 )

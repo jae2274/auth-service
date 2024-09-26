@@ -68,6 +68,7 @@ func (c *Controller) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/sign-up", c.SignUp).Methods("POST")
 	router.HandleFunc("/auth/refresh", c.RefreshJwt).Methods("POST")
 	router.HandleFunc("/auth/authority", c.FindAllUserAuthorities).Methods("GET")
+	router.HandleFunc("/auth/withdrawal", c.Withdrawal).Methods("DELETE")
 }
 
 func (c *Controller) AuthCodeUrls(w http.ResponseWriter, r *http.Request) {
@@ -426,6 +427,29 @@ func (c *Controller) FindAllUserAuthorities(w http.ResponseWriter, r *http.Reque
 	err = json.NewEncoder(w).Encode(struct {
 		Authorities []*domain.UserAuthority `json:"authorities"`
 	}{Authorities: userAuthorities})
+
+	if errorHandler(ctx, w, err) {
+		return
+	}
+}
+
+func (c *Controller) Withdrawal(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	claims, isExisted := middleware.GetClaims(ctx)
+	if !isExisted {
+		http.Error(w, "no claims in context", http.StatusUnauthorized)
+		return
+	}
+
+	userId, err := strconv.Atoi(claims.UserId)
+	if errorHandler(ctx, w, err) {
+		return
+	}
+
+	err = mysqldb.WithTransactionVoid(ctx, c.db, func(tx *sql.Tx) error {
+		return service.Withdrawal(ctx, tx, userId)
+	})
 
 	if errorHandler(ctx, w, err) {
 		return

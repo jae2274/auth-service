@@ -53,11 +53,28 @@ func makeCacheKey(cols boil.Columns, nzDefaults []string) string {
 
 // Enum values for UserAuthorizedBy
 const (
-	UserAuthorizedByGOOGLE string = "GOOGLE"
+	UserAuthorizedByGOOGLE  string = "GOOGLE"
+	UserAuthorizedByDELETED string = "DELETED"
 )
 
 func AllUserAuthorizedBy() []string {
 	return []string{
 		UserAuthorizedByGOOGLE,
+		UserAuthorizedByDELETED,
+	}
+}
+
+// Enum values for UserStatus
+const (
+	UserStatusACTIVE    string = "ACTIVE"
+	UserStatusSUSPENDED string = "SUSPENDED"
+	UserStatusDELETED   string = "DELETED"
+)
+
+func AllUserStatus() []string {
+	return []string{
+		UserStatusACTIVE,
+		UserStatusSUSPENDED,
+		UserStatusDELETED,
 	}
 }

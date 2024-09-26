@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/jae2274/auth-service/auth_service/common/domain"
@@ -45,6 +46,7 @@ func FindSignedUpUser(ctx context.Context, exec boil.ContextExecutor, authorized
 }
 
 func ApplyUserAgreements(ctx context.Context, tx *sql.Tx, userId int, agreements []*dto.UserAgreementReq) error {
+
 	for _, addAgreement := range agreements {
 		userAgreement := models.UserAgreement{
 			UserID:      userId,
@@ -267,4 +269,33 @@ func convertToUser(mUser *models.User) *domain.User {
 		Authorities:      userAuthorities,
 		CreatedUnixMilli: mUser.CreateDate.UnixMilli(),
 	}
+}
+
+func Withdrawal(ctx context.Context, tx *sql.Tx, userId int) error {
+
+	_, err := models.UserAgreements(models.UserAgreementWhere.UserID.EQ(userId)).DeleteAll(ctx, tx)
+	if err != nil {
+		return err
+	}
+
+	_, err = models.UserAuthorities(models.UserAuthorityWhere.UserID.EQ(userId)).DeleteAll(ctx, tx)
+	if err != nil {
+		return err
+	}
+
+	user, err := models.Users(models.UserWhere.UserID.EQ(userId)).One(ctx, tx)
+	if err != nil {
+		return err
+	}
+
+	user.Email = fmt.Sprintf("DELETED_%d", user.UserID)
+	user.Name = fmt.Sprintf("DELETED_%d", user.UserID)
+	user.AuthorizedID = fmt.Sprintf("DELETED_%d", user.UserID)
+	user.AuthorizedBy = string(domain.AuthorizedByDELETED)
+	user.DeleteDate = null.TimeFrom(time.Now())
+	user.Status = string(domain.DELETED)
+
+	_, err = user.Update(ctx, tx, boil.Infer())
+
+	return err
 }

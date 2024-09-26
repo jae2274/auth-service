@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jae2274/auth-service/auth_service/common/domain"
+	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
@@ -97,6 +98,38 @@ func TestUserService(t *testing.T) {
 		require.Equal(t, userinfo.AuthorizedID, user.AuthorizedID)
 		require.Equal(t, userinfo.Email, user.Email)
 		require.Equal(t, userinfo.Username, user.Name)
+	})
+
+	t.Run("return isExistedUser false after withdraw", func(t *testing.T) {
+		db := tinit.DB(t)
+		ctx, requiredAgreements, optionalAgreements, _ := initAgreementFunc(t, db)
+
+		actionOtherUserSignUP(t, ctx, db, &dto.UserAgreementReq{AgreementId: requiredAgreements[0].AgreementID, IsAgree: true}, &dto.UserAgreementReq{AgreementId: optionalAgreements[0].AgreementID, IsAgree: true})
+
+		agreementReq := []*dto.UserAgreementReq{{
+			AgreementId: requiredAgreements[0].AgreementID,
+			IsAgree:     true,
+		}, {
+			AgreementId: requiredAgreements[1].AgreementID,
+			IsAgree:     false,
+		}, {
+			AgreementId: optionalAgreements[0].AgreementID,
+			IsAgree:     true,
+		}, {
+			AgreementId: optionalAgreements[1].AgreementID,
+			IsAgree:     false,
+		}}
+		user, err := signUp(ctx, db, &userinfo, agreementReq)
+		require.NoError(t, err)
+
+		err = mysqldb.WithTransactionVoid(ctx, db, func(tx *sql.Tx) error {
+			return service.Withdrawal(ctx, tx, user.UserID)
+		})
+		require.NoError(t, err)
+
+		user, isExisted, err := service.FindSignedUpUser(ctx, db, userinfo.AuthorizedBy, userinfo.AuthorizedID)
+		require.NoError(t, err)
+		require.False(t, isExisted)
 	})
 
 	t.Run("return needed necessary agreements when sign up with not answered", func(t *testing.T) {
