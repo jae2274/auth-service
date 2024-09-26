@@ -353,13 +353,20 @@ func (c *AuthController) RefreshJwt(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	userId, err := strconv.Atoi(claims.UserId)
+
+	user, isExisted, err := service.FindSignedUpUser(ctx, c.db, claims.AuthorizedBy, claims.AuthorizedID)
 	if errorHandler(ctx, w, err) {
 		return
 	}
 
+	if !isExisted {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	res, err := mysqldb.WithTransaction(ctx, c.db, func(tx *sql.Tx) (*dto.RefreshJwtResponse, error) {
-		dUserAuthorities, err := service.FindValidUserAuthorities(ctx, tx, userId)
+
+		dUserAuthorities, err := service.FindValidUserAuthorities(ctx, tx, user.UserID)
 		if err != nil {
 			return nil, err
 		}
