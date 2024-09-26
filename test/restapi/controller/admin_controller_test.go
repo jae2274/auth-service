@@ -41,6 +41,26 @@ func initAuthority(ctx context.Context, t *testing.T, db *sql.DB) []*models.Auth
 	return authorities
 }
 
+func initAdminUser(ctx context.Context, t *testing.T, db *sql.DB) *jwtresolver.CustomClaims {
+	user, err := mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (*models.User, error) {
+		user, err := service.SignUp(ctx, tx, &ooauth.UserInfo{
+			AuthorizedID: "authorizedID",
+			AuthorizedBy: "GOOGLE",
+			Email:        "testEmail@testmail.net",
+			Username:     "testUsername",
+		}, []*dto.UserAgreementReq{})
+
+		return user, err
+	})
+
+	require.NoError(t, err)
+	return &jwtresolver.CustomClaims{
+		UserId:       strconv.Itoa(user.UserID),
+		AuthorizedBy: domain.AuthorizedBy(user.AuthorizedBy),
+		AuthorizedID: user.AuthorizedID,
+	}
+}
+
 func TestAdminController(t *testing.T) {
 	ctx := context.Background()
 
@@ -49,26 +69,6 @@ func TestAdminController(t *testing.T) {
 
 	rootUrl := initRootUrl(t)
 	jwtResolver := initJwtResolver(t)
-
-	initAdminUser := func(t *testing.T, db *sql.DB) *jwtresolver.CustomClaims {
-		user, err := mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (*models.User, error) {
-			user, err := service.SignUp(ctx, tx, &ooauth.UserInfo{
-				AuthorizedID: "authorizedID",
-				AuthorizedBy: "GOOGLE",
-				Email:        "testEmail@testmail.net",
-				Username:     "testUsername",
-			}, []*dto.UserAgreementReq{})
-
-			return user, err
-		})
-
-		require.NoError(t, err)
-		return &jwtresolver.CustomClaims{
-			UserId:       strconv.Itoa(user.UserID),
-			AuthorizedBy: domain.AuthorizedBy(user.AuthorizedBy),
-			AuthorizedID: user.AuthorizedID,
-		}
-	}
 
 	signUpTestUser := func(t *testing.T, db *sql.DB) *models.User {
 		user, err := mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (*models.User, error) {
@@ -118,7 +118,7 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			admin := initAdminUser(t, db)                                                                                                        //admin api 호출시
+			admin := initAdminUser(ctx, t, db)                                                                                                   //admin api 호출시
 			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
 			require.NoError(t, err)
 
@@ -136,7 +136,7 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			authorities := initAuthority(ctx, t, db)
 
-			admin := initAdminUser(t, db)
+			admin := initAdminUser(ctx, t, db)
 			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{domain.AuthorityAdmin}, time.Now())
 			require.NoError(t, err)
 
@@ -177,7 +177,7 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			admin := initAdminUser(t, db)
+			admin := initAdminUser(ctx, t, db)
 			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
 			require.NoError(t, err)
 
@@ -196,7 +196,7 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			admin := initAdminUser(t, db)
+			admin := initAdminUser(ctx, t, db)
 			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{domain.AuthorityAdmin}, time.Now())
 			require.NoError(t, err)
 
@@ -238,7 +238,7 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			admin := initAdminUser(t, db)
+			admin := initAdminUser(ctx, t, db)
 			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
 			require.NoError(t, err)
 
@@ -257,7 +257,7 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			admin := initAdminUser(t, db)
+			admin := initAdminUser(ctx, t, db)
 			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{domain.AuthorityAdmin}, time.Now())
 			require.NoError(t, err)
 
@@ -318,7 +318,7 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			admin := initAdminUser(t, db)
+			admin := initAdminUser(ctx, t, db)
 			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
 			require.NoError(t, err)
 
@@ -336,7 +336,7 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			admin := initAdminUser(t, db)
+			admin := initAdminUser(ctx, t, db)
 			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{domain.AuthorityAdmin}, time.Now())
 			require.NoError(t, err)
 
@@ -379,7 +379,7 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			admin := initAdminUser(t, db)
+			admin := initAdminUser(ctx, t, db)
 			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
 			require.NoError(t, err)
 
@@ -397,7 +397,7 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			admin := initAdminUser(t, db)
+			admin := initAdminUser(ctx, t, db)
 			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{domain.AuthorityAdmin}, time.Now())
 			require.NoError(t, err)
 
