@@ -35,7 +35,7 @@ func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 	authController := ctrlr.NewAuthController(db, jwtResolver, aesCryptor, googleAuth)
 	authController.RegisterRoutes(router)
 
-	userController := ctrlr.NewUserController(db)
+	userController := ctrlr.NewUserController(db, jwtResolver)
 	userController.RegisterRoutes(router)
 
 	ticketController := ctrlr.NewTicketController(db, jwtResolver)
