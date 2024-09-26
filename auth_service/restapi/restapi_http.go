@@ -31,12 +31,16 @@ func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 	if err != nil {
 		return err
 	}
+
 	googleAuth := ooauth.NewGoogleOauth(envVars.GoogleClientID, envVars.GoogleClientSecret, envVars.GoogleRedirectUrl)
 	authController := ctrlr.NewAuthController(db, jwtResolver, aesCryptor, googleAuth)
 	authController.RegisterRoutes(router)
 
+	userRouter := router.NewRoute().Subrouter()
 	userController := ctrlr.NewUserController(db, jwtResolver)
-	userController.RegisterRoutes(router)
+	userController.RegisterRoutes(userRouter)
+	validUserHandler := middleware.ValidUserHandler(db)
+	userRouter.Use(validUserHandler)
 
 	ticketController := ctrlr.NewTicketController(db, jwtResolver)
 	ticketController.RegisterRoutes(router)
@@ -44,7 +48,7 @@ func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 	adminRouter := router.NewRoute().Subrouter()
 	adminController := ctrlr.NewAdminController(db)
 	adminController.RegisterRoutes(adminRouter)
-	adminRouter.Use(middleware.CheckHasAuthority(domain.AuthorityAdmin))
+	adminRouter.Use(middleware.CheckHasAuthority(domain.AuthorityAdmin), validUserHandler)
 
 	var allowOrigins []string
 	if envVars.AccessControlAllowOrigin != nil {

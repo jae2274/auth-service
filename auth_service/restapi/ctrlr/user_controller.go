@@ -92,7 +92,7 @@ func (c *UserController) UseTicket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := mysqldb.WithTransaction(ctx, c.db, func(tx *sql.Tx) (*dto.UseTicketResponse, error) {
-		return c.useTicket(ctx, tx, userId, ticketUUID)
+		return c.useTicket(ctx, tx, userId, claims.AuthorizedBy, claims.AuthorizedID, ticketUUID)
 	})
 
 	if errorHandler(ctx, w, err) {
@@ -106,7 +106,7 @@ func (c *UserController) UseTicket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (c *UserController) useTicket(ctx context.Context, tx *sql.Tx, userId int, ticketId string) (*dto.UseTicketResponse, error) {
+func (c *UserController) useTicket(ctx context.Context, tx *sql.Tx, userId int, authBy domain.AuthorizedBy, authId string, ticketId string) (*dto.UseTicketResponse, error) {
 	res := &dto.UseTicketResponse{}
 	ticket, err := service.UseTicket(ctx, tx, userId, ticketId)
 	switch err {
@@ -141,7 +141,7 @@ func (c *UserController) useTicket(ctx context.Context, tx *sql.Tx, userId int, 
 	for _, authority := range allAuthorities {
 		allAuthorityCodes = append(allAuthorityCodes, authority.AuthorityCode)
 	}
-	tokens, err := c.jwtResolver.CreateToken(strconv.Itoa(userId), allAuthorityCodes, time.Now())
+	tokens, err := c.jwtResolver.CreateToken(strconv.Itoa(userId), authBy, authId, allAuthorityCodes, time.Now())
 	if err != nil {
 		return nil, err
 	}

@@ -50,6 +50,26 @@ func TestAdminController(t *testing.T) {
 	rootUrl := initRootUrl(t)
 	jwtResolver := initJwtResolver(t)
 
+	initAdminUser := func(t *testing.T, db *sql.DB) *jwtresolver.CustomClaims {
+		user, err := mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (*models.User, error) {
+			user, err := service.SignUp(ctx, tx, &ooauth.UserInfo{
+				AuthorizedID: "authorizedID",
+				AuthorizedBy: "GOOGLE",
+				Email:        "testEmail@testmail.net",
+				Username:     "testUsername",
+			}, []*dto.UserAgreementReq{})
+
+			return user, err
+		})
+
+		require.NoError(t, err)
+		return &jwtresolver.CustomClaims{
+			UserId:       strconv.Itoa(user.UserID),
+			AuthorizedBy: domain.AuthorizedBy(user.AuthorizedBy),
+			AuthorizedID: user.AuthorizedID,
+		}
+	}
+
 	signUpTestUser := func(t *testing.T, db *sql.DB) *models.User {
 		user, err := mysqldb.WithTransaction(ctx, db, func(tx *sql.Tx) (*models.User, error) {
 			return service.SignUp(ctx, tx, &ooauth.UserInfo{AuthorizedBy: domain.GOOGLE, AuthorizedID: "authId", Email: "targetUser@test.com", Username: "target"}, nil)
@@ -98,7 +118,8 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			tokens, err := jwtResolver.CreateToken("100", []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
+			admin := initAdminUser(t, db)                                                                                                        //admin api 호출시
+			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
 			require.NoError(t, err)
 
 			req, err := http.NewRequest("GET", rootUrl+adminAuthority, nil)
@@ -115,7 +136,8 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			authorities := initAuthority(ctx, t, db)
 
-			tokens, err := jwtResolver.CreateToken("100", []string{domain.AuthorityAdmin}, time.Now())
+			admin := initAdminUser(t, db)
+			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{domain.AuthorityAdmin}, time.Now())
 			require.NoError(t, err)
 
 			req, err := http.NewRequest("GET", rootUrl+adminAuthority, nil)
@@ -155,7 +177,8 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			tokens, err := jwtResolver.CreateToken("100", []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
+			admin := initAdminUser(t, db)
+			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
 			require.NoError(t, err)
 
 			targetUser := signUpTestUser(t, db)
@@ -173,7 +196,8 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			tokens, err := jwtResolver.CreateToken("100", []string{domain.AuthorityAdmin}, time.Now())
+			admin := initAdminUser(t, db)
+			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{domain.AuthorityAdmin}, time.Now())
 			require.NoError(t, err)
 
 			targetUser := signUpTestUser(t, db)
@@ -213,7 +237,9 @@ func TestAdminController(t *testing.T) {
 		t.Run("return 403 if not authorized", func(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
-			tokens, err := jwtResolver.CreateToken("100", []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
+
+			admin := initAdminUser(t, db)
+			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
 			require.NoError(t, err)
 
 			targetUser := signUpTestUser(t, db)
@@ -230,7 +256,9 @@ func TestAdminController(t *testing.T) {
 		t.Run("return 204 if successfully removed", func(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
-			tokens, err := jwtResolver.CreateToken("100", []string{domain.AuthorityAdmin}, time.Now())
+
+			admin := initAdminUser(t, db)
+			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{domain.AuthorityAdmin}, time.Now())
 			require.NoError(t, err)
 
 			targetUser := signUpTestUser(t, db)
@@ -290,7 +318,8 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			tokens, err := jwtResolver.CreateToken("100", []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
+			admin := initAdminUser(t, db)
+			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
 			require.NoError(t, err)
 
 			req, err := http.NewRequest("POST", rootUrl+adminTicket, strings.NewReader(createTicketReq))
@@ -306,9 +335,9 @@ func TestAdminController(t *testing.T) {
 		t.Run("return 201 if successfully created", func(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
-			admin := signUpTestUser(t, db)
 
-			tokens, err := jwtResolver.CreateToken(strconv.Itoa(admin.UserID), []string{domain.AuthorityAdmin}, time.Now())
+			admin := initAdminUser(t, db)
+			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{domain.AuthorityAdmin}, time.Now())
 			require.NoError(t, err)
 
 			req, err := http.NewRequest("POST", rootUrl+adminTicket, strings.NewReader(createTicketReq))
@@ -350,7 +379,8 @@ func TestAdminController(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
 
-			tokens, err := jwtResolver.CreateToken("100", []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
+			admin := initAdminUser(t, db)
+			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{"AUTHORITY_USER"}, time.Now()) //not AUTHORITY_ADMIN
 			require.NoError(t, err)
 
 			req, err := http.NewRequest("GET", rootUrl+adminTicket, nil)
@@ -366,9 +396,9 @@ func TestAdminController(t *testing.T) {
 		t.Run("return 200 with tickets", func(t *testing.T) {
 			db := tinit.DB(t)
 			initAuthority(ctx, t, db)
-			admin := signUpTestUser(t, db)
 
-			tokens, err := jwtResolver.CreateToken(strconv.Itoa(admin.UserID), []string{domain.AuthorityAdmin}, time.Now())
+			admin := initAdminUser(t, db)
+			tokens, err := jwtResolver.CreateToken(admin.UserId, admin.AuthorizedBy, admin.AuthorizedID, []string{domain.AuthorityAdmin}, time.Now())
 			require.NoError(t, err)
 
 			req, err := http.NewRequest("POST", rootUrl+adminTicket, strings.NewReader(createTicketReq))

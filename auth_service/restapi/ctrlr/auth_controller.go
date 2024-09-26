@@ -13,6 +13,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/jae2274/auth-service/auth_service/common/domain"
 	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/models"
 	"github.com/jae2274/auth-service/auth_service/restapi/aescryptor"
@@ -255,7 +256,7 @@ func signInSuccessRes(ctx context.Context, db boil.ContextExecutor, jwtResolver 
 	for _, authority := range userAuthorities {
 		authorityCodes = append(authorityCodes, authority.AuthorityCode)
 	}
-	token, err := jwtResolver.CreateToken(strconv.Itoa(user.UserID), authorityCodes, time.Now())
+	token, err := jwtResolver.CreateToken(strconv.Itoa(user.UserID), domain.AuthorizedBy(user.AuthorizedBy), user.AuthorizedID, authorityCodes, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +369,7 @@ func (c *AuthController) RefreshJwt(w http.ResponseWriter, r *http.Request) {
 			authorityCodes = append(authorityCodes, authority.AuthorityCode)
 		}
 
-		tokens, err := c.jwtResolver.CreateToken(claims.UserId, authorityCodes, time.Now())
+		tokens, err := c.jwtResolver.CreateToken(claims.UserId, claims.AuthorizedBy, claims.AuthorizedID, authorityCodes, time.Now())
 		if err != nil {
 			return nil, err
 		}

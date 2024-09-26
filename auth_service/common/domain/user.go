@@ -14,7 +14,7 @@ const (
 )
 
 func (AuthorizedByValues) Values() []string {
-	return []string{string(GOOGLE)}
+	return []string{string(GOOGLE), string(AuthorizedByDELETED)}
 }
 
 type StatusValues struct{}

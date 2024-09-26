@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jae2274/auth-service/auth_service/common/domain"
 	"github.com/jae2274/auth-service/auth_service/restapi/jwtresolver"
 	"github.com/stretchr/testify/require"
 )
@@ -11,6 +12,9 @@ import (
 func TestJwtresolver(t *testing.T) {
 	secretKey := "testKey"
 	userId := "Jyo Liar"
+	authBy := domain.GOOGLE
+	authByDeleted := domain.AuthorizedByDELETED
+	authId := "1234567890"
 	authorities := []string{"admin", "user"}
 
 	now := time.Now()
@@ -46,7 +50,7 @@ func TestJwtresolver(t *testing.T) {
 
 	t.Run("return valid claims", func(t *testing.T) {
 		//Given
-		tokenInfo, err := jwtResolver.CreateToken(userId, authorities, time.Now())
+		tokenInfo, err := jwtResolver.CreateToken(userId, authBy, authId, authorities, time.Now())
 		require.NoError(t, err)
 
 		//When
@@ -62,7 +66,7 @@ func TestJwtresolver(t *testing.T) {
 
 	t.Run("return valid claims even empty authorities", func(t *testing.T) {
 		//Given
-		tokenInfo, err := jwtResolver.CreateToken(userId, []string{}, time.Now())
+		tokenInfo, err := jwtResolver.CreateToken(userId, authBy, authId, []string{}, time.Now())
 		require.NoError(t, err)
 
 		//When
@@ -78,7 +82,7 @@ func TestJwtresolver(t *testing.T) {
 
 	t.Run("return invalid claims if after expiresAt", func(t *testing.T) {
 		//Given
-		tokenInfo, err := jwtResolver.CreateToken(userId, authorities, now.Add(-jwtResolver.GetAccessTokenDuration()-time.Minute))
+		tokenInfo, err := jwtResolver.CreateToken(userId, authBy, authId, authorities, now.Add(-jwtResolver.GetAccessTokenDuration()-time.Minute))
 		require.NoError(t, err)
 
 		//When
@@ -93,7 +97,7 @@ func TestJwtresolver(t *testing.T) {
 	t.Run("return error when secret key is different", func(t *testing.T) {
 		diffJwtResolver := jwtresolver.NewJwtResolver("differentSecretKey")
 		//Given
-		tokenInfo, err := diffJwtResolver.CreateToken(userId, authorities, time.Now())
+		tokenInfo, err := diffJwtResolver.CreateToken(userId, authBy, authId, authorities, time.Now())
 		require.NoError(t, err)
 
 		//When
@@ -106,7 +110,7 @@ func TestJwtresolver(t *testing.T) {
 
 	t.Run("return error if empty userId", func(t *testing.T) {
 		//Given
-		tokenInfo, err := jwtResolver.CreateToken("", authorities, time.Now())
+		tokenInfo, err := jwtResolver.CreateToken("", authByDeleted, "", authorities, time.Now())
 		require.NoError(t, err)
 
 		//When
@@ -119,7 +123,7 @@ func TestJwtresolver(t *testing.T) {
 
 	t.Run("return valid if refresh token is valid", func(t *testing.T) {
 		//Given
-		tokenInfo, err := jwtResolver.CreateToken(userId, authorities, time.Now())
+		tokenInfo, err := jwtResolver.CreateToken(userId, authBy, authId, authorities, time.Now())
 		require.NoError(t, err)
 
 		//When
@@ -134,7 +138,7 @@ func TestJwtresolver(t *testing.T) {
 
 	t.Run("return invalid if refresh token is expired", func(t *testing.T) {
 		//Given
-		tokenInfo, err := jwtResolver.CreateToken(userId, authorities, now.Add(-jwtResolver.GetRefreshTokenDuration()-time.Minute))
+		tokenInfo, err := jwtResolver.CreateToken(userId, authBy, authId, authorities, now.Add(-jwtResolver.GetRefreshTokenDuration()-time.Minute))
 		require.NoError(t, err)
 
 		//When

@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
+	"github.com/jae2274/auth-service/auth_service/common/domain"
 	"github.com/jae2274/goutils/terr"
 	"gopkg.in/validator.v2"
 )
@@ -60,11 +61,13 @@ func (j *JwtResolver) GetRefreshTokenDuration() time.Duration {
 	return j.refreshTokenDuration
 }
 
-func (j *JwtResolver) CreateToken(userId string, authorities []string, createdAt time.Time) (*TokenInfo, error) {
+func (j *JwtResolver) CreateToken(userId string, authBy domain.AuthorizedBy, authId string, authorities []string, createdAt time.Time) (*TokenInfo, error) {
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		&CustomClaims{
-			UserId:      userId,
-			Authorities: authorities,
+			UserId:       userId,
+			Authorities:  authorities,
+			AuthorizedBy: authBy,
+			AuthorizedID: authId,
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(createdAt.Add(j.accessTokenDuration)),
 			},
@@ -77,7 +80,9 @@ func (j *JwtResolver) CreateToken(userId string, authorities []string, createdAt
 
 	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		&CustomClaims{
-			UserId: userId,
+			UserId:       userId,
+			AuthorizedBy: authBy,
+			AuthorizedID: authId,
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(createdAt.Add(j.refreshTokenDuration)),
 			},

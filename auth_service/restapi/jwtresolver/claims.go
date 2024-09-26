@@ -1,9 +1,15 @@
 package jwtresolver
 
-import "github.com/golang-jwt/jwt/v5"
+import (
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/jae2274/auth-service/auth_service/common/domain"
+)
 
 type CustomClaims struct {
-	UserId      string `validate:"nonzero"`
+	UserId       string `validate:"nonzero"`
+	AuthorizedBy domain.AuthorizedBy
+	AuthorizedID string
+
 	Authorities []string
 	jwt.RegisteredClaims
 }
