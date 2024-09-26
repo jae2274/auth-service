@@ -32,8 +32,11 @@ func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 		return err
 	}
 	googleAuth := ooauth.NewGoogleOauth(envVars.GoogleClientID, envVars.GoogleClientSecret, envVars.GoogleRedirectUrl)
-	controller := ctrlr.NewController(db, jwtResolver, aesCryptor, googleAuth)
-	controller.RegisterRoutes(router)
+	authController := ctrlr.NewAuthController(db, jwtResolver, aesCryptor, googleAuth)
+	authController.RegisterRoutes(router)
+
+	userController := ctrlr.NewUserController(db)
+	userController.RegisterRoutes(router)
 
 	ticketController := ctrlr.NewTicketController(db, jwtResolver)
 	ticketController.RegisterRoutes(router)

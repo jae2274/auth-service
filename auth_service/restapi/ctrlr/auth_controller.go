@@ -13,17 +13,14 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/jae2274/auth-service/auth_service/common/domain"
 	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
 	"github.com/jae2274/auth-service/auth_service/models"
 	"github.com/jae2274/auth-service/auth_service/restapi/aescryptor"
 	"github.com/jae2274/auth-service/auth_service/restapi/ctrlr/dto"
 	"github.com/jae2274/auth-service/auth_service/restapi/jwtresolver"
-	"github.com/jae2274/auth-service/auth_service/restapi/middleware"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 	"github.com/jae2274/auth-service/auth_service/restapi/service"
 	"github.com/jae2274/auth-service/auth_service/utils"
-	"github.com/jae2274/goutils/llog"
 	"github.com/jae2274/goutils/terr"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 
@@ -31,7 +28,7 @@ import (
 	"github.com/gorilla/sessions"
 )
 
-type Controller struct {
+type AuthController struct {
 	db                *sql.DB
 	jwtResolver       *jwtresolver.JwtResolver
 	store             *sessions.CookieStore
@@ -43,7 +40,7 @@ type Controller struct {
 //go:embed after_auth.html
 var afterLoginHtml string
 
-func NewController(db *sql.DB, jwtResolver *jwtresolver.JwtResolver, aesCryptor *aescryptor.JsonAesCryptor, googleOauth ooauth.Ooauth) *Controller {
+func NewAuthController(db *sql.DB, jwtResolver *jwtresolver.JwtResolver, aesCryptor *aescryptor.JsonAesCryptor, googleOauth ooauth.Ooauth) *AuthController {
 
 	afterLoginHtmlTmpl, err := template.New("afterLogin").Parse(afterLoginHtml)
 
@@ -51,7 +48,7 @@ func NewController(db *sql.DB, jwtResolver *jwtresolver.JwtResolver, aesCryptor 
 		panic(err)
 	}
 
-	return &Controller{
+	return &AuthController{
 		db:                db,
 		jwtResolver:       jwtResolver,
 		store:             sessions.NewCookieStore([]byte("secret")),
@@ -61,17 +58,15 @@ func NewController(db *sql.DB, jwtResolver *jwtresolver.JwtResolver, aesCryptor 
 	}
 }
 
-func (c *Controller) RegisterRoutes(router *mux.Router) {
+func (c *AuthController) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/auth-code-urls", c.AuthCodeUrls).Methods("GET")
 	router.HandleFunc("/auth/callback/google", c.Authenticate)
+	router.HandleFunc("/auth/refresh", c.RefreshJwt).Methods("POST")
 	router.HandleFunc("/auth/sign-in", c.SignIn).Methods("POST")
 	router.HandleFunc("/auth/sign-up", c.SignUp).Methods("POST")
-	router.HandleFunc("/auth/refresh", c.RefreshJwt).Methods("POST")
-	router.HandleFunc("/auth/authority", c.FindAllUserAuthorities).Methods("GET")
-	router.HandleFunc("/auth/withdrawal", c.Withdrawal).Methods("DELETE")
 }
 
-func (c *Controller) AuthCodeUrls(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) AuthCodeUrls(w http.ResponseWriter, r *http.Request) {
 	state := randToken()
 	err := pushSessionState(c.store, w, r, state)
 	if errorHandler(r.Context(), w, err) {
@@ -90,7 +85,7 @@ func randToken() string {
 	return base64.StdEncoding.EncodeToString(b)
 }
 
-func (c *Controller) Authenticate(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) Authenticate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	state, err := popSessionState(c.store, w, r)
@@ -164,7 +159,7 @@ func pushSessionState(s *sessions.CookieStore, w http.ResponseWriter, r *http.Re
 	return nil
 }
 
-func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) SignIn(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var req dto.SignInRequest
@@ -192,7 +187,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (c *Controller) signIn(ctx context.Context, tx *sql.Tx, userinfo *ooauth.UserInfo, additionalAgreements []*dto.UserAgreementReq) (*dto.SignInResponse, error) {
+func (c *AuthController) signIn(ctx context.Context, tx *sql.Tx, userinfo *ooauth.UserInfo, additionalAgreements []*dto.UserAgreementReq) (*dto.SignInResponse, error) {
 	user, isExisted, err := service.FindSignedUpUser(ctx, tx, userinfo.AuthorizedBy, userinfo.AuthorizedID)
 	if err != nil {
 		return nil, err
@@ -296,7 +291,7 @@ func signInNewUserRes(ctx context.Context, db boil.ContextExecutor, userinfo *oo
 	}, nil
 }
 
-func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) SignUp(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var req dto.SignUpRequest
@@ -322,15 +317,6 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func errorHandler(ctx context.Context, w http.ResponseWriter, err error) bool {
-	if err != nil {
-		llog.LogErr(ctx, err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return true
-	}
-	return false
-}
-
 func encrypt(aesCryptor *aescryptor.JsonAesCryptor, ooauthToken *ooauth.OauthToken) (string, error) {
 	authToken, err := aesCryptor.Encrypt(ooauthToken)
 	if err != nil {
@@ -348,7 +334,7 @@ func decrypt(aesCryptor *aescryptor.JsonAesCryptor, authToken string) (*ooauth.O
 	return ooauthToken, nil
 }
 
-func (c *Controller) RefreshJwt(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) RefreshJwt(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var req dto.RefreshJwtRequest
@@ -398,58 +384,6 @@ func (c *Controller) RefreshJwt(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = json.NewEncoder(w).Encode(res)
-
-	if errorHandler(ctx, w, err) {
-		return
-	}
-}
-
-func (c *Controller) FindAllUserAuthorities(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	claims, isExisted := middleware.GetClaims(ctx)
-	if !isExisted {
-		http.Error(w, "no claims in context", http.StatusUnauthorized)
-		return
-	}
-
-	userId, err := strconv.Atoi(claims.UserId)
-	if errorHandler(ctx, w, err) {
-		return
-	}
-
-	userAuthorities, err := service.FindAllUserAuthorities(ctx, c.db, userId)
-	if errorHandler(ctx, w, err) {
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(struct {
-		Authorities []*domain.UserAuthority `json:"authorities"`
-	}{Authorities: userAuthorities})
-
-	if errorHandler(ctx, w, err) {
-		return
-	}
-}
-
-func (c *Controller) Withdrawal(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	claims, isExisted := middleware.GetClaims(ctx)
-	if !isExisted {
-		http.Error(w, "no claims in context", http.StatusUnauthorized)
-		return
-	}
-
-	userId, err := strconv.Atoi(claims.UserId)
-	if errorHandler(ctx, w, err) {
-		return
-	}
-
-	err = mysqldb.WithTransactionVoid(ctx, c.db, func(tx *sql.Tx) error {
-		return service.Withdrawal(ctx, tx, userId)
-	})
 
 	if errorHandler(ctx, w, err) {
 		return
