@@ -61,6 +61,8 @@ func initAdminUser(ctx context.Context, t *testing.T, db *sql.DB) *jwtresolver.C
 	}
 }
 
+// admin api는 jwt의 토큰을 기반으로 동작한다.
+// jwt에 admin 권한이 존재하는지, 정지되거나 탈퇴한 계정인지 확인을 위해 DB조회를 할 뿐, DB의 권한 정보는 api호출에 영향을 미치지 않는다.
 func TestAdminController(t *testing.T) {
 	ctx := context.Background()
 
