@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/jae2274/auth-service/auth_service/common/domain"
 	"github.com/jae2274/auth-service/auth_service/common/mysqldb"
@@ -92,7 +91,7 @@ func (c *UserController) UseTicket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := mysqldb.WithTransaction(ctx, c.db, func(tx *sql.Tx) (*dto.UseTicketResponse, error) {
-		return c.useTicket(ctx, tx, userId, claims.AuthorizedBy, claims.AuthorizedID, ticketUUID)
+		return useTicket(ctx, tx, userId, claims.AuthorizedBy, claims.AuthorizedID, ticketUUID)
 	})
 
 	if errorHandler(ctx, w, err) {
@@ -106,49 +105,24 @@ func (c *UserController) UseTicket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (c *UserController) useTicket(ctx context.Context, tx *sql.Tx, userId int, authBy domain.AuthorizedBy, authId string, ticketId string) (*dto.UseTicketResponse, error) {
-	res := &dto.UseTicketResponse{}
-	ticket, err := service.UseTicket(ctx, tx, userId, ticketId)
+func useTicket(ctx context.Context, tx *sql.Tx, userId int, authBy domain.AuthorizedBy, authId string, ticketId string) (*dto.UseTicketResponse, error) {
+	_, err := service.UseTicket(ctx, tx, userId, ticketId)
+
+	var ticketStatus dto.TicketStatus
 	switch err {
 	case service.ErrTicketNotFound:
-		res.TicketStatus = dto.NOT_EXISTED
-		return res, nil
+		ticketStatus = dto.NOT_EXISTED
 	case service.ErrNoMoreUseableTicket:
-		res.TicketStatus = dto.NO_MORE_USEABLE
-		return res, nil
+		ticketStatus = dto.NO_MORE_USEABLE
 	case service.ErrAlreadyUsedTicket:
-		res.TicketStatus = dto.ALREADY_USED
-		return res, nil
-	}
-
-	authorityIds := make([]int, len(ticket.TicketAuthorities))
-	for i, authority := range ticket.TicketAuthorities {
-		authorityIds[i] = authority.AuthorityId
-	}
-
-	/*
-		추후 해당 기능이 사용될 여지가 있을 것으로 판단되어 주석처리하였습니다.
-	*/
-	// userAuthorities, err := service.FindUserAuthoritiesByAuthorityIds(ctx, tx, userId, authorityIds)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	allAuthorities, err := service.FindValidUserAuthorities(ctx, tx, userId)
-	if err != nil {
-		return nil, err
-	}
-	allAuthorityCodes := make([]string, 0, len(allAuthorities))
-	for _, authority := range allAuthorities {
-		allAuthorityCodes = append(allAuthorityCodes, authority.AuthorityCode)
-	}
-	tokens, err := c.jwtResolver.CreateToken(strconv.Itoa(userId), authBy, authId, allAuthorityCodes, time.Now())
-	if err != nil {
+		ticketStatus = dto.ALREADY_USED
+	case nil:
+		ticketStatus = dto.SUCCESSFULLY_USED
+	default:
 		return nil, err
 	}
 
-	res.TicketStatus = dto.SUCCESSFULLY_USED
-	res.AccessToken = &tokens.AccessToken
-	res.Authorities = allAuthorityCodes
-	// res.AppliedAuthorities = userAuthorities
-	return res, nil
+	return &dto.UseTicketResponse{
+		TicketStatus: ticketStatus,
+	}, nil
 }
