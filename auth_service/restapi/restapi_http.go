@@ -39,8 +39,7 @@ func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 	userRouter := router.NewRoute().Subrouter()
 	userController := ctrlr.NewUserController(db, jwtResolver)
 	userController.RegisterRoutes(userRouter)
-	validUserHandler := middleware.ValidUserHandler(db)
-	userRouter.Use(validUserHandler)
+	userRouter.Use(middleware.CheckHasClaims)
 
 	ticketController := ctrlr.NewTicketController(db, jwtResolver)
 	ticketController.RegisterRoutes(router)
@@ -48,7 +47,7 @@ func Run(ctx context.Context, envVars *vars.Vars, db *sql.DB) error {
 	adminRouter := router.NewRoute().Subrouter()
 	adminController := ctrlr.NewAdminController(db)
 	adminController.RegisterRoutes(adminRouter)
-	adminRouter.Use(middleware.CheckHasAuthority(domain.AuthorityAdmin), validUserHandler)
+	adminRouter.Use(middleware.CheckHasAuthority(domain.AuthorityAdmin), middleware.CheckHasClaims)
 
 	var allowOrigins []string
 	if envVars.AccessControlAllowOrigin != nil {
