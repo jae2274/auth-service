@@ -12,6 +12,7 @@ import (
 	"github.com/jae2274/auth-service/auth_service/restapi/mapper"
 	"github.com/jae2274/auth-service/auth_service/restapi/ooauth"
 	"github.com/jae2274/auth-service/auth_service/utils"
+	"github.com/jae2274/goutils/llog"
 	"github.com/jae2274/goutils/ptr"
 	"github.com/jae2274/goutils/terr"
 	"github.com/volatiletech/null/v8"
@@ -272,18 +273,22 @@ func convertToUser(mUser *models.User) *domain.User {
 }
 
 func Withdrawal(ctx context.Context, tx *sql.Tx, userId int) error {
+	user, err := models.Users(models.UserWhere.UserID.EQ(userId)).One(ctx, tx)
+	if err != nil {
+		return err
+	}
 
-	_, err := models.UserAgreements(models.UserAgreementWhere.UserID.EQ(userId)).DeleteAll(ctx, tx)
+	if user.Status == string(domain.DELETED) {
+		llog.Warn(ctx, fmt.Sprintf("user already deleted. userId: %d", userId))
+		return nil
+	}
+
+	_, err = models.UserAgreements(models.UserAgreementWhere.UserID.EQ(userId)).DeleteAll(ctx, tx)
 	if err != nil {
 		return err
 	}
 
 	_, err = models.UserAuthorities(models.UserAuthorityWhere.UserID.EQ(userId)).DeleteAll(ctx, tx)
-	if err != nil {
-		return err
-	}
-
-	user, err := models.Users(models.UserWhere.UserID.EQ(userId)).One(ctx, tx)
 	if err != nil {
 		return err
 	}

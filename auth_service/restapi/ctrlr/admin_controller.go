@@ -105,10 +105,8 @@ func (a *AdminController) RemoveAuthority(w http.ResponseWriter, r *http.Request
 
 func getAllTicket(ctx context.Context, db *sql.DB, byMe bool) ([]*dto.TicketDetail, error) {
 	if byMe {
-		claims, isExisted := middleware.GetClaims(ctx)
-		if !isExisted {
-			return nil, terr.New("no claims")
-		}
+		claims := GetClaimsOrPatal(ctx)
+
 		adminUserId, err := strconv.Atoi(claims.UserId)
 		if err != nil {
 			return nil, err
